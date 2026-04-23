@@ -29,7 +29,7 @@ Goal: a `Voice` class can be instantiated from a test harness and produce audio.
 - [x] `PitchEnvelope` interface accepts an arbitrary curve (point list with interpolation)
 - [x] `LowpassFilter` wrapping `juce::dsp::IIR` (cutoff + resonance), unit tested
 - [x] `Bitcrush` effect (sample-rate and bit-depth reduction), unit tested
-- [ ] `Distortion` effect (waveshaper), unit tested
+- [x] `Distortion` effect (waveshaper), unit tested
 - [ ] `Voice` class composing: oscillator → pitch env → amp env → filter → bitcrush → distortion → gain (fixed order)
 - [ ] Full parameter layout defined in `AudioProcessorValueTreeState`
 - [ ] Test harness: CLI or unit test that renders a voice to WAV for listening checks
