@@ -42,10 +42,20 @@ Rules:
 ## JUCE rules
 
 - Use `AudioProcessorValueTreeState` for **every** parameter from day one. No ad-hoc `std::atomic<float>` members.
-- Use JUCE DSP module classes (`juce::dsp::IIR`, `juce::dsp::Oscillator`, `juce::dsp::WaveShaper`, etc.) where they exist. Do not reimplement filters, oscillators, or waveshapers from scratch.
+- For DSP primitives, follow the **DSP dependency policy** below rather than reaching for `juce::dsp` reflexively.
 - Use `UndoManager` for **every** user-initiated state change, including dice rolls (one transaction per click).
 - Use `ValueTree` for project serialization. Version the tree from the first save. Never break older `.beep` files without an explicit migration.
 - Prefer JUCE containers (`juce::Array`, `juce::String`) in JUCE-facing code; prefer `std::` containers in pure DSP/Core code.
+
+## DSP conventions
+
+Rules that apply to every class under `Source/DSP/`. New DSP classes should match these so tests stay predictable and compositions stay safe.
+
+**Dependency policy.** `Source/DSP/` primitives should minimize external dependencies to keep the test target small and tests fast. Simple, well-understood DSP math (naive waveform generators, envelope ramps, bitcrush quantization, basic waveshapers, gain/pan) is implemented directly in pure C++. Use `juce::dsp` only for nontrivial algorithms where a from-scratch implementation carries real correctness risk or significant engineering effort: IIR/FIR filters beyond one-pole, FFT, resamplers, oversampling, convolution, reverbs. When in doubt, flag the choice in a session rather than deciding silently.
+
+**Lifecycle contract.** Every DSP class exposes `prepare(double sampleRate)` to set up sample-rate-dependent state and `reset()` to return periodic / deterministic state (phase accumulators, envelope stages, filter memories) to a fresh runtime state. Before `prepare()` has been called, `processSample()` returns `0.0f` (silence) — it must not crash, NaN, or emit arbitrary values. Stochastic state (RNG seeds, etc.) is not required to reset; document any deviation in the class header.
+
+**House style.** Phase accumulators and other long-running integrators use `double` internally to avoid drift; samples returned are `float`. Avoid JUCE headers in DSP translation units when `<cmath>`, `<random>`, `<cassert>`, `<cstdint>` will do.
 
 ## Code style
 
