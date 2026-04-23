@@ -59,6 +59,8 @@ Rules that apply to every class under `Source/DSP/`. New DSP classes should matc
 
 **Testing boundary behavior.** Phase accumulators, envelope stage transitions, and other time-based DSP produce sub-sample drift from floating-point accumulation. Tests that check boundary events (discontinuities, stage changes, zero crossings) should use a tolerance window around the expected sample index, not exact equality. One successful detection inside the window is the test condition.
 
+**Envelope retrigger.** Envelope-like classes (amp env, pitch env, filter env, etc.) that expose a `noteOn()`-style trigger must, when re-triggered while non-idle, restart from the *current* output level rather than snapping to zero. This prevents clicks when a pattern event retriggers a voice that is still ringing from a prior event.
+
 ## Code style
 
 - **C++17.** No C++20 features unless the user approves.
