@@ -23,7 +23,7 @@ Goal: an empty standalone app window opens on all three OSes, built via CMake, t
 
 Goal: a `Voice` class can be instantiated from a test harness and produce audio. No UI yet.
 
-- [ ] Catch2 fetched via CPM for tests, wired into CTest and the CI workflow
+- [x] Catch2 fetched via CPM for tests, wired into CTest and the CI workflow
 - [ ] `Oscillator` class: sine, square, triangle, saw, noise. Unit tested for expected waveform shape.
 - [ ] `AmpEnvelope` ADSR class, unit tested (attack ramp, sustain, release tail, retrigger)
 - [ ] `PitchEnvelope` interface accepts an arbitrary curve (point list with interpolation)
