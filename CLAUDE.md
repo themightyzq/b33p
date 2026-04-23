@@ -92,6 +92,11 @@ Rules that apply to every class under `Source/DSP/`. New DSP classes should matc
 4. Implement. Run tests. Build on at least the host OS.
 5. Check the task off in `TODO.md` (do **not** delete it — history matters).
 6. Commit with Conventional Commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `build:`, `chore:`.
+7. Push the commit to origin immediately (see **Push after every commit** below).
+
+**Push after every commit.** Once a commit lands locally, push it to origin immediately. Don't batch commits for end-of-session pushes. Rationale: continuous remote backup, CI runs tied to individual commits for clearer failure attribution, and push history doubles as a session log. A deliberately broken commit used to verify a pipeline (like the red run during Catch2 setup) still gets pushed — the red CI run *is* the verification. The only exception is when a session is explicitly work-in-progress and will be squashed/rebased before pushing; flag that case at the start of the session.
+
+**Verify working directory before git operations.** Shell state between tool calls is not always what it appears — especially after `cd` commands earlier in the session. Before `git add`, `git commit`, or any path-sensitive git operation, either (a) run `pwd` to confirm cwd is the repo root, or (b) use absolute paths for file arguments. If a git command fails with "pathspec did not match," the most likely cause is cwd drift, not a missing file — check cwd before assuming the file is wrong.
 
 ## When to ask vs. proceed
 
