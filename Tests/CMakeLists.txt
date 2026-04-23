@@ -1,5 +1,7 @@
 add_executable(B33pTests
     SanityTest.cpp
+    DSP/OscillatorTests.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/Oscillator.cpp
 )
 
 target_include_directories(B33pTests PRIVATE
