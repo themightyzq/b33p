@@ -1,0 +1,87 @@
+# Build artifacts -----------------------------------------------------------
+build/
+Build/
+Builds/
+out/
+cmake-build-*/
+dist/
+
+# CMake ---------------------------------------------------------------------
+CMakeFiles/
+CMakeCache.txt
+CMakeScripts/
+cmake_install.cmake
+CTestTestfile.cmake
+_deps/
+Testing/
+**/*.cmake
+!cmake/CPM.cmake
+!CMakeLists.txt
+
+# CPM source cache (if colocated) ------------------------------------------
+.cpm/
+.cpm_source_cache/
+
+# JUCE-generated ------------------------------------------------------------
+JuceLibraryCode/
+juce_binarydata_*/
+
+# Compiled binaries ---------------------------------------------------------
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.exp
+
+# Xcode ---------------------------------------------------------------------
+*.xcodeproj/
+!*.xcodeproj/project.pbxproj
+xcuserdata/
+*.xcworkspace/
+*.xcuserstate
+DerivedData/
+
+# Visual Studio -------------------------------------------------------------
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.opensdf
+*.sdf
+*.suo
+
+# CLion / JetBrains ---------------------------------------------------------
+.idea/
+cmake-build-debug/
+cmake-build-release/
+
+# VS Code -------------------------------------------------------------------
+.vscode/
+!.vscode/settings.json.example
+
+# OS junk -------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux editor swap / backup -----------------------------------------------
+*~
+*.swp
+*.swo
+
+# User-local settings / secrets --------------------------------------------
+.env
+.env.local
