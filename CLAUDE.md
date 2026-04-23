@@ -57,6 +57,8 @@ Rules that apply to every class under `Source/DSP/`. New DSP classes should matc
 
 **House style.** Phase accumulators and other long-running integrators use `double` internally to avoid drift; samples returned are `float`. Avoid JUCE headers in DSP translation units when `<cmath>`, `<random>`, `<cassert>`, `<cstdint>` will do.
 
+**Testing boundary behavior.** Phase accumulators, envelope stage transitions, and other time-based DSP produce sub-sample drift from floating-point accumulation. Tests that check boundary events (discontinuities, stage changes, zero crossings) should use a tolerance window around the expected sample index, not exact equality. One successful detection inside the window is the test condition.
+
 ## Code style
 
 - **C++17.** No C++20 features unless the user approves.
