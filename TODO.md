@@ -2,7 +2,7 @@
 
 B33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current phase: Phase 0 — Project scaffolding**
+> **Current phase: Phase 1 — Voice DSP core**
 
 ---
 

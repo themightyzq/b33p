@@ -15,6 +15,7 @@ endif()
 set(B33P_BUNDLE_ID "com.themightyzq.b33p" CACHE STRING "Application bundle identifier")
 set(B33P_COMPANY_NAME "ZQ SFX"              CACHE STRING "Company / author name")
 set(B33P_JUCE_VERSION "8.0.12"              CACHE STRING "JUCE release tag to fetch")
+set(B33P_CATCH2_VERSION "v3.14.0"           CACHE STRING "Catch2 release tag to fetch")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -71,3 +72,25 @@ target_link_libraries(B33p
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
 )
+
+# ---------------------------------------------------------------------------
+# Tests — opt-in via BUILD_TESTING (default ON when this is the top-level
+# project, OFF when B33p is consumed as a dependency).
+# ---------------------------------------------------------------------------
+if(PROJECT_IS_TOP_LEVEL)
+    include(CTest)
+    if(BUILD_TESTING)
+        CPMAddPackage(
+            NAME                Catch2
+            GITHUB_REPOSITORY   catchorg/Catch2
+            GIT_TAG             ${B33P_CATCH2_VERSION}
+            EXCLUDE_FROM_ALL    YES
+            SYSTEM              YES
+        )
+
+        list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
+        include(Catch)
+
+        add_subdirectory(Tests)
+    endif()
+endif()
