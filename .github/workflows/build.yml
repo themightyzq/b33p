@@ -5,8 +5,8 @@ on:
     branches: [main]
   pull_request:
 
-# Phase 0 stub: debug build across all three target OSes, no tests.
-# Catch2 + ctest step lands in Phase 1 alongside the first DSP unit tests.
+# Debug build + ctest across all three target OSes. Catch2 is fetched via CPM
+# inside CMakeLists.txt when BUILD_TESTING is ON.
 
 jobs:
   build:
@@ -59,3 +59,7 @@ jobs:
 
       - name: Build
         run: cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure --build-config ${{ env.CMAKE_BUILD_TYPE }}
