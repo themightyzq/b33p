@@ -26,7 +26,7 @@ Goal: a `Voice` class can be instantiated from a test harness and produce audio.
 - [x] Catch2 fetched via CPM for tests, wired into CTest and the CI workflow
 - [x] `Oscillator` class: sine, square, triangle, saw, noise. Unit tested for expected waveform shape.
 - [x] `AmpEnvelope` ADSR class, unit tested (attack ramp, sustain, release tail, retrigger)
-- [ ] `PitchEnvelope` interface accepts an arbitrary curve (point list with interpolation)
+- [x] `PitchEnvelope` interface accepts an arbitrary curve (point list with interpolation)
 - [ ] `LowpassFilter` wrapping `juce::dsp::IIR` (cutoff + resonance), unit tested
 - [ ] `Bitcrush` effect (sample-rate and bit-depth reduction), unit tested
 - [ ] `Distortion` effect (waveshaper), unit tested
