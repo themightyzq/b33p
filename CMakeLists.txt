@@ -67,6 +67,7 @@ target_compile_definitions(B33p PRIVATE
 target_link_libraries(B33p
     PRIVATE
         juce::juce_gui_basics
+        juce::juce_dsp
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

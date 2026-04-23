@@ -27,7 +27,7 @@ Goal: a `Voice` class can be instantiated from a test harness and produce audio.
 - [x] `Oscillator` class: sine, square, triangle, saw, noise. Unit tested for expected waveform shape.
 - [x] `AmpEnvelope` ADSR class, unit tested (attack ramp, sustain, release tail, retrigger)
 - [x] `PitchEnvelope` interface accepts an arbitrary curve (point list with interpolation)
-- [ ] `LowpassFilter` wrapping `juce::dsp::IIR` (cutoff + resonance), unit tested
+- [x] `LowpassFilter` wrapping `juce::dsp::IIR` (cutoff + resonance), unit tested
 - [ ] `Bitcrush` effect (sample-rate and bit-depth reduction), unit tested
 - [ ] `Distortion` effect (waveshaper), unit tested
 - [ ] `Voice` class composing: oscillator → pitch env → amp env → filter → bitcrush → distortion → gain (fixed order)
