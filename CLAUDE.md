@@ -73,10 +73,11 @@ Rules:
 ## Workflow
 
 1. Read `TODO.md`. Confirm the task is in the active phase.
-2. If anything about scope is unclear, ask before writing code.
-3. Implement. Run tests. Build on at least the host OS.
-4. Check the task off in `TODO.md` (do **not** delete it — history matters).
-5. Commit with Conventional Commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `build:`, `chore:`.
+2. Skim the **"Chores / tech debt"** section near the bottom of `TODO.md`. If any item has a time-sensitive deadline approaching (next two weeks) or is newly relevant to the work at hand, flag it to the user before starting. When chores are resolved, check them off rather than deleting them — same rule as phase tasks.
+3. If anything about scope is unclear, ask before writing code.
+4. Implement. Run tests. Build on at least the host OS.
+5. Check the task off in `TODO.md` (do **not** delete it — history matters).
+6. Commit with Conventional Commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `build:`, `chore:`.
 
 ## When to ask vs. proceed
 

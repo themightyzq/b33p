@@ -107,6 +107,14 @@ Goal: v0.1 is shippable.
 
 ---
 
+## Chores / tech debt
+
+Cross-cutting work that isn't tied to any single phase. Review at the start of every session — if any item has a time-sensitive deadline approaching, flag it to the user before starting feature work.
+
+- [ ] Bump `actions/checkout` and `actions/cache` to `@v5` before June 2, 2026 (Node 20 deprecation — GitHub Actions warning surfaced on every run)
+
+---
+
 ## Post-MVP roadmap
 
 Ordered roughly by priority, not commitment. Each item becomes its own phase when prioritized.
