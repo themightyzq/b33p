@@ -2,6 +2,7 @@
 
 #include "LabeledSlider.h"
 #include "Section.h"
+#include "State/B33pProcessor.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -10,12 +11,13 @@ namespace B33p
     class MasterSection : public Section
     {
     public:
-        explicit MasterSection(juce::AudioProcessorValueTreeState& apvts);
+        explicit MasterSection(B33pProcessor& processor);
 
         void resized() override;
 
     private:
-        LabeledSlider gainSlider { "Gain" };
+        LabeledSlider    gainSlider     { "Gain" };
+        juce::TextButton auditionButton { "Audition" };
 
         juce::AudioProcessorValueTreeState::SliderAttachment gainAttachment;
 

@@ -30,6 +30,11 @@ namespace B33p
 
         juce::UndoManager& getUndoManager() { return undoManager; }
 
+        // Message-thread entry point. Sets a flag that the next
+        // processBlock picks up to call voice.trigger() + schedule
+        // an auto-noteOff after the audition duration elapses.
+        void triggerAudition();
+
         // juce::AudioProcessor interface ----------------------------
         const juce::String getName() const override                              { return "B33p"; }
         void  prepareToPlay(double sampleRate, int blockSize) override;
@@ -62,12 +67,23 @@ namespace B33p
         void setPitchCurve(std::vector<PitchEnvelopePoint> newCurve);
 
     private:
+        void pushParametersToVoice();
+
         juce::UndoManager                  undoManager;
         juce::AudioProcessorValueTreeState apvts;
 
         Voice voice;
 
+        // Curve writes lock on the message thread; audio-thread reads
+        // use a ScopedTryLock and fall back to whatever curve the Voice
+        // already has. The race window is tiny but real once live audio
+        // is wired.
+        juce::CriticalSection pitchCurveLock;
         std::vector<PitchEnvelopePoint> pitchCurve { { 0.0f, 0.0f }, { 1.0f, 0.0f } };
+
+        std::atomic<bool> pendingAudition { false };
+        int samplesUntilAuditionRelease { 0 };
+        double currentSampleRate { 44100.0 };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(B33pProcessor)
     };

@@ -4,21 +4,32 @@
 
 namespace B33p
 {
-    MasterSection::MasterSection(juce::AudioProcessorValueTreeState& apvts)
+    MasterSection::MasterSection(B33pProcessor& processor)
         : Section("Master"),
-          gainAttachment(apvts, ParameterIDs::voiceGain, gainSlider.getSlider())
+          gainAttachment(processor.getApvts(), ParameterIDs::voiceGain, gainSlider.getSlider())
     {
         addAndMakeVisible(gainSlider);
+
+        auditionButton.onClick = [&processor] { processor.triggerAudition(); };
+        addAndMakeVisible(auditionButton);
     }
 
     void MasterSection::resized()
     {
         auto bounds = getContentBounds();
 
-        // One slider centred horizontally inside the section — the
-        // audition button will sit next to it in a later task.
-        constexpr int kSliderWidth = 140;
-        const int x = bounds.getX() + (bounds.getWidth() - kSliderWidth) / 2;
-        gainSlider.setBounds(x, bounds.getY(), kSliderWidth, bounds.getHeight());
+        constexpr int kSliderWidth   = 140;
+        constexpr int kButtonHeight  = 28;
+        constexpr int kButtonWidth   = 120;
+        constexpr int kGap           = 6;
+
+        auto buttonRow = bounds.removeFromBottom(kButtonHeight);
+        bounds.removeFromBottom(kGap);
+
+        const int xSlider = bounds.getX() + (bounds.getWidth() - kSliderWidth) / 2;
+        gainSlider.setBounds(xSlider, bounds.getY(), kSliderWidth, bounds.getHeight());
+
+        const int xButton = buttonRow.getX() + (buttonRow.getWidth() - kButtonWidth) / 2;
+        auditionButton.setBounds(xButton, buttonRow.getY(), kButtonWidth, kButtonHeight);
     }
 }
