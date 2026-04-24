@@ -21,10 +21,12 @@ add_executable(B33pTests
     DSP/DistortionTests.cpp
     DSP/VoiceTests.cpp
     State/ParameterLayoutTests.cpp
+    State/ParameterRandomizerTests.cpp
     Harness/VoiceRenderer.cpp
     Harness/VoiceRendererTests.cpp
     ${B33P_DSP_SOURCES}
     ${CMAKE_SOURCE_DIR}/Source/State/ParameterLayout.cpp
+    ${CMAKE_SOURCE_DIR}/Source/State/ParameterRandomizer.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/B33pProcessor.cpp
 )
 
