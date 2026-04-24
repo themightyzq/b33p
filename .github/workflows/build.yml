@@ -58,7 +58,13 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
 
       - name: Build
-        run: cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+        # --parallel 2 caps concurrent compile jobs so the runner does
+        # not OOM. Since adding B33pRenderVoice as a second executable,
+        # ubuntu-latest (GCC Debug) was OOM-thrashing with unbounded
+        # parallelism and timing out near the ~48 minute mark. Two
+        # parallel compile jobs keeps peak memory inside the runner's
+        # budget; wall-clock build time stays under 15 minutes.
+        run: cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel 2
 
       - name: Test
         working-directory: build
