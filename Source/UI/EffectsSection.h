@@ -2,6 +2,7 @@
 
 #include "LabeledSlider.h"
 #include "Section.h"
+#include "State/B33pProcessor.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -10,14 +11,14 @@ namespace B33p
     class EffectsSection : public Section
     {
     public:
-        explicit EffectsSection(juce::AudioProcessorValueTreeState& apvts);
+        explicit EffectsSection(B33pProcessor& processor);
 
         void resized() override;
 
     private:
-        LabeledSlider bitDepthSlider   { "Bits"  };
-        LabeledSlider crushRateSlider  { "Rate"  };
-        LabeledSlider driveSlider      { "Drive" };
+        LabeledSlider bitDepthSlider  { "Bits"  };
+        LabeledSlider crushRateSlider { "Rate"  };
+        LabeledSlider driveSlider     { "Drive" };
 
         juce::AudioProcessorValueTreeState::SliderAttachment bitDepthAttachment;
         juce::AudioProcessorValueTreeState::SliderAttachment crushRateAttachment;

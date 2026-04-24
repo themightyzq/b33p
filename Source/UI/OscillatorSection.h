@@ -2,6 +2,7 @@
 
 #include "LabeledSlider.h"
 #include "Section.h"
+#include "State/B33pProcessor.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -10,13 +11,16 @@ namespace B33p
     class OscillatorSection : public Section
     {
     public:
-        explicit OscillatorSection(juce::AudioProcessorValueTreeState& apvts);
+        explicit OscillatorSection(B33pProcessor& processor);
 
         void resized() override;
 
     private:
-        juce::ComboBox waveformSelector;
-        LabeledSlider  basePitchSlider { "Pitch" };
+        juce::ComboBox   waveformSelector;
+        juce::TextButton waveformDice { "D" };
+        juce::TextButton waveformLock { "L" };
+
+        LabeledSlider    basePitchSlider { "Pitch" };
 
         // ComboBoxAttachment is unique_ptr because it must be
         // constructed after the ComboBox has its items populated —

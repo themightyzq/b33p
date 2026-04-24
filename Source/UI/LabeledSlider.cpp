@@ -1,12 +1,16 @@
 #include "LabeledSlider.h"
 
+#include "RandomizerWiring.h"
+
 namespace B33p
 {
     namespace
     {
-        constexpr int kLabelHeight    = 14;
-        constexpr int kTextBoxHeight  = 16;
-        constexpr int kTextBoxWidth   = 64;
+        constexpr int kLabelHeight      = 14;
+        constexpr int kTextBoxHeight    = 16;
+        constexpr int kTextBoxWidth     = 64;
+        constexpr int kDiceLockHeight   = 20;
+        constexpr int kDiceLockGap      = 4;
     }
 
     LabeledSlider::LabeledSlider(const juce::String& name)
@@ -20,12 +24,28 @@ namespace B33p
         label.setJustificationType(juce::Justification::centred);
         label.setFont(juce::FontOptions(11.0f));
         addAndMakeVisible(label);
+
+        addAndMakeVisible(diceButton);
+        addAndMakeVisible(lockButton);
+    }
+
+    void LabeledSlider::attachRandomizer(B33pProcessor& processor,
+                                          const juce::String& parameterID)
+    {
+        wireRandomizerButtons(processor, diceButton, lockButton, parameterID);
     }
 
     void LabeledSlider::resized()
     {
         auto bounds = getLocalBounds();
         label.setBounds(bounds.removeFromTop(kLabelHeight));
+
+        auto diceLockRow = bounds.removeFromBottom(kDiceLockHeight);
         slider.setBounds(bounds);
+
+        const int cellWidth = (diceLockRow.getWidth() - kDiceLockGap) / 2;
+        diceButton.setBounds(diceLockRow.removeFromLeft(cellWidth));
+        diceLockRow.removeFromLeft(kDiceLockGap);
+        lockButton.setBounds(diceLockRow);
     }
 }

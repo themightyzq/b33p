@@ -4,13 +4,16 @@
 
 namespace B33p
 {
-    FilterSection::FilterSection(juce::AudioProcessorValueTreeState& apvts)
+    FilterSection::FilterSection(B33pProcessor& processor)
         : Section("Filter"),
-          cutoffAttachment   (apvts, ParameterIDs::filterCutoffHz,     cutoffSlider.getSlider()),
-          resonanceAttachment(apvts, ParameterIDs::filterResonanceQ,   resonanceSlider.getSlider())
+          cutoffAttachment   (processor.getApvts(), ParameterIDs::filterCutoffHz,   cutoffSlider.getSlider()),
+          resonanceAttachment(processor.getApvts(), ParameterIDs::filterResonanceQ, resonanceSlider.getSlider())
     {
         addAndMakeVisible(cutoffSlider);
         addAndMakeVisible(resonanceSlider);
+
+        cutoffSlider   .attachRandomizer(processor, ParameterIDs::filterCutoffHz);
+        resonanceSlider.attachRandomizer(processor, ParameterIDs::filterResonanceQ);
     }
 
     void FilterSection::resized()
