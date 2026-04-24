@@ -62,6 +62,8 @@ target_sources(B33p PRIVATE
     Source/UI/LabeledSlider.cpp
     Source/UI/MasterSection.cpp
     Source/UI/OscillatorSection.cpp
+    Source/UI/PatternGrid.cpp
+    Source/UI/PatternSection.cpp
     Source/UI/PitchEnvSection.cpp
     Source/UI/RandomizerWiring.cpp
     Source/UI/PitchEnvelopeEditor.cpp

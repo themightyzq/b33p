@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DSP/Voice.h"
+#include "Pattern/Pattern.h"
 #include "ParameterRandomizer.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -70,6 +71,13 @@ namespace B33p
         const std::vector<PitchEnvelopePoint>& getPitchCurve() const { return pitchCurve; }
         void setPitchCurve(std::vector<PitchEnvelopePoint> newCurve);
 
+        // The user-authored sequencer pattern. UI edits go through
+        // this reference directly. A thread-safety wrapper lands with
+        // the playback commit — right now no audio-thread path touches
+        // the pattern so no lock is needed yet.
+        Pattern&       getPattern()       { return pattern; }
+        const Pattern& getPattern() const { return pattern; }
+
     private:
         void pushParametersToVoice();
 
@@ -85,6 +93,8 @@ namespace B33p
         // is wired.
         juce::CriticalSection pitchCurveLock;
         std::vector<PitchEnvelopePoint> pitchCurve { { 0.0f, 0.0f }, { 1.0f, 0.0f } };
+
+        Pattern pattern;
 
         std::atomic<bool> pendingAudition { false };
         int samplesUntilAuditionRelease { 0 };
