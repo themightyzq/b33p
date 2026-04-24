@@ -39,7 +39,7 @@ Goal: a `Voice` class can be instantiated from a test harness and produce audio.
 Goal: a user can audition and design a single voice with every parameter exposed.
 
 - [x] Layout: oscillator section, amp env section, filter section, effects section, master
-- [ ] Waveform selector (dropdown)
+- [x] Waveform selector (dropdown)
 - [ ] Rotary sliders bound to APVTS for all continuous parameters
 - [ ] ADSR visualizer for amp envelope
 - [ ] **Drawable pitch envelope** component — click to add points, drag to move, right-click to delete, curve interpolation

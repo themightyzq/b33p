@@ -17,6 +17,17 @@ namespace B33p
         addAndMakeVisible(effectsSection);
         addAndMakeVisible(masterSection);
 
+        // Item order matches B33p::Oscillator::Waveform so a later
+        // ComboBoxAttachment onto the APVTS choice parameter will
+        // translate cleanly between selected index and enum value.
+        waveformSelector.addItem("Sine",     1);
+        waveformSelector.addItem("Square",   2);
+        waveformSelector.addItem("Triangle", 3);
+        waveformSelector.addItem("Saw",      4);
+        waveformSelector.addItem("Noise",    5);
+        waveformSelector.setSelectedId(1, juce::dontSendNotification);
+        oscillatorSection.addAndMakeVisible(waveformSelector);
+
         setSize(900, 520);
     }
 
@@ -46,5 +57,11 @@ namespace B33p
         effectsSection.setBounds(bottomRow.removeFromLeft(bottomCellWidth));
         bottomRow.removeFromLeft(kGap);
         masterSection.setBounds(bottomRow);
+
+        // Child controls sit inside their parent section's content
+        // bounds, in the section's local coordinate system.
+        constexpr int kComboBoxHeight = 26;
+        waveformSelector.setBounds(
+            oscillatorSection.getContentBounds().removeFromTop(kComboBoxHeight));
     }
 }
