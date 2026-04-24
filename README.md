@@ -1,8 +1,8 @@
-# B33p
+# b33p
 
 > Small sounds. Fast iteration. Infinite dice rolls.
 
-**B33p** is a focused sound-design tool for short synthesized beeps, blips, alarms, and droid chatter — the kind of sounds you'd hear from Star Wars droids, retro games, sci-fi UIs, and chirpy gadgets. Design a voice, lay it out on a pattern timeline, hit the dice until something surprises you, then export a WAV.
+**b33p** is a focused sound-design tool for short synthesized beeps, blips, alarms, and droid chatter — the kind of sounds you'd hear from Star Wars droids, retro games, sci-fi UIs, and chirpy gadgets. Design a voice, lay it out on a pattern timeline, hit the dice until something surprises you, then export a WAV.
 
 Built for sound designers, game developers, and synth hobbyists who want a tight workflow for one specific problem: making a lot of good tiny sounds, quickly.
 
@@ -55,7 +55,7 @@ cmake -B build -G Xcode
 cmake --build build --config Release
 ```
 
-The app lands at `build/B33p_artefacts/Release/B33p.app`.
+The app lands at `build/B33p_artefacts/Release/b33p.app`.
 
 ### Windows
 
@@ -66,7 +66,7 @@ cmake -B build -G "Visual Studio 17 2022"
 cmake --build build --config Release
 ```
 
-The app lands at `build\B33p_artefacts\Release\B33p.exe`.
+The app lands at `build\B33p_artefacts\Release\b33p.exe`.
 
 ### Linux
 
@@ -81,11 +81,11 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
-The app lands at `build/B33p_artefacts/B33p`.
+The app lands at `build/B33p_artefacts/b33p`.
 
 ## Quick start — your first beep
 
-1. Open B33p. You land on the voice editor with a default patch.
+1. Open b33p. You land on the voice editor with a default patch.
 2. Click the big **Dice** at the top. Do it a few times until something catches your ear. Click the lock next to any parameter you want to keep while rerolling the rest.
 3. Switch to the **Pattern** tab. Click-drag in a lane to draw an event. Drag the edges to resize, drag the body to move, hit Delete to remove it.
 4. Press **Space** to loop-play the pattern. Keep dicing and tweaking until it sounds right.
@@ -109,7 +109,7 @@ The app lands at `build/B33p_artefacts/B33p`.
 
 Projects save as `.beep` files. A `.beep` is a versioned `ValueTree` serialization of the full project: voice parameters, pitch-envelope curve, pattern lanes and events, and lock/range state. It's self-contained — no external sample files — so a `.beep` is portable and small.
 
-The format is versioned from v1 onward; older `.beep` files will always open in newer B33p versions via explicit migrations.
+The format is versioned from v1 onward; older `.beep` files will always open in newer b33p versions via explicit migrations.
 
 ## Contributing
 
@@ -121,14 +121,14 @@ Pull requests: please open an issue first to discuss scope. The project has a st
 
 Released under **GPL-3.0-or-later**. See `LICENSE` for the full text.
 
-In short: you can use, modify, and redistribute B33p freely, but derivative works must also be GPL-3.0-or-later and distributed with source.
+In short: you can use, modify, and redistribute b33p freely, but derivative works must also be GPL-3.0-or-later and distributed with source.
 
 ## Credits
 
-- **B33p** by **ZQ SFX** — [github.com/themightyzq](https://github.com/themightyzq)
+- **b33p** by **ZQ SFX** — [github.com/themightyzq](https://github.com/themightyzq)
 - Built with [JUCE](https://juce.com/)
 - Tested with [Catch2](https://github.com/catchorg/Catch2)
 
 ---
 
-For the full roadmap, see [TODO.md](TODO.md). For the operating rules used by the project's AI coding assistant, see [CLAUDE.md](CLAUDE.md).
+For the full roadmap, see [TODO.md](TODO.md).

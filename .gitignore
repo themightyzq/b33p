@@ -85,3 +85,12 @@ $RECYCLE.BIN/
 # User-local settings / secrets --------------------------------------------
 .env
 .env.local
+
+# AI agent / editor settings — project-local only --------------------------
+CLAUDE.md
+.claude/
+.anthropic/
+.cursor/
+.cursorrules
+.aider*
+.github/copilot-*
