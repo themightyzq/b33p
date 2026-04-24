@@ -52,6 +52,7 @@ juce_add_gui_app(B33p
 target_sources(B33p PRIVATE
     Source/Main.cpp
     Source/MainComponent.cpp
+    Source/UI/Section.cpp
 )
 
 target_include_directories(B33p PRIVATE Source)
