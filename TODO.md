@@ -131,6 +131,10 @@ Ordered roughly by priority, not commitment. Each item becomes its own phase whe
 - [ ] **Per-event parameter overrides** beyond pitch (e.g., filter cutoff per hit)
 - [ ] **Event probability, ratcheting, humanize**
 
+### Visual feedback
+
+- [ ] **Filter response visualizer** — FabFilter/iZotope-style spectrum overlay showing the current cutoff + Q curve so the filter's behaviour reads at a glance; the log-skewed cutoff slider alone feels abrupt without the visual. Good time to also consider coefficient smoothing (`SmoothedValue`) so dragging doesn't zipper.
+
 ### Workflow
 
 - [ ] **Multiple voices per project** — each lane references its own voice
