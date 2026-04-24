@@ -1,3 +1,16 @@
+# Shared DSP sources used by both B33pTests and the B33pRenderVoice
+# listen-check CLI. Kept as a plain list (not a static library) so each
+# target pulls only what it needs and link flags stay target-local.
+set(B33P_DSP_SOURCES
+    ${CMAKE_SOURCE_DIR}/Source/DSP/Oscillator.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/AmpEnvelope.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/PitchEnvelope.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/LowpassFilter.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/Bitcrush.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/Distortion.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/Voice.cpp
+)
+
 add_executable(B33pTests
     SanityTest.cpp
     DSP/OscillatorTests.cpp
@@ -8,23 +21,21 @@ add_executable(B33pTests
     DSP/DistortionTests.cpp
     DSP/VoiceTests.cpp
     State/ParameterLayoutTests.cpp
-    ${CMAKE_SOURCE_DIR}/Source/DSP/Oscillator.cpp
-    ${CMAKE_SOURCE_DIR}/Source/DSP/AmpEnvelope.cpp
-    ${CMAKE_SOURCE_DIR}/Source/DSP/PitchEnvelope.cpp
-    ${CMAKE_SOURCE_DIR}/Source/DSP/LowpassFilter.cpp
-    ${CMAKE_SOURCE_DIR}/Source/DSP/Bitcrush.cpp
-    ${CMAKE_SOURCE_DIR}/Source/DSP/Distortion.cpp
-    ${CMAKE_SOURCE_DIR}/Source/DSP/Voice.cpp
+    Harness/VoiceRenderer.cpp
+    Harness/VoiceRendererTests.cpp
+    ${B33P_DSP_SOURCES}
     ${CMAKE_SOURCE_DIR}/Source/State/ParameterLayout.cpp
 )
 
 target_include_directories(B33pTests PRIVATE
     ${CMAKE_SOURCE_DIR}/Source
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(B33pTests PRIVATE
     Catch2::Catch2WithMain
     juce::juce_dsp
+    juce::juce_audio_formats
     juce::juce_audio_processors
     juce::juce_recommended_config_flags
 )
@@ -42,3 +53,33 @@ target_compile_definitions(B33pTests PRIVATE
 target_compile_features(B33pTests PRIVATE cxx_std_17)
 
 catch_discover_tests(B33pTests)
+
+# -----------------------------------------------------------------------------
+# B33pRenderVoice — a listen-check CLI. Given a duration, pitch, waveform, and
+# output path, it renders one Voice event to a mono 16-bit WAV so a human can
+# play the file and hear whether the DSP sounds right. Not a test — never
+# registered with ctest — just a developer tool built alongside the suite.
+# -----------------------------------------------------------------------------
+add_executable(B33pRenderVoice
+    Harness/RenderVoice.cpp
+    Harness/VoiceRenderer.cpp
+    ${B33P_DSP_SOURCES}
+)
+
+target_include_directories(B33pRenderVoice PRIVATE
+    ${CMAKE_SOURCE_DIR}/Source
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(B33pRenderVoice PRIVATE
+    juce::juce_dsp
+    juce::juce_audio_formats
+    juce::juce_recommended_config_flags
+)
+
+target_compile_definitions(B33pRenderVoice PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+)
+
+target_compile_features(B33pRenderVoice PRIVATE cxx_std_17)
