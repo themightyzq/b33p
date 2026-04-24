@@ -31,7 +31,7 @@ Goal: a `Voice` class can be instantiated from a test harness and produce audio.
 - [x] `Bitcrush` effect (sample-rate and bit-depth reduction), unit tested
 - [x] `Distortion` effect (waveshaper), unit tested
 - [x] `Voice` class composing: oscillator → pitch env → amp env → filter → bitcrush → distortion → gain (fixed order)
-- [ ] Full parameter layout defined in `AudioProcessorValueTreeState`
+- [x] Full parameter layout defined in `AudioProcessorValueTreeState`
 - [ ] Test harness: CLI or unit test that renders a voice to WAV for listening checks
 
 ## Phase 2 — Voice UI
