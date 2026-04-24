@@ -21,7 +21,11 @@ namespace B33p
         void paint(juce::Graphics& g) override;
         void resized() override;
 
+        bool keyPressed(const juce::KeyPress& key) override;
+
     private:
+        B33pProcessor& processor;
+
         OscillatorSection oscillatorSection;
         AmpEnvSection     ampEnvelopeSection;
         FilterSection     filterSection;
