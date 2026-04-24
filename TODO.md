@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current phase: Phase 2 — Voice UI**
+> **Current phase: Phase 4 — Pattern sequencer**
 
 ---
 
@@ -51,11 +51,11 @@ Goal: a user can audition and design a single voice with every parameter exposed
 
 Goal: every voice parameter has a dice button and a lock; a top-level dice rerolls everything unlocked; undo works.
 
-- [ ] `Randomizable<T>` wrapper (or equivalent): owns a range, a lock flag, a `roll()` that respects the lock
-- [ ] Hardcoded parameter-range table covering every voice parameter
-- [ ] Dice UI element + lock toggle beside every parameter
+- [x] `Randomizable<T>` wrapper (or equivalent): owns a range, a lock flag, a `roll()` that respects the lock
+- [x] Hardcoded parameter-range table covering every voice parameter
+- [x] Dice UI element + lock toggle beside every parameter
 - [x] Top-level "Dice All" button rerolls all non-locked parameters in one `UndoManager` transaction
-- [ ] Unit tests for lock behaviour and range clamping
+- [x] Unit tests for lock behaviour and range clamping
 
 ## Phase 4 — Pattern sequencer
 
