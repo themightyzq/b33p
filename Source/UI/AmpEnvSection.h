@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AmpEnvelopeVisualizer.h"
 #include "LabeledSlider.h"
 #include "Section.h"
 
@@ -19,6 +20,8 @@ namespace B33p
         LabeledSlider decaySlider   { "Decay"   };
         LabeledSlider sustainSlider { "Sustain" };
         LabeledSlider releaseSlider { "Release" };
+
+        AmpEnvelopeVisualizer visualizer;
 
         juce::AudioProcessorValueTreeState::SliderAttachment attackAttachment;
         juce::AudioProcessorValueTreeState::SliderAttachment decayAttachment;
