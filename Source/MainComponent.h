@@ -22,6 +22,8 @@ namespace B33p
         Section effectsSection     { "Effects"      };
         Section masterSection      { "Master"       };
 
+        juce::ComboBox waveformSelector;
+
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
     };
 }
