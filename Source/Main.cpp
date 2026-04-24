@@ -12,7 +12,7 @@ namespace B33p
     public:
         Application() = default;
 
-        const juce::String getApplicationName() override    { return "B33p"; }
+        const juce::String getApplicationName() override    { return "b33p"; }
         const juce::String getApplicationVersion() override { return B33P_VERSION_STRING; }
         bool moreThanOneInstanceAllowed() override           { return true; }
 

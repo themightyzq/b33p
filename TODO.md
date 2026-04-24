@@ -1,6 +1,6 @@
 # TODO.md
 
-B33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
+b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
 > **Current phase: Phase 2 — Voice UI**
 
@@ -12,7 +12,7 @@ Goal: an empty standalone app window opens on all three OSes, built via CMake, t
 
 - [x] `CMakeLists.txt` at repo root, C++17, project name `B33p`
 - [x] JUCE fetched via CPM, pinned to a specific release tag (8.0.12)
-- [x] Standalone target builds and launches an empty `juce::DocumentWindow` titled "B33p"
+- [x] Standalone target builds and launches an empty `juce::DocumentWindow` titled "b33p"
 - [x] Directory skeleton: `Source/{Core,DSP,Pattern,State,UI}`, `Tests/`, `docs/images/`
 - [x] `.gitignore` covers build dirs, IDE files, OS files
 - [x] `LICENSE` file (GPL-3.0) at repo root

@@ -43,7 +43,7 @@ CPMAddPackage(
 # Standalone GUI app target
 # ---------------------------------------------------------------------------
 juce_add_gui_app(B33p
-    PRODUCT_NAME        "B33p"
+    PRODUCT_NAME        "b33p"
     COMPANY_NAME        "${B33P_COMPANY_NAME}"
     BUNDLE_ID           "${B33P_BUNDLE_ID}"
     VERSION             "${PROJECT_VERSION}"

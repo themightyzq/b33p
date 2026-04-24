@@ -14,10 +14,10 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 BUILD_DIR="build"
 BUILD_TYPE="${B33P_BUILD_TYPE:-Debug}"
-APP_BUNDLE="${BUILD_DIR}/B33p_artefacts/${BUILD_TYPE}/B33p.app"
+APP_BUNDLE="${BUILD_DIR}/B33p_artefacts/${BUILD_TYPE}/b33p.app"
 
 echo "=============================="
-echo " B33p — Build and Launch"
+echo " b33p — Build and Launch"
 echo " Build type : ${BUILD_TYPE}"
 echo " Working dir: $(pwd)"
 echo "=============================="
