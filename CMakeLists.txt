@@ -73,6 +73,7 @@ target_sources(B33p PRIVATE
     Source/DSP/Bitcrush.cpp
     Source/DSP/Distortion.cpp
     Source/DSP/Voice.cpp
+    Source/Pattern/Pattern.cpp
 )
 
 target_include_directories(B33p PRIVATE Source)

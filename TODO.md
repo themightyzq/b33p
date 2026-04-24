@@ -61,12 +61,13 @@ Goal: every voice parameter has a dice button and a lock; a top-level dice rerol
 
 Goal: place and edit events on up to 4 lanes, loop-play the pattern.
 
-- [ ] `Pattern` data model: lanes, events (start, duration, pitch offset)
-- [ ] 10-second maximum pattern length enforced
+- [x] `Pattern` data model: lanes, events (start, duration, pitch offset)
+- [x] 10-second maximum pattern length enforced
 - [ ] Timeline UI: ruler, 4 lanes, playhead
 - [ ] Click-drag to create an event; drag edges to resize; drag body to move
 - [ ] Delete/Backspace removes selected event
-- [ ] Grid-snap dropdown: 1/4, 1/8, 1/16, 1/32, off
+- [ ] Grid-size / snap dropdown in milliseconds: `10 ms`, `25 ms`, `50 ms`, `100 ms`, `250 ms`, `500 ms`, `1 s`, off (musical snap is post-MVP)
+- [ ] Pattern-length control: user-adjustable within `[0.1 s, 10 s]`
 - [ ] Playback engine: triggers the voice on event start, applies pitch offset
 - [ ] Loop toggle
 - [ ] Unit tests for pattern model (insertion order, overlap handling, snap math)
@@ -134,6 +135,15 @@ Ordered roughly by priority, not commitment. Each item becomes its own phase whe
 ### Visual feedback
 
 - [ ] **Filter response visualizer** — FabFilter/iZotope-style spectrum overlay showing the current cutoff + Q curve so the filter's behaviour reads at a glance; the log-skewed cutoff slider alone feels abrupt without the visual. Good time to also consider coefficient smoothing (`SmoothedValue`) so dragging doesn't zipper.
+
+### Musical timing / DAW integration
+
+Explicitly out of MVP scope — the standalone app is the priority and the "music" framing comes later.
+
+- [ ] **Tempo (BPM) + time signature** as pattern attributes
+- [ ] **Musical snap values** (1/4, 1/8, 1/16, 1/32) derived from BPM
+- [ ] **Dual time display** in the pattern ruler (bars/beats + seconds)
+- [ ] **DAW transport sync** — when running as VST/AU, follow host tempo, play/stop, and bar position
 
 ### Workflow
 
