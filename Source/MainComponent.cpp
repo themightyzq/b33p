@@ -4,25 +4,28 @@ namespace B33p
 {
     namespace
     {
-        constexpr int kOuterPadding = 12;
-        constexpr int kGap          = 8;
-        constexpr int kTopRowHeight = 260;
+        constexpr int kOuterPadding  = 12;
+        constexpr int kGap           = 8;
+        constexpr int kTopRowHeight  = 260;
+        constexpr int kMidRowHeight  = 180;
     }
 
     MainComponent::MainComponent(B33pProcessor& processor)
-        : oscillatorSection (processor.getApvts()),
-          ampEnvelopeSection(processor.getApvts()),
-          filterSection     (processor.getApvts()),
-          effectsSection    (processor.getApvts()),
-          masterSection     (processor.getApvts())
+        : oscillatorSection   (processor.getApvts()),
+          ampEnvelopeSection  (processor.getApvts()),
+          filterSection       (processor.getApvts()),
+          effectsSection      (processor.getApvts()),
+          masterSection       (processor.getApvts()),
+          pitchEnvelopeSection(processor)
     {
         addAndMakeVisible(oscillatorSection);
         addAndMakeVisible(ampEnvelopeSection);
         addAndMakeVisible(filterSection);
         addAndMakeVisible(effectsSection);
         addAndMakeVisible(masterSection);
+        addAndMakeVisible(pitchEnvelopeSection);
 
-        setSize(900, 520);
+        setSize(900, 660);
     }
 
     void MainComponent::paint(juce::Graphics& g)
@@ -34,7 +37,9 @@ namespace B33p
     {
         auto bounds = getLocalBounds().reduced(kOuterPadding);
 
-        auto topRow    = bounds.removeFromTop(kTopRowHeight);
+        auto topRow = bounds.removeFromTop(kTopRowHeight);
+        bounds.removeFromTop(kGap);
+        auto midRow = bounds.removeFromTop(kMidRowHeight);
         bounds.removeFromTop(kGap);
         auto bottomRow = bounds;
 
@@ -45,9 +50,11 @@ namespace B33p
         topRow.removeFromLeft(kGap);
         filterSection.setBounds(topRow);
 
-        const int bottomCellWidth = (bottomRow.getWidth() - kGap) / 2;
-        effectsSection.setBounds(bottomRow.removeFromLeft(bottomCellWidth));
-        bottomRow.removeFromLeft(kGap);
-        masterSection.setBounds(bottomRow);
+        const int midCellWidth = (midRow.getWidth() - kGap) / 2;
+        effectsSection.setBounds(midRow.removeFromLeft(midCellWidth));
+        midRow.removeFromLeft(kGap);
+        masterSection.setBounds(midRow);
+
+        pitchEnvelopeSection.setBounds(bottomRow);
     }
 }

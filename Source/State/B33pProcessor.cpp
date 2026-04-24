@@ -20,6 +20,11 @@ namespace B33p
     {
     }
 
+    void B33pProcessor::setPitchCurve(std::vector<PitchEnvelopePoint> newCurve)
+    {
+        pitchCurve = std::move(newCurve);
+    }
+
     void B33pProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                      juce::MidiBuffer& /*midi*/)
     {

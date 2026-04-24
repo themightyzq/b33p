@@ -54,11 +54,20 @@ namespace B33p
         void  getStateInformation(juce::MemoryBlock&) override                   {}
         void  setStateInformation(const void*, int) override                     {}
 
+        // The drawn pitch envelope curve. Unlike the other parameters,
+        // the curve is not an APVTS value — it is a variable-length
+        // breakpoint list and will move into the project ValueTree in
+        // Phase 6 when save/load arrives.
+        const std::vector<PitchEnvelopePoint>& getPitchCurve() const { return pitchCurve; }
+        void setPitchCurve(std::vector<PitchEnvelopePoint> newCurve);
+
     private:
         juce::UndoManager                  undoManager;
         juce::AudioProcessorValueTreeState apvts;
 
         Voice voice;
+
+        std::vector<PitchEnvelopePoint> pitchCurve { { 0.0f, 0.0f }, { 1.0f, 0.0f } };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(B33pProcessor)
     };

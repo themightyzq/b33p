@@ -61,6 +61,8 @@ target_sources(B33p PRIVATE
     Source/UI/LabeledSlider.cpp
     Source/UI/MasterSection.cpp
     Source/UI/OscillatorSection.cpp
+    Source/UI/PitchEnvSection.cpp
+    Source/UI/PitchEnvelopeEditor.cpp
     Source/UI/Section.cpp
     Source/DSP/Oscillator.cpp
     Source/DSP/AmpEnvelope.cpp
