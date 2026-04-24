@@ -4,10 +4,11 @@ namespace B33p
 {
     namespace
     {
-        constexpr int kOuterPadding  = 12;
-        constexpr int kGap           = 8;
-        constexpr int kTopRowHeight  = 260;
-        constexpr int kMidRowHeight  = 180;
+        constexpr int kOuterPadding   = 12;
+        constexpr int kGap            = 8;
+        constexpr int kTopRowHeight   = 260;
+        constexpr int kMidRowHeight   = 180;
+        constexpr int kPitchRowHeight = 180;
     }
 
     MainComponent::MainComponent(B33pProcessor& processorRef)
@@ -17,7 +18,8 @@ namespace B33p
           filterSection       (processor),
           effectsSection      (processor),
           masterSection       (processor),
-          pitchEnvelopeSection(processor)
+          pitchEnvelopeSection(processor),
+          patternSection      (processor)
     {
         addAndMakeVisible(oscillatorSection);
         addAndMakeVisible(ampEnvelopeSection);
@@ -25,24 +27,11 @@ namespace B33p
         addAndMakeVisible(effectsSection);
         addAndMakeVisible(masterSection);
         addAndMakeVisible(pitchEnvelopeSection);
+        addAndMakeVisible(patternSection);
 
-        // Let the spacebar shortcut reach keyPressed() when no child
-        // control has absorbed the key. A focused button already maps
-        // space to its own onClick, so that path still triggers
-        // audition directly without reaching here.
         setWantsKeyboardFocus(true);
 
-        setSize(900, 660);
-    }
-
-    bool MainComponent::keyPressed(const juce::KeyPress& key)
-    {
-        if (key == juce::KeyPress::spaceKey)
-        {
-            processor.triggerAudition();
-            return true;
-        }
-        return false;
+        setSize(900, 920);
     }
 
     void MainComponent::paint(juce::Graphics& g)
@@ -58,7 +47,9 @@ namespace B33p
         bounds.removeFromTop(kGap);
         auto midRow = bounds.removeFromTop(kMidRowHeight);
         bounds.removeFromTop(kGap);
-        auto bottomRow = bounds;
+        auto pitchRow = bounds.removeFromTop(kPitchRowHeight);
+        bounds.removeFromTop(kGap);
+        auto patternRow = bounds;
 
         const int topCellWidth = (topRow.getWidth() - 2 * kGap) / 3;
         oscillatorSection.setBounds(topRow.removeFromLeft(topCellWidth));
@@ -72,6 +63,17 @@ namespace B33p
         midRow.removeFromLeft(kGap);
         masterSection.setBounds(midRow);
 
-        pitchEnvelopeSection.setBounds(bottomRow);
+        pitchEnvelopeSection.setBounds(pitchRow);
+        patternSection.setBounds(patternRow);
+    }
+
+    bool MainComponent::keyPressed(const juce::KeyPress& key)
+    {
+        if (key == juce::KeyPress::spaceKey)
+        {
+            processor.triggerAudition();
+            return true;
+        }
+        return false;
     }
 }

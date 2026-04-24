@@ -6,6 +6,7 @@
 #include "UI/FilterSection.h"
 #include "UI/MasterSection.h"
 #include "UI/OscillatorSection.h"
+#include "UI/PatternSection.h"
 #include "UI/PitchEnvSection.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -32,6 +33,7 @@ namespace B33p
         EffectsSection    effectsSection;
         MasterSection     masterSection;
         PitchEnvSection   pitchEnvelopeSection;
+        PatternSection    patternSection;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
     };

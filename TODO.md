@@ -63,9 +63,9 @@ Goal: place and edit events on up to 4 lanes, loop-play the pattern.
 
 - [x] `Pattern` data model: lanes, events (start, duration, pitch offset)
 - [x] 10-second maximum pattern length enforced
-- [ ] Timeline UI: ruler, 4 lanes, playhead
-- [ ] Click-drag to create an event; drag edges to resize; drag body to move
-- [ ] Delete/Backspace removes selected event
+- [x] Timeline UI: ruler, 4 lanes, playhead _(playhead lands with playback commit)_
+- [x] Click-drag to create an event; drag edges to resize; drag body to move
+- [x] Delete/Backspace removes selected event
 - [ ] Grid-size / snap dropdown in milliseconds: `10 ms`, `25 ms`, `50 ms`, `100 ms`, `250 ms`, `500 ms`, `1 s`, off (musical snap is post-MVP)
 - [ ] Pattern-length control: user-adjustable within `[0.1 s, 10 s]`
 - [ ] Playback engine: triggers the voice on event start, applies pitch offset
