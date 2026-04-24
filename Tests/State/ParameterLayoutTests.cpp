@@ -2,6 +2,7 @@
 #include <catch2/catch_approx.hpp>
 
 #include "Core/ParameterIDs.h"
+#include "State/B33pProcessor.h"
 #include "State/ParameterLayout.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -10,30 +11,6 @@ using Catch::Approx;
 
 namespace
 {
-    // Minimal AudioProcessor host so APVTS has something to attach to.
-    // The tests only inspect parameters — processBlock is a permanent
-    // no-op here.
-    class StubProcessor : public juce::AudioProcessor
-    {
-    public:
-        const juce::String getName() const override                              { return "Stub"; }
-        void prepareToPlay(double, int) override                                 {}
-        void releaseResources() override                                         {}
-        void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override {}
-        juce::AudioProcessorEditor* createEditor() override                      { return nullptr; }
-        bool hasEditor() const override                                          { return false; }
-        bool acceptsMidi() const override                                        { return false; }
-        bool producesMidi() const override                                       { return false; }
-        double getTailLengthSeconds() const override                             { return 0.0; }
-        int getNumPrograms() override                                            { return 1; }
-        int getCurrentProgram() override                                         { return 0; }
-        void setCurrentProgram(int) override                                     {}
-        const juce::String getProgramName(int) override                          { return {}; }
-        void changeProgramName(int, const juce::String&) override                {}
-        void getStateInformation(juce::MemoryBlock&) override                    {}
-        void setStateInformation(const void*, int) override                      {}
-    };
-
     struct FloatExpectation
     {
         const char* id;
@@ -53,18 +30,15 @@ namespace
     }
 }
 
-TEST_CASE("ParameterLayout: constructs without error and attaches to APVTS", "[state][layout]")
+TEST_CASE("ParameterLayout: B33pProcessor constructs and exposes APVTS", "[state][layout]")
 {
-    StubProcessor processor;
-    REQUIRE_NOTHROW(juce::AudioProcessorValueTreeState {
-        processor, nullptr, "B33pParameters", B33p::createParameterLayout() });
+    REQUIRE_NOTHROW(B33p::B33pProcessor{});
 }
 
 TEST_CASE("ParameterLayout: every expected parameter ID is present", "[state][layout]")
 {
-    StubProcessor processor;
-    juce::AudioProcessorValueTreeState apvts {
-        processor, nullptr, "B33pParameters", B33p::createParameterLayout() };
+    B33p::B33pProcessor processor;
+    auto& apvts = processor.getApvts();
 
     const char* const expectedIds[] = {
         B33p::ParameterIDs::oscWaveform,
@@ -87,9 +61,8 @@ TEST_CASE("ParameterLayout: every expected parameter ID is present", "[state][la
 
 TEST_CASE("ParameterLayout: continuous parameters have correct ranges and defaults", "[state][layout]")
 {
-    StubProcessor processor;
-    juce::AudioProcessorValueTreeState apvts {
-        processor, nullptr, "B33pParameters", B33p::createParameterLayout() };
+    B33p::B33pProcessor processor;
+    auto& apvts = processor.getApvts();
 
     const FloatExpectation expectations[] = {
         { B33p::ParameterIDs::basePitchHz,          20.0f,    20000.0f, 440.0f  },
@@ -120,9 +93,8 @@ TEST_CASE("ParameterLayout: continuous parameters have correct ranges and defaul
 
 TEST_CASE("ParameterLayout: waveform choice lists all five waveforms with Sine default", "[state][layout]")
 {
-    StubProcessor processor;
-    juce::AudioProcessorValueTreeState apvts {
-        processor, nullptr, "B33pParameters", B33p::createParameterLayout() };
+    B33p::B33pProcessor processor;
+    auto& apvts = processor.getApvts();
 
     auto* choice = asChoice(apvts.getParameter(B33p::ParameterIDs::oscWaveform));
     REQUIRE(choice != nullptr);
@@ -134,9 +106,8 @@ TEST_CASE("ParameterLayout: waveform choice lists all five waveforms with Sine d
 
 TEST_CASE("ParameterLayout: Hz parameters are log-skewed around their centre", "[state][layout]")
 {
-    StubProcessor processor;
-    juce::AudioProcessorValueTreeState apvts {
-        processor, nullptr, "B33pParameters", B33p::createParameterLayout() };
+    B33p::B33pProcessor processor;
+    auto& apvts = processor.getApvts();
 
     // 0.5 normalized must map near the declared skew centre, not the
     // linear midpoint of the range. This confirms a skew was applied
@@ -163,9 +134,8 @@ TEST_CASE("ParameterLayout: Hz parameters are log-skewed around their centre", "
 
 TEST_CASE("ParameterLayout: sustain and Q stay linear (no skew applied)", "[state][layout]")
 {
-    StubProcessor processor;
-    juce::AudioProcessorValueTreeState apvts {
-        processor, nullptr, "B33pParameters", B33p::createParameterLayout() };
+    B33p::B33pProcessor processor;
+    auto& apvts = processor.getApvts();
 
     auto* sustain = asFloat(apvts.getParameter(B33p::ParameterIDs::ampSustain));
     REQUIRE(sustain != nullptr);
