@@ -55,6 +55,7 @@ target_sources(B33p PRIVATE
     Source/State/B33pProcessor.cpp
     Source/State/ParameterLayout.cpp
     Source/UI/AmpEnvSection.cpp
+    Source/UI/AmpEnvelopeVisualizer.cpp
     Source/UI/EffectsSection.cpp
     Source/UI/FilterSection.cpp
     Source/UI/LabeledSlider.cpp
