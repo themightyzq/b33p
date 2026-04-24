@@ -2,7 +2,7 @@
 
 B33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current phase: Phase 1 — Voice DSP core**
+> **Current phase: Phase 2 — Voice UI**
 
 ---
 
@@ -38,7 +38,7 @@ Goal: a `Voice` class can be instantiated from a test harness and produce audio.
 
 Goal: a user can audition and design a single voice with every parameter exposed.
 
-- [ ] Layout: oscillator section, amp env section, filter section, effects section, master
+- [x] Layout: oscillator section, amp env section, filter section, effects section, master
 - [ ] Waveform selector (dropdown)
 - [ ] Rotary sliders bound to APVTS for all continuous parameters
 - [ ] ADSR visualizer for amp envelope

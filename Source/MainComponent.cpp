@@ -2,26 +2,49 @@
 
 namespace B33p
 {
+    namespace
+    {
+        constexpr int kOuterPadding = 12;
+        constexpr int kGap          = 8;
+        constexpr int kTopRowHeight = 260;
+    }
+
     MainComponent::MainComponent()
     {
-        setSize(600, 400);
+        addAndMakeVisible(oscillatorSection);
+        addAndMakeVisible(ampEnvelopeSection);
+        addAndMakeVisible(filterSection);
+        addAndMakeVisible(effectsSection);
+        addAndMakeVisible(masterSection);
+
+        setSize(900, 520);
     }
 
     void MainComponent::paint(juce::Graphics& g)
     {
-        g.fillAll(juce::Colour::fromRGB(26, 26, 26));
-
-        auto bounds = getLocalBounds();
-        auto titleArea = bounds.removeFromTop(bounds.getHeight() * 3 / 5);
-
-        g.setColour(juce::Colours::white);
-        g.setFont(juce::FontOptions(64.0f));
-        g.drawText("B33p", titleArea, juce::Justification::centredBottom);
-
-        g.setColour(juce::Colours::grey);
-        g.setFont(juce::FontOptions(14.0f));
-        g.drawText("v" B33P_VERSION_STRING, bounds, juce::Justification::centredTop);
+        g.fillAll(juce::Colour::fromRGB(22, 22, 22));
     }
 
-    void MainComponent::resized() {}
+    void MainComponent::resized()
+    {
+        auto bounds = getLocalBounds().reduced(kOuterPadding);
+
+        auto topRow    = bounds.removeFromTop(kTopRowHeight);
+        bounds.removeFromTop(kGap);
+        auto bottomRow = bounds;  // whatever's left
+
+        // Top row: oscillator | amp env | filter — three equal cells.
+        const int topCellWidth = (topRow.getWidth() - 2 * kGap) / 3;
+        oscillatorSection.setBounds(topRow.removeFromLeft(topCellWidth));
+        topRow.removeFromLeft(kGap);
+        ampEnvelopeSection.setBounds(topRow.removeFromLeft(topCellWidth));
+        topRow.removeFromLeft(kGap);
+        filterSection.setBounds(topRow);
+
+        // Bottom row: effects | master — two equal cells.
+        const int bottomCellWidth = (bottomRow.getWidth() - kGap) / 2;
+        effectsSection.setBounds(bottomRow.removeFromLeft(bottomCellWidth));
+        bottomRow.removeFromLeft(kGap);
+        masterSection.setBounds(bottomRow);
+    }
 }
