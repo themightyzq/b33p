@@ -13,6 +13,13 @@ namespace B33p
         auditionButton.onClick = [&processor] { processor.triggerAudition(); };
         addAndMakeVisible(auditionButton);
 
+        diceAllButton.onClick = [&processor]
+        {
+            juce::Random rng;
+            processor.getRandomizer().rollAllUnlocked(rng);
+        };
+        addAndMakeVisible(diceAllButton);
+
         gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain);
     }
 
@@ -20,18 +27,20 @@ namespace B33p
     {
         auto bounds = getContentBounds();
 
-        constexpr int kSliderWidth   = 140;
-        constexpr int kButtonHeight  = 28;
-        constexpr int kButtonWidth   = 120;
-        constexpr int kGap           = 6;
+        constexpr int kSliderWidth  = 140;
+        constexpr int kButtonHeight = 28;
+        constexpr int kButtonGap    = 6;
+        constexpr int kRowGap       = 6;
 
         auto buttonRow = bounds.removeFromBottom(kButtonHeight);
-        bounds.removeFromBottom(kGap);
+        bounds.removeFromBottom(kRowGap);
 
         const int xSlider = bounds.getX() + (bounds.getWidth() - kSliderWidth) / 2;
         gainSlider.setBounds(xSlider, bounds.getY(), kSliderWidth, bounds.getHeight());
 
-        const int xButton = buttonRow.getX() + (buttonRow.getWidth() - kButtonWidth) / 2;
-        auditionButton.setBounds(xButton, buttonRow.getY(), kButtonWidth, kButtonHeight);
+        const int cellWidth = (buttonRow.getWidth() - kButtonGap) / 2;
+        diceAllButton.setBounds(buttonRow.removeFromLeft(cellWidth));
+        buttonRow.removeFromLeft(kButtonGap);
+        auditionButton.setBounds(buttonRow);
     }
 }

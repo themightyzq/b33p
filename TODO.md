@@ -54,7 +54,7 @@ Goal: every voice parameter has a dice button and a lock; a top-level dice rerol
 - [ ] `Randomizable<T>` wrapper (or equivalent): owns a range, a lock flag, a `roll()` that respects the lock
 - [ ] Hardcoded parameter-range table covering every voice parameter
 - [ ] Dice UI element + lock toggle beside every parameter
-- [ ] Top-level "Dice All" button rerolls all non-locked parameters in one `UndoManager` transaction
+- [x] Top-level "Dice All" button rerolls all non-locked parameters in one `UndoManager` transaction
 - [ ] Unit tests for lock behaviour and range clamping
 
 ## Phase 4 — Pattern sequencer
