@@ -6,12 +6,14 @@ add_executable(B33pTests
     DSP/LowpassFilterTests.cpp
     DSP/BitcrushTests.cpp
     DSP/DistortionTests.cpp
+    DSP/VoiceTests.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Oscillator.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/AmpEnvelope.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/PitchEnvelope.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/LowpassFilter.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Bitcrush.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Distortion.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/Voice.cpp
 )
 
 target_include_directories(B33pTests PRIVATE
