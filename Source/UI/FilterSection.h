@@ -2,6 +2,7 @@
 
 #include "LabeledSlider.h"
 #include "Section.h"
+#include "State/B33pProcessor.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -10,13 +11,13 @@ namespace B33p
     class FilterSection : public Section
     {
     public:
-        explicit FilterSection(juce::AudioProcessorValueTreeState& apvts);
+        explicit FilterSection(B33pProcessor& processor);
 
         void resized() override;
 
     private:
-        LabeledSlider cutoffSlider     { "Cutoff" };
-        LabeledSlider resonanceSlider  { "Q"      };
+        LabeledSlider cutoffSlider    { "Cutoff" };
+        LabeledSlider resonanceSlider { "Q"      };
 
         juce::AudioProcessorValueTreeState::SliderAttachment cutoffAttachment;
         juce::AudioProcessorValueTreeState::SliderAttachment resonanceAttachment;

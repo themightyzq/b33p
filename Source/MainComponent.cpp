@@ -12,10 +12,10 @@ namespace B33p
 
     MainComponent::MainComponent(B33pProcessor& processorRef)
         : processor(processorRef),
-          oscillatorSection   (processor.getApvts()),
-          ampEnvelopeSection  (processor.getApvts()),
-          filterSection       (processor.getApvts()),
-          effectsSection      (processor.getApvts()),
+          oscillatorSection   (processor),
+          ampEnvelopeSection  (processor),
+          filterSection       (processor),
+          effectsSection      (processor),
           masterSection       (processor),
           pitchEnvelopeSection(processor)
     {

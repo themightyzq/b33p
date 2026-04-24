@@ -1,12 +1,15 @@
 #include "OscillatorSection.h"
 
 #include "Core/ParameterIDs.h"
+#include "RandomizerWiring.h"
 
 namespace B33p
 {
-    OscillatorSection::OscillatorSection(juce::AudioProcessorValueTreeState& apvts)
+    OscillatorSection::OscillatorSection(B33pProcessor& processor)
         : Section("Oscillator"),
-          basePitchAttachment(apvts, ParameterIDs::basePitchHz, basePitchSlider.getSlider())
+          basePitchAttachment(processor.getApvts(),
+                              ParameterIDs::basePitchHz,
+                              basePitchSlider.getSlider())
     {
         // Item IDs (1..5) match B33p::Oscillator::Waveform enum order
         // so the APVTS choice index maps cleanly at wiring time.
@@ -18,21 +21,36 @@ namespace B33p
 
         waveformAttachment = std::make_unique<
             juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-                apvts, ParameterIDs::oscWaveform, waveformSelector);
+                processor.getApvts(), ParameterIDs::oscWaveform, waveformSelector);
 
         addAndMakeVisible(waveformSelector);
+        addAndMakeVisible(waveformDice);
+        addAndMakeVisible(waveformLock);
         addAndMakeVisible(basePitchSlider);
+
+        wireRandomizerButtons(processor, waveformDice, waveformLock,
+                              ParameterIDs::oscWaveform);
+        basePitchSlider.attachRandomizer(processor, ParameterIDs::basePitchHz);
     }
 
     void OscillatorSection::resized()
     {
         auto bounds = getContentBounds();
 
-        constexpr int kComboHeight = 26;
-        constexpr int kGap         = 8;
+        constexpr int kComboHeight  = 26;
+        constexpr int kButtonWidth  = 32;
+        constexpr int kButtonGap    = 2;
+        constexpr int kComboGap     = 4;
+        constexpr int kRowGap       = 8;
 
-        waveformSelector.setBounds(bounds.removeFromTop(kComboHeight));
-        bounds.removeFromTop(kGap);
+        auto topRow = bounds.removeFromTop(kComboHeight);
+        waveformLock.setBounds(topRow.removeFromRight(kButtonWidth));
+        topRow.removeFromRight(kButtonGap);
+        waveformDice.setBounds(topRow.removeFromRight(kButtonWidth));
+        topRow.removeFromRight(kComboGap);
+        waveformSelector.setBounds(topRow);
+
+        bounds.removeFromTop(kRowGap);
         basePitchSlider.setBounds(bounds);
     }
 }

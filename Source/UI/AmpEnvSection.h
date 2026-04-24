@@ -3,6 +3,7 @@
 #include "AmpEnvelopeVisualizer.h"
 #include "LabeledSlider.h"
 #include "Section.h"
+#include "State/B33pProcessor.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -11,7 +12,7 @@ namespace B33p
     class AmpEnvSection : public Section
     {
     public:
-        explicit AmpEnvSection(juce::AudioProcessorValueTreeState& apvts);
+        explicit AmpEnvSection(B33pProcessor& processor);
 
         void resized() override;
 

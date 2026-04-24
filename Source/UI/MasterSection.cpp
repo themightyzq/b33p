@@ -12,6 +12,8 @@ namespace B33p
 
         auditionButton.onClick = [&processor] { processor.triggerAudition(); };
         addAndMakeVisible(auditionButton);
+
+        gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain);
     }
 
     void MasterSection::resized()

@@ -4,15 +4,19 @@
 
 namespace B33p
 {
-    EffectsSection::EffectsSection(juce::AudioProcessorValueTreeState& apvts)
+    EffectsSection::EffectsSection(B33pProcessor& processor)
         : Section("Effects"),
-          bitDepthAttachment (apvts, ParameterIDs::bitcrushBitDepth,     bitDepthSlider.getSlider()),
-          crushRateAttachment(apvts, ParameterIDs::bitcrushSampleRateHz, crushRateSlider.getSlider()),
-          driveAttachment    (apvts, ParameterIDs::distortionDrive,      driveSlider.getSlider())
+          bitDepthAttachment (processor.getApvts(), ParameterIDs::bitcrushBitDepth,     bitDepthSlider.getSlider()),
+          crushRateAttachment(processor.getApvts(), ParameterIDs::bitcrushSampleRateHz, crushRateSlider.getSlider()),
+          driveAttachment    (processor.getApvts(), ParameterIDs::distortionDrive,      driveSlider.getSlider())
     {
         addAndMakeVisible(bitDepthSlider);
         addAndMakeVisible(crushRateSlider);
         addAndMakeVisible(driveSlider);
+
+        bitDepthSlider .attachRandomizer(processor, ParameterIDs::bitcrushBitDepth);
+        crushRateSlider.attachRandomizer(processor, ParameterIDs::bitcrushSampleRateHz);
+        driveSlider    .attachRandomizer(processor, ParameterIDs::distortionDrive);
     }
 
     void EffectsSection::resized()

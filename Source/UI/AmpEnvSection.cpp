@@ -4,19 +4,24 @@
 
 namespace B33p
 {
-    AmpEnvSection::AmpEnvSection(juce::AudioProcessorValueTreeState& apvts)
+    AmpEnvSection::AmpEnvSection(B33pProcessor& processor)
         : Section("Amp Envelope"),
-          visualizer(apvts),
-          attackAttachment (apvts, ParameterIDs::ampAttack,  attackSlider.getSlider()),
-          decayAttachment  (apvts, ParameterIDs::ampDecay,   decaySlider.getSlider()),
-          sustainAttachment(apvts, ParameterIDs::ampSustain, sustainSlider.getSlider()),
-          releaseAttachment(apvts, ParameterIDs::ampRelease, releaseSlider.getSlider())
+          visualizer(processor.getApvts()),
+          attackAttachment (processor.getApvts(), ParameterIDs::ampAttack,  attackSlider.getSlider()),
+          decayAttachment  (processor.getApvts(), ParameterIDs::ampDecay,   decaySlider.getSlider()),
+          sustainAttachment(processor.getApvts(), ParameterIDs::ampSustain, sustainSlider.getSlider()),
+          releaseAttachment(processor.getApvts(), ParameterIDs::ampRelease, releaseSlider.getSlider())
     {
         addAndMakeVisible(visualizer);
         addAndMakeVisible(attackSlider);
         addAndMakeVisible(decaySlider);
         addAndMakeVisible(sustainSlider);
         addAndMakeVisible(releaseSlider);
+
+        attackSlider .attachRandomizer(processor, ParameterIDs::ampAttack);
+        decaySlider  .attachRandomizer(processor, ParameterIDs::ampDecay);
+        sustainSlider.attachRandomizer(processor, ParameterIDs::ampSustain);
+        releaseSlider.attachRandomizer(processor, ParameterIDs::ampRelease);
     }
 
     void AmpEnvSection::resized()
