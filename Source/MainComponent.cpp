@@ -10,8 +10,9 @@ namespace B33p
         constexpr int kMidRowHeight  = 180;
     }
 
-    MainComponent::MainComponent(B33pProcessor& processor)
-        : oscillatorSection   (processor.getApvts()),
+    MainComponent::MainComponent(B33pProcessor& processorRef)
+        : processor(processorRef),
+          oscillatorSection   (processor.getApvts()),
           ampEnvelopeSection  (processor.getApvts()),
           filterSection       (processor.getApvts()),
           effectsSection      (processor.getApvts()),
@@ -25,7 +26,23 @@ namespace B33p
         addAndMakeVisible(masterSection);
         addAndMakeVisible(pitchEnvelopeSection);
 
+        // Let the spacebar shortcut reach keyPressed() when no child
+        // control has absorbed the key. A focused button already maps
+        // space to its own onClick, so that path still triggers
+        // audition directly without reaching here.
+        setWantsKeyboardFocus(true);
+
         setSize(900, 660);
+    }
+
+    bool MainComponent::keyPressed(const juce::KeyPress& key)
+    {
+        if (key == juce::KeyPress::spaceKey)
+        {
+            processor.triggerAudition();
+            return true;
+        }
+        return false;
     }
 
     void MainComponent::paint(juce::Graphics& g)
