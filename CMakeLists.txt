@@ -52,7 +52,22 @@ juce_add_gui_app(B33p
 target_sources(B33p PRIVATE
     Source/Main.cpp
     Source/MainComponent.cpp
+    Source/State/B33pProcessor.cpp
+    Source/State/ParameterLayout.cpp
+    Source/UI/AmpEnvSection.cpp
+    Source/UI/EffectsSection.cpp
+    Source/UI/FilterSection.cpp
+    Source/UI/LabeledSlider.cpp
+    Source/UI/MasterSection.cpp
+    Source/UI/OscillatorSection.cpp
     Source/UI/Section.cpp
+    Source/DSP/Oscillator.cpp
+    Source/DSP/AmpEnvelope.cpp
+    Source/DSP/PitchEnvelope.cpp
+    Source/DSP/LowpassFilter.cpp
+    Source/DSP/Bitcrush.cpp
+    Source/DSP/Distortion.cpp
+    Source/DSP/Voice.cpp
 )
 
 target_include_directories(B33p PRIVATE Source)
@@ -67,6 +82,7 @@ target_compile_definitions(B33p PRIVATE
 
 target_link_libraries(B33p
     PRIVATE
+        juce::juce_audio_processors
         juce::juce_gui_basics
         juce::juce_dsp
     PUBLIC
