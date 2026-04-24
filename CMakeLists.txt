@@ -54,6 +54,7 @@ target_sources(B33p PRIVATE
     Source/MainComponent.cpp
     Source/State/B33pProcessor.cpp
     Source/State/ParameterLayout.cpp
+    Source/State/ParameterRandomizer.cpp
     Source/UI/AmpEnvSection.cpp
     Source/UI/AmpEnvelopeVisualizer.cpp
     Source/UI/EffectsSection.cpp

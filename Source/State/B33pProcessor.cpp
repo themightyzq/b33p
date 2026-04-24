@@ -15,6 +15,7 @@ namespace B33p
         : juce::AudioProcessor(BusesProperties()
               .withOutput("Output", juce::AudioChannelSet::stereo(), true))
         , apvts(*this, &undoManager, "B33pParameters", createParameterLayout())
+        , randomizer(apvts)
     {
     }
 

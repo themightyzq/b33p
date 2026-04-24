@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DSP/Voice.h"
+#include "ParameterRandomizer.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -29,6 +30,9 @@ namespace B33p
         const juce::AudioProcessorValueTreeState& getApvts() const { return apvts; }
 
         juce::UndoManager& getUndoManager() { return undoManager; }
+
+        ParameterRandomizer&       getRandomizer()       { return randomizer; }
+        const ParameterRandomizer& getRandomizer() const { return randomizer; }
 
         // Message-thread entry point. Sets a flag that the next
         // processBlock picks up to call voice.trigger() + schedule
@@ -71,6 +75,7 @@ namespace B33p
 
         juce::UndoManager                  undoManager;
         juce::AudioProcessorValueTreeState apvts;
+        ParameterRandomizer                randomizer;
 
         Voice voice;
 
