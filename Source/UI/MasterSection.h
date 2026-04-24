@@ -18,6 +18,7 @@ namespace B33p
     private:
         LabeledSlider    gainSlider     { "Gain" };
         juce::TextButton auditionButton { "Audition" };
+        juce::TextButton diceAllButton  { "Dice All" };
 
         juce::AudioProcessorValueTreeState::SliderAttachment gainAttachment;
 
