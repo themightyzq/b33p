@@ -15,7 +15,7 @@ namespace B33p
           ampEnvelopeSection  (processor.getApvts()),
           filterSection       (processor.getApvts()),
           effectsSection      (processor.getApvts()),
-          masterSection       (processor.getApvts()),
+          masterSection       (processor),
           pitchEnvelopeSection(processor)
     {
         addAndMakeVisible(oscillatorSection);

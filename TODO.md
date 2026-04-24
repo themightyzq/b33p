@@ -44,7 +44,7 @@ Goal: a user can audition and design a single voice with every parameter exposed
 - [x] ADSR visualizer for amp envelope
 - [x] **Drawable pitch envelope** component — click to add points, drag to move, right-click to delete, curve interpolation
   - **Contingency:** if the drawable version is slipping, ship Phase 2 with an ADSR-style pitch-env UI against the same `PitchEnvelope` interface, then deliver drawable as Phase 2.5. Do not block the phase on it.
-- [ ] "Audition" button plays the voice at a fixed pitch
+- [x] "Audition" button plays the voice at a fixed pitch
 - [ ] Spacebar = audition
 
 ## Phase 3 — Randomization system
