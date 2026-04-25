@@ -201,6 +201,16 @@ namespace B33p
                 g.drawRoundedRectangle(rect, kEventCorner, 1.0f);
             }
         }
+
+        // Playhead — only drawn while the processor is playing.
+        if (processor.isPlaying())
+        {
+            const float x = secondsToX(processor.getPlayheadSeconds());
+            g.setColour(juce::Colour::fromRGB(255, 165, 60));
+            g.drawLine(x, frame.getY() + kRulerHeight,
+                       x, frame.getBottom(),
+                       1.5f);
+        }
     }
 
     void PatternGrid::mouseDown(const juce::MouseEvent& e)

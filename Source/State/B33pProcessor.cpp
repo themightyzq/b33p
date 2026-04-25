@@ -21,8 +21,9 @@ namespace B33p
 
     void B33pProcessor::prepareToPlay(double sampleRate, int /*blockSize*/)
     {
-        currentSampleRate           = sampleRate;
-        samplesUntilAuditionRelease = 0;
+        currentSampleRate    = sampleRate;
+        samplesUntilNoteOff  = 0;
+        playheadSeconds.store(0.0);
         voice.prepare(sampleRate);
         voice.reset();
     }
@@ -40,6 +41,24 @@ namespace B33p
     void B33pProcessor::triggerAudition()
     {
         pendingAudition.store(true, std::memory_order_release);
+    }
+
+    void B33pProcessor::startPlayback()
+    {
+        // Build the snapshot, swap it into the audio-thread slot,
+        // reset the playhead, then signal "playing". The release of
+        // playing happens-before the audio thread's acquire; the
+        // shared_ptr atomic_store provides its own ordering for
+        // pointer reads.
+        auto snapshot = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern));
+        std::atomic_store(&snapshotSlot, snapshot);
+        playheadSeconds.store(0.0);
+        playing.store(true, std::memory_order_release);
+    }
+
+    void B33pProcessor::stopPlayback()
+    {
+        playing.store(false, std::memory_order_release);
     }
 
     void B33pProcessor::pushParametersToVoice()
@@ -61,6 +80,23 @@ namespace B33p
         voice.setGain                (apvts.getRawParameterValue(ParameterIDs::voiceGain)->load());
     }
 
+    void B33pProcessor::triggerVoiceFromEvent(const Event& event)
+    {
+        // Try to refresh the voice's pitch curve before triggering;
+        // if the lock is contended we keep whatever curve was last
+        // pushed in. Acceptable because the next free trigger picks
+        // it up.
+        {
+            const juce::ScopedTryLock tryLock(pitchCurveLock);
+            if (tryLock.isLocked())
+                voice.setPitchCurve(pitchCurve);
+        }
+
+        voice.trigger(static_cast<float>(event.durationSeconds),
+                      event.pitchOffsetSemitones);
+        samplesUntilNoteOff = static_cast<int>(event.durationSeconds * currentSampleRate);
+    }
+
     void B33pProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                      juce::MidiBuffer& /*midi*/)
     {
@@ -71,39 +107,89 @@ namespace B33p
 
         pushParametersToVoice();
 
+        // ---- Detect playback start / stop transitions -------------
+        const bool nowPlaying = playing.load(std::memory_order_acquire);
+        if (nowPlaying && ! audioThreadPlaying)
+        {
+            activeSnapshot      = std::atomic_load(&snapshotSlot);
+            nextEventIndex      = 0;
+            playheadSeconds.store(0.0);
+        }
+        else if (! nowPlaying && audioThreadPlaying)
+        {
+            voice.noteOff();
+            samplesUntilNoteOff = 0;
+            activeSnapshot.reset();
+        }
+        audioThreadPlaying = nowPlaying;
+
+        // ---- Audition trigger fires before the per-sample loop ----
         if (pendingAudition.exchange(false, std::memory_order_acq_rel))
         {
-            {
-                const juce::ScopedTryLock tryLock(pitchCurveLock);
-                if (tryLock.isLocked())
-                    voice.setPitchCurve(pitchCurve);
-            }
-            voice.trigger(kAuditionDurationSeconds, 0.0f);
-            samplesUntilAuditionRelease = static_cast<int>(
-                kAuditionDurationSeconds * currentSampleRate);
-        }
-
-        // Decrement the auto-release counter at block granularity —
-        // a few milliseconds of jitter is imperceptible for audition.
-        if (samplesUntilAuditionRelease > 0)
-        {
-            samplesUntilAuditionRelease -= numSamples;
-            if (samplesUntilAuditionRelease <= 0)
-            {
-                samplesUntilAuditionRelease = 0;
-                voice.noteOff();
-            }
+            Event auditionEvent { 0.0,
+                                  static_cast<double>(kAuditionDurationSeconds),
+                                  0.0f };
+            triggerVoiceFromEvent(auditionEvent);
         }
 
         auto* left  = numChannels > 0 ? buffer.getWritePointer(0) : nullptr;
         auto* right = numChannels > 1 ? buffer.getWritePointer(1) : nullptr;
 
+        const double sampleDuration = currentSampleRate > 0.0
+                                          ? 1.0 / currentSampleRate
+                                          : 0.0;
+        double playhead = playheadSeconds.load();
+
         for (int i = 0; i < numSamples; ++i)
         {
+            // ---- Pattern playback: advance playhead, fire events --
+            if (audioThreadPlaying && activeSnapshot != nullptr)
+            {
+                if (playhead >= activeSnapshot->lengthSeconds)
+                {
+                    if (looping.load())
+                    {
+                        playhead       -= activeSnapshot->lengthSeconds;
+                        nextEventIndex  = 0;
+                    }
+                    else
+                    {
+                        voice.noteOff();
+                        playing.store(false, std::memory_order_release);
+                        audioThreadPlaying  = false;
+                        samplesUntilNoteOff = 0;
+                        activeSnapshot.reset();
+                    }
+                }
+
+                if (audioThreadPlaying && activeSnapshot != nullptr)
+                {
+                    const auto& events = activeSnapshot->events;
+                    while (nextEventIndex < static_cast<int>(events.size())
+                           && events[static_cast<size_t>(nextEventIndex)].startSeconds <= playhead)
+                    {
+                        triggerVoiceFromEvent(events[static_cast<size_t>(nextEventIndex)]);
+                        ++nextEventIndex;
+                    }
+                }
+            }
+
+            // ---- Sample-accurate noteOff for the active note ------
+            if (samplesUntilNoteOff > 0)
+            {
+                if (--samplesUntilNoteOff == 0)
+                    voice.noteOff();
+            }
+
             const float s = voice.processSample();
             if (left  != nullptr) left[i]  = s;
             if (right != nullptr) right[i] = s;
+
+            playhead += sampleDuration;
         }
+
+        if (audioThreadPlaying)
+            playheadSeconds.store(playhead);
 
         // Zero any additional output channels (defensive — stereo
         // standalones typically have at most 2 output channels).
