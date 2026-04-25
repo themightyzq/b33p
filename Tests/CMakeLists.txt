@@ -23,6 +23,7 @@ add_executable(B33pTests
     State/ParameterLayoutTests.cpp
     State/ParameterRandomizerTests.cpp
     Pattern/PatternTests.cpp
+    Pattern/PatternSnapshotTests.cpp
     Harness/VoiceRenderer.cpp
     Harness/VoiceRendererTests.cpp
     ${B33P_DSP_SOURCES}
@@ -30,6 +31,7 @@ add_executable(B33pTests
     ${CMAKE_SOURCE_DIR}/Source/State/ParameterRandomizer.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/B33pProcessor.cpp
     ${CMAKE_SOURCE_DIR}/Source/Pattern/Pattern.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Pattern/PatternSnapshot.cpp
 )
 
 target_include_directories(B33pTests PRIVATE
