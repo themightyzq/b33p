@@ -27,6 +27,11 @@ namespace B33p
     public:
         explicit PatternGrid(B33pProcessor& processor);
 
+        // 0 (or negative) means "no snap" — clicks land at the exact
+        // cursor position and grid lines are not drawn.
+        void   setGridSeconds(double seconds);
+        double getGridSeconds() const { return gridSeconds; }
+
         void paint(juce::Graphics& g) override;
 
         void mouseDown(const juce::MouseEvent& e) override;
@@ -65,6 +70,7 @@ namespace B33p
         HitResult hitTestEvent(juce::Point<float> p) const;
 
         B33pProcessor& processor;
+        double         gridSeconds { 0.1 };
 
         Selection selection;
 

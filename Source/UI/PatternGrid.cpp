@@ -1,5 +1,7 @@
 #include "PatternGrid.h"
 
+#include "Pattern/SnapMath.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -7,21 +9,26 @@ namespace B33p
 {
     namespace
     {
-        constexpr float  kLaneLabelWidth  = 24.0f;
-        constexpr float  kRulerHeight     = 20.0f;
-        constexpr float  kOuterInset      = 1.0f;
-        constexpr float  kLaneInset       = 3.0f;   // vertical padding inside each lane
-        constexpr float  kEventCorner     = 2.0f;
-        constexpr float  kResizeEdgeWidth = 6.0f;
-        constexpr double kGridSeconds     = 0.1;     // hardcoded until next commit
-        constexpr double kMinDurationSec  = 0.02;    // 20 ms — tighter than grid by design
-        constexpr double kDefaultDurationSec = kGridSeconds;
+        constexpr float  kLaneLabelWidth     = 24.0f;
+        constexpr float  kRulerHeight        = 20.0f;
+        constexpr float  kOuterInset         = 1.0f;
+        constexpr float  kLaneInset          = 3.0f;   // vertical padding inside each lane
+        constexpr float  kEventCorner        = 2.0f;
+        constexpr float  kResizeEdgeWidth    = 6.0f;
+        constexpr double kMinDurationSec     = 0.02;   // 20 ms — tighter than the smallest grid by design
+        constexpr double kDefaultDurationSec = 0.1;    // matches the default 100 ms grid
     }
 
     PatternGrid::PatternGrid(B33pProcessor& processorRef)
         : processor(processorRef)
     {
         setWantsKeyboardFocus(true);
+    }
+
+    void PatternGrid::setGridSeconds(double seconds)
+    {
+        gridSeconds = seconds;
+        repaint();
     }
 
     juce::Rectangle<float> PatternGrid::plotArea() const
@@ -78,7 +85,7 @@ namespace B33p
 
     double PatternGrid::snapSeconds(double seconds) const
     {
-        return std::round(seconds / kGridSeconds) * kGridSeconds;
+        return snapToGrid(seconds, gridSeconds);
     }
 
     juce::Rectangle<float> PatternGrid::eventRect(int lane, const Event& e) const
@@ -127,14 +134,18 @@ namespace B33p
         const auto& pattern = processor.getPattern();
         const double length = pattern.getLengthSeconds();
 
-        // Grid time lines
-        g.setColour(juce::Colour::fromRGB(40, 40, 40));
-        for (double t = 0.0; t <= length + 1e-6; t += kGridSeconds)
+        // Grid time lines (skipped entirely when snap is off so the
+        // canvas isn't cluttered).
+        if (gridSeconds > 0.0)
         {
-            const float x = secondsToX(t);
-            g.drawVerticalLine(static_cast<int>(std::round(x)),
-                               frame.getY() + kRulerHeight,
-                               frame.getBottom());
+            g.setColour(juce::Colour::fromRGB(40, 40, 40));
+            for (double t = 0.0; t <= length + 1e-6; t += gridSeconds)
+            {
+                const float x = secondsToX(t);
+                g.drawVerticalLine(static_cast<int>(std::round(x)),
+                                   frame.getY() + kRulerHeight,
+                                   frame.getBottom());
+            }
         }
 
         // Lane separators
@@ -185,6 +196,12 @@ namespace B33p
             const auto& events = pattern.getEvents(lane);
             for (std::size_t i = 0; i < events.size(); ++i)
             {
+                // Events past the new pattern length still exist in
+                // the data — they just don't draw or play. Shrinking
+                // the pattern is non-destructive.
+                if (events[i].startSeconds >= length)
+                    continue;
+
                 const auto rect = eventRect(lane, events[i]);
                 const bool isSelected = (selection.valid()
                                          && selection.lane  == lane
