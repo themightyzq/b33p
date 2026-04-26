@@ -19,11 +19,20 @@ namespace B33p
 
     private:
         void timerCallback() override;
+        void onLengthChanged();
+        void onGridChanged();
 
         B33pProcessor&   processor;
         PatternGrid      grid;
-        juce::TextButton playButton { "Play" };
-        juce::TextButton loopToggle { "Loop" };
+
+        juce::TextButton playButton  { "Play" };
+        juce::TextButton loopToggle  { "Loop" };
+
+        juce::Label      lengthLabel;
+        juce::ComboBox   lengthCombo;
+
+        juce::Label      gridLabel;
+        juce::ComboBox   gridCombo;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternSection)
     };

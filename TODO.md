@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current phase: Phase 4 — Pattern sequencer**
+> **Current phase: Phase 5 — WAV export**
 
 ---
 
@@ -66,11 +66,11 @@ Goal: place and edit events on up to 4 lanes, loop-play the pattern.
 - [x] Timeline UI: ruler, 4 lanes, playhead
 - [x] Click-drag to create an event; drag edges to resize; drag body to move
 - [x] Delete/Backspace removes selected event
-- [ ] Grid-size / snap dropdown in milliseconds: `10 ms`, `25 ms`, `50 ms`, `100 ms`, `250 ms`, `500 ms`, `1 s`, off (musical snap is post-MVP)
-- [ ] Pattern-length control: user-adjustable within `[0.1 s, 10 s]`
+- [x] Grid-size / snap dropdown in milliseconds: `10 ms`, `25 ms`, `50 ms`, `100 ms`, `250 ms`, `500 ms`, `1 s`, off (musical snap is post-MVP)
+- [x] Pattern-length control: user-adjustable within `[0.1 s, 10 s]`
 - [x] Playback engine: triggers the voice on event start, applies pitch offset
 - [x] Loop toggle
-- [ ] Unit tests for pattern model (insertion order, overlap handling, snap math)
+- [x] Unit tests for pattern model (insertion order, overlap handling, snap math)
 
 ## Phase 5 — WAV export
 

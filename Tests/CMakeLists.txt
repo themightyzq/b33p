@@ -24,6 +24,7 @@ add_executable(B33pTests
     State/ParameterRandomizerTests.cpp
     Pattern/PatternTests.cpp
     Pattern/PatternSnapshotTests.cpp
+    Pattern/SnapMathTests.cpp
     Harness/VoiceRenderer.cpp
     Harness/VoiceRendererTests.cpp
     ${B33P_DSP_SOURCES}
