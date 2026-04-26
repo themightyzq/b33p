@@ -26,6 +26,7 @@ add_executable(B33pTests
     Pattern/PatternSnapshotTests.cpp
     Pattern/PatternRendererTests.cpp
     Pattern/SnapMathTests.cpp
+    Pattern/WavWriterTests.cpp
     Harness/VoiceRenderer.cpp
     Harness/VoiceRendererTests.cpp
     ${B33P_DSP_SOURCES}
@@ -35,6 +36,7 @@ add_executable(B33pTests
     ${CMAKE_SOURCE_DIR}/Source/Pattern/Pattern.cpp
     ${CMAKE_SOURCE_DIR}/Source/Pattern/PatternRenderer.cpp
     ${CMAKE_SOURCE_DIR}/Source/Pattern/PatternSnapshot.cpp
+    ${CMAKE_SOURCE_DIR}/Source/Pattern/WavWriter.cpp
 )
 
 target_include_directories(B33pTests PRIVATE
