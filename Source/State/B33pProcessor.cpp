@@ -3,6 +3,7 @@
 #include "Core/ParameterIDs.h"
 #include "DSP/Oscillator.h"
 #include "ParameterLayout.h"
+#include "ProjectState.h"
 
 namespace B33p
 {
@@ -42,6 +43,24 @@ namespace B33p
     {
         const juce::ScopedLock lock(pitchCurveLock);
         return pitchCurve;
+    }
+
+    void B33pProcessor::getStateInformation(juce::MemoryBlock& destData)
+    {
+        const auto xml = ProjectState::toXmlString(ProjectState::save(*this));
+        destData.replaceAll(xml.toRawUTF8(), xml.getNumBytesAsUTF8());
+    }
+
+    void B33pProcessor::setStateInformation(const void* data, int sizeInBytes)
+    {
+        if (data == nullptr || sizeInBytes <= 0)
+            return;
+
+        const juce::String xml { static_cast<const char*>(data),
+                                  static_cast<size_t>(sizeInBytes) };
+        const auto tree = ProjectState::fromXmlString(xml);
+        if (tree.isValid())
+            ProjectState::load(*this, tree);
     }
 
     void B33pProcessor::triggerAudition()

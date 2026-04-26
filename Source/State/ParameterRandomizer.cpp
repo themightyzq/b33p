@@ -20,6 +20,20 @@ namespace B33p
             lockedIds.erase(parameterID.toStdString());
     }
 
+    std::vector<juce::String> ParameterRandomizer::getLockedParameterIDs() const
+    {
+        std::vector<juce::String> out;
+        out.reserve(lockedIds.size());
+        for (const auto& id : lockedIds)
+            out.emplace_back(id);
+        return out;
+    }
+
+    void ParameterRandomizer::clearAllLocks()
+    {
+        lockedIds.clear();
+    }
+
     bool ParameterRandomizer::rollOneNoTransaction(const juce::String& parameterID,
                                                    juce::Random& rng)
     {

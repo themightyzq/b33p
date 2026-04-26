@@ -107,9 +107,10 @@ namespace B33p
         const juce::String getProgramName(int) override                          { return {}; }
         void  changeProgramName(int, const juce::String&) override               {}
 
-        // Phase 6 will fill these out via ValueTree round-trip.
-        void  getStateInformation(juce::MemoryBlock&) override                   {}
-        void  setStateInformation(const void*, int) override                     {}
+        // ValueTree-backed save/load via ProjectState. Hosts and
+        // the .beep file format share the same XML serialization.
+        void  getStateInformation(juce::MemoryBlock& destData) override;
+        void  setStateInformation(const void* data, int sizeInBytes) override;
 
     private:
         void pushParametersToVoice();
