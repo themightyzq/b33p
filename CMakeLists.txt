@@ -78,6 +78,7 @@ target_sources(B33p PRIVATE
     Source/Pattern/Pattern.cpp
     Source/Pattern/PatternRenderer.cpp
     Source/Pattern/PatternSnapshot.cpp
+    Source/Pattern/WavWriter.cpp
 )
 
 target_include_directories(B33p PRIVATE Source)
@@ -93,6 +94,7 @@ target_compile_definitions(B33p PRIVATE
 target_link_libraries(B33p
     PRIVATE
         juce::juce_audio_devices
+        juce::juce_audio_formats
         juce::juce_audio_processors
         juce::juce_audio_utils
         juce::juce_gui_basics
