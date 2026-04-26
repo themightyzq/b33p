@@ -4,6 +4,7 @@
 
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace B33p
 {
@@ -31,6 +32,14 @@ namespace B33p
 
         bool isLocked(const juce::String& parameterID) const;
         void setLocked(const juce::String& parameterID, bool locked);
+
+        // Snapshot of every currently-locked parameter ID. Used by
+        // the project-state serializer; ordering is not guaranteed.
+        std::vector<juce::String> getLockedParameterIDs() const;
+
+        // Wipes every lock. Used when loading a project so locks
+        // restored from disk fully replace any in-memory locks.
+        void clearAllLocks();
 
         // Returns true iff the parameter existed and was unlocked.
         // Begins its own UndoManager transaction so each click is one
