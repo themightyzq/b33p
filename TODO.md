@@ -76,7 +76,7 @@ Goal: place and edit events on up to 4 lanes, loop-play the pattern.
 
 Goal: offline-render the pattern to a WAV file the user picks.
 
-- [ ] Offline render path (no realtime audio device) — deterministic given the same project
+- [x] Offline render path (no realtime audio device) — deterministic given the same project
 - [ ] Export dialog: file picker, sample rate, bit depth, channels
   - **Sample rates:** 8 / 11.025 / 16 / 22.05 / 44.1 / 48 kHz
   - **Bit depths:** 8-bit unsigned PCM, 16-bit, 24-bit
