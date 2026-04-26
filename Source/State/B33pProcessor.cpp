@@ -38,6 +38,12 @@ namespace B33p
         pitchCurve = std::move(newCurve);
     }
 
+    std::vector<PitchEnvelopePoint> B33pProcessor::getPitchCurveCopy() const
+    {
+        const juce::ScopedLock lock(pitchCurveLock);
+        return pitchCurve;
+    }
+
     void B33pProcessor::triggerAudition()
     {
         pendingAudition.store(true, std::memory_order_release);

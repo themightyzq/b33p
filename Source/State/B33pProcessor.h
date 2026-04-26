@@ -59,6 +59,11 @@ namespace B33p
         const std::vector<PitchEnvelopePoint>& getPitchCurve() const { return pitchCurve; }
         void setPitchCurve(std::vector<PitchEnvelopePoint> newCurve);
 
+        // Thread-safe snapshot for the offline export thread — takes
+        // the same CriticalSection the audio-thread try-lock uses, so
+        // a copy here cannot race with a concurrent UI write.
+        std::vector<PitchEnvelopePoint> getPitchCurveCopy() const;
+
         // The user-authored sequencer pattern. UI edits go through
         // this reference directly. Playback uses an immutable
         // snapshot built when startPlayback() runs, so live UI edits
@@ -120,7 +125,7 @@ namespace B33p
         // use a ScopedTryLock and fall back to whatever curve the Voice
         // already has. The race window is tiny but real once live audio
         // is wired.
-        juce::CriticalSection pitchCurveLock;
+        mutable juce::CriticalSection pitchCurveLock;
         std::vector<PitchEnvelopePoint> pitchCurve { { 0.0f, 0.0f }, { 1.0f, 0.0f } };
 
         Pattern pattern;

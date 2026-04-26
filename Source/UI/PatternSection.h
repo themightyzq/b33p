@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ExportDialog.h"
 #include "PatternGrid.h"
 #include "Section.h"
 #include "State/B33pProcessor.h"
@@ -21,18 +22,22 @@ namespace B33p
         void timerCallback() override;
         void onLengthChanged();
         void onGridChanged();
+        void onExportClicked();
+        void runExport(ExportDialog::Result settings);
 
         B33pProcessor&   processor;
         PatternGrid      grid;
 
-        juce::TextButton playButton  { "Play" };
-        juce::TextButton loopToggle  { "Loop" };
+        juce::TextButton playButton   { "Play" };
+        juce::TextButton loopToggle   { "Loop" };
 
         juce::Label      lengthLabel;
         juce::ComboBox   lengthCombo;
 
         juce::Label      gridLabel;
         juce::ComboBox   gridCombo;
+
+        juce::TextButton exportButton { "Export..." };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternSection)
     };

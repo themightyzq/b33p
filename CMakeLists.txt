@@ -59,6 +59,7 @@ target_sources(B33p PRIVATE
     Source/UI/AmpEnvelopeVisualizer.cpp
     Source/UI/EffectsSection.cpp
     Source/UI/ExportDialog.cpp
+    Source/UI/ExportTask.cpp
     Source/UI/FilterSection.cpp
     Source/UI/LabeledSlider.cpp
     Source/UI/MasterSection.cpp

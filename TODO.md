@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current phase: Phase 5 — WAV export**
+> **Current phase: Phase 6 — Project save / load**
 
 ---
 
@@ -77,13 +77,13 @@ Goal: place and edit events on up to 4 lanes, loop-play the pattern.
 Goal: offline-render the pattern to a WAV file the user picks.
 
 - [x] Offline render path (no realtime audio device) — deterministic given the same project
-- [ ] Export dialog: file picker, sample rate, bit depth, channels
+- [x] Export dialog: file picker, sample rate, bit depth, channels
   - **Sample rates:** 8 / 11.025 / 16 / 22.05 / 44.1 / 48 kHz
   - **Bit depths:** 8-bit unsigned PCM, 16-bit, 24-bit
   - **Channels:** mono / stereo-duplicated
   - 8-bit + low sample rates are the intentional lo-fi / retro path. Effective resolutions below 8-bit are produced via the Phase 1 bitcrusher rendering into the chosen container.
-- [ ] Render matches pattern length exactly; trailing tail captured until voice silence threshold
-- [ ] Progress indicator for renders > 1 second
+- [x] Render matches pattern length exactly; trailing tail captured until voice silence threshold
+- [x] Progress indicator for renders > 1 second
 
 ## Phase 6 — Project save / load
 

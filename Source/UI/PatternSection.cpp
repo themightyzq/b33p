@@ -1,5 +1,7 @@
 #include "PatternSection.h"
 
+#include "ExportTask.h"
+
 #include <array>
 
 namespace B33p
@@ -9,6 +11,7 @@ namespace B33p
         constexpr int  kControlsHeight = 28;
         constexpr int  kControlsGap    = 6;
         constexpr int  kButtonWidth    = 80;
+        constexpr int  kExportWidth    = 90;
         constexpr int  kComboWidth     = 110;
         constexpr int  kLabelWidth     = 50;
         constexpr int  kRepaintHz      = 30;
@@ -110,6 +113,11 @@ namespace B33p
         gridCombo.onChange = [this] { onGridChanged(); };
         addAndMakeVisible(gridCombo);
 
+        // Export button (right-aligned to separate the action from
+        // playback / editing controls).
+        exportButton.onClick = [this] { onExportClicked(); };
+        addAndMakeVisible(exportButton);
+
         startTimerHz(kRepaintHz);
     }
 
@@ -137,6 +145,31 @@ namespace B33p
         grid.setGridSeconds(kGridPresets[idx].seconds);
     }
 
+    void PatternSection::onExportClicked()
+    {
+        ExportDialog::showAsync(this, [this](ExportDialog::Result result)
+        {
+            if (! result.accepted)
+                return;
+
+            // Defer the actual launch to the message thread so the
+            // dialog has fully closed before the export-progress
+            // window opens — avoids overlapping modal stacks.
+            juce::MessageManager::callAsync([this, r = std::move(result)]
+            {
+                runExport(r);
+            });
+        });
+    }
+
+    void PatternSection::runExport(ExportDialog::Result settings)
+    {
+        // ExportTask is heap-allocated and self-deletes in
+        // threadComplete after showing its own success/failure
+        // alert — fire-and-forget from this side.
+        ExportTask::launchAsync(processor, std::move(settings));
+    }
+
     void PatternSection::timerCallback()
     {
         const bool playing = processor.isPlaying();
@@ -152,6 +185,11 @@ namespace B33p
 
         auto controlsRow = bounds.removeFromTop(kControlsHeight);
         bounds.removeFromTop(kControlsGap);
+
+        // Right-align Export to separate the action from the
+        // play/edit controls on the left.
+        exportButton.setBounds(controlsRow.removeFromRight(kExportWidth));
+        controlsRow.removeFromRight(kControlsGap);
 
         playButton.setBounds(controlsRow.removeFromLeft(kButtonWidth));
         controlsRow.removeFromLeft(kControlsGap);
