@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current phase: Phase 8 — Pattern editor: per-event control + intuitive clip editing**
+> **Current phase: Phase 9 — Multi-voice patterns**
 
 ---
 
