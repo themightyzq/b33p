@@ -161,6 +161,70 @@ TEST_CASE("Voice: gain scales the output linearly", "[dsp][voice]")
     REQUIRE(peakHalf == Approx(peakUnity * 0.5f).margin(0.02f));
 }
 
+TEST_CASE("Voice: per-event velocity scales output linearly", "[dsp][voice]")
+{
+    auto peakAtVelocity = [](float velocity)
+    {
+        Voice voice;
+        voice.prepare(kSampleRate);
+        configureCleanBeep(voice);
+
+        voice.trigger(1.0f, 0.0f, velocity);
+        return peakAbs(render(voice, 5000));
+    };
+
+    const float peakFull    = peakAtVelocity(1.0f);
+    const float peakHalf    = peakAtVelocity(0.5f);
+    const float peakSilent  = peakAtVelocity(0.0f);
+
+    REQUIRE(peakFull   > 0.05f);
+    REQUIRE(peakHalf   == Approx(peakFull * 0.5f).margin(0.02f));
+    REQUIRE(peakSilent == Approx(0.0f).margin(1e-6f));
+}
+
+TEST_CASE("Voice: trigger() default velocity matches the explicit 1.0 case", "[dsp][voice]")
+{
+    auto peakDefault = []
+    {
+        Voice voice;
+        voice.prepare(kSampleRate);
+        configureCleanBeep(voice);
+        voice.trigger(1.0f, 0.0f);   // no velocity arg
+        return peakAbs(render(voice, 5000));
+    };
+    auto peakOne = []
+    {
+        Voice voice;
+        voice.prepare(kSampleRate);
+        configureCleanBeep(voice);
+        voice.trigger(1.0f, 0.0f, 1.0f);
+        return peakAbs(render(voice, 5000));
+    };
+    REQUIRE(peakDefault() == Approx(peakOne()).margin(1e-6f));
+}
+
+TEST_CASE("Voice: velocity is clamped to [0, 1]", "[dsp][voice]")
+{
+    Voice voice;
+    voice.prepare(kSampleRate);
+    configureCleanBeep(voice);
+
+    // Out-of-range high should clamp to 1.0; out-of-range low should clamp to 0.0.
+    voice.trigger(1.0f, 0.0f, 5.0f);
+    const float peakHigh = peakAbs(render(voice, 5000));
+
+    voice.reset();
+    voice.trigger(1.0f, 0.0f, 1.0f);
+    const float peakOne = peakAbs(render(voice, 5000));
+
+    REQUIRE(peakHigh == Approx(peakOne).margin(0.02f));
+
+    voice.reset();
+    voice.trigger(1.0f, 0.0f, -2.0f);
+    const float peakLow = peakAbs(render(voice, 5000));
+    REQUIRE(peakLow == Approx(0.0f).margin(1e-6f));
+}
+
 TEST_CASE("Voice: noteOff and release tail drive isActive to false", "[dsp][voice]")
 {
     Voice voice;

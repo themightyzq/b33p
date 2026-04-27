@@ -35,8 +35,8 @@ namespace
         // events spread across multiple lanes.
         auto& pattern = processor.getPattern();
         pattern.setLengthSeconds(3.0);
-        pattern.addEvent(0, { 0.5, 0.25, 0.0f });
-        pattern.addEvent(2, { 1.5, 0.10, 7.0f });
+        pattern.addEvent(0, { 0.5, 0.25, 0.0f, 1.0f });
+        pattern.addEvent(2, { 1.5, 0.10, 7.0f, 0.6f });   // non-default velocity
         processor.setLooping(false);
 
         // Lock a couple of parameters.
@@ -126,8 +126,44 @@ TEST_CASE("ProjectState: round-trip preserves pattern length, loop and events",
             REQUIRE(a[i].startSeconds         == Approx(b[i].startSeconds));
             REQUIRE(a[i].durationSeconds      == Approx(b[i].durationSeconds));
             REQUIRE(a[i].pitchOffsetSemitones == Approx(b[i].pitchOffsetSemitones));
+            REQUIRE(a[i].velocity             == Approx(b[i].velocity));
         }
     }
+}
+
+TEST_CASE("ProjectState: events from a v1 file (no velocity property) load with velocity 1.0",
+          "[state][project]")
+{
+    // Synthesize a v1-style tree by hand — same structure ProjectState
+    // generates, but with the EVENT lacking the new "velocity" attribute.
+    juce::ValueTree root { "B33P" };
+    root.setProperty("version", B33p::ProjectState::kCurrentVersion, nullptr);
+
+    juce::ValueTree params { "PARAMETERS" };
+    root.appendChild(params, nullptr);
+
+    juce::ValueTree pattern { "PATTERN" };
+    pattern.setProperty("length_seconds", 2.0, nullptr);
+    pattern.setProperty("looping",        true, nullptr);
+
+    juce::ValueTree lane { "LANE" };
+    lane.setProperty("index", 0, nullptr);
+
+    juce::ValueTree event { "EVENT" };
+    event.setProperty("start_seconds",          0.5, nullptr);
+    event.setProperty("duration_seconds",       0.2, nullptr);
+    event.setProperty("pitch_offset_semitones", 0.0, nullptr);
+    // No "velocity" property — this is what a pre-Phase-8 file looks like.
+    lane.appendChild(event, nullptr);
+    pattern.appendChild(lane, nullptr);
+    root.appendChild(pattern, nullptr);
+
+    B33pProcessor restored;
+    REQUIRE(B33p::ProjectState::load(restored, root));
+
+    const auto& events = restored.getPattern().getEvents(0);
+    REQUIRE(events.size() == 1);
+    REQUIRE(events[0].velocity == Approx(1.0f));
 }
 
 TEST_CASE("ProjectState: round-trip preserves locks", "[state][project]")

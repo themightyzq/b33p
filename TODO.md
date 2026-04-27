@@ -113,10 +113,10 @@ Goal: every clip in the pattern has its own pitch offset and velocity, the editi
 Framing: today the pattern editor is "place a beep here, drag it, drag its edge". After this phase it's a real sequencing surface — the clip editing feels native (cursor changes, snap guides, both edges resize, drag between lanes), every event carries its own pitch and dynamics, and an inspector strip exposes the numbers when you need them.
 
 ### Per-event data + playback
-- [ ] `Event` gains a `velocity` field (0..1, default 1.0); operator== updated
-- [ ] Voice trigger respects per-event `pitchOffsetSemitones` (already in data, currently ignored at trigger time) and `velocity`
-- [ ] PatternRenderer / WavWriter honour velocity in the offline render
-- [ ] `.beep` serializes velocity with a default-tolerant load (no schema bump needed — new field defaults cleanly for v1 files)
+- [x] `Event` gains a `velocity` field (0..1, default 1.0); operator== updated
+- [x] Voice trigger respects per-event `pitchOffsetSemitones` and `velocity` (pitch offset was already wired; velocity is the new bit)
+- [x] PatternRenderer / WavWriter honour velocity in the offline render
+- [x] `.beep` serializes velocity with a default-tolerant load (no schema bump needed — new field defaults cleanly for v1 files)
 
 ### Inspector panel (selected-event detail)
 - [ ] Thin inspector strip below the pattern grid; visible when an event is selected, hidden otherwise

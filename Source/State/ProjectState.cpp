@@ -28,6 +28,7 @@ namespace B33p::ProjectState
         const juce::Identifier kEventStart            { "start_seconds" };
         const juce::Identifier kEventDuration         { "duration_seconds" };
         const juce::Identifier kEventPitch            { "pitch_offset_semitones" };
+        const juce::Identifier kEventVelocity         { "velocity" };
 
         const juce::Identifier kLocks                 { "LOCKS" };
         const juce::Identifier kLock                  { "LOCK" };
@@ -75,6 +76,7 @@ namespace B33p::ProjectState
                 eventNode.setProperty(kEventStart,    e.startSeconds,                       nullptr);
                 eventNode.setProperty(kEventDuration, e.durationSeconds,                    nullptr);
                 eventNode.setProperty(kEventPitch,    static_cast<double>(e.pitchOffsetSemitones), nullptr);
+                eventNode.setProperty(kEventVelocity, static_cast<double>(e.velocity),             nullptr);
                 laneNode.appendChild(eventNode, nullptr);
             }
 
@@ -157,7 +159,9 @@ namespace B33p::ProjectState
                 Event e;
                 e.startSeconds         = static_cast<double>(eventNode.getProperty(kEventStart,    0.0));
                 e.durationSeconds      = static_cast<double>(eventNode.getProperty(kEventDuration, 0.1));
-                e.pitchOffsetSemitones = static_cast<float> (static_cast<double>(eventNode.getProperty(kEventPitch, 0.0)));
+                e.pitchOffsetSemitones = static_cast<float> (static_cast<double>(eventNode.getProperty(kEventPitch,    0.0)));
+                // velocity defaults to 1.0 for v1 files that pre-date this field.
+                e.velocity             = static_cast<float> (static_cast<double>(eventNode.getProperty(kEventVelocity, 1.0)));
                 pattern.addEvent(laneIdx, e);
             }
         }

@@ -65,7 +65,12 @@ namespace B33p
 
         void setGain(float linearGain);
 
-        void trigger(float durationSeconds, float pitchOffsetSemitones);
+        // velocity is a per-trigger 0..1 scalar applied on top of
+        // gain. Defaults to 1.0 so existing callers (audition,
+        // tests) keep their previous behaviour.
+        void trigger(float durationSeconds,
+                     float pitchOffsetSemitones,
+                     float velocity = 1.0f);
         void noteOff();
 
         float processSample();
@@ -83,6 +88,7 @@ namespace B33p
         float basePitchHz          { 440.0f };
         float pitchOffsetSemitones { 0.0f };
         float gain                 { 1.0f };
+        float triggerVelocity      { 1.0f };
         bool  prepared             { false };
     };
 }
