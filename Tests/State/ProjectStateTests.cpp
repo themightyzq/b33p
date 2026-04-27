@@ -210,3 +210,44 @@ TEST_CASE("ProjectState: getStateInformation/setStateInformation round-trip",
     REQUIRE(restored.getLooping() == original.getLooping());
     REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::filterCutoffHz));
 }
+
+TEST_CASE("ProjectState: writeToFile / readFromFile round-trip via temp file",
+          "[state][project]")
+{
+    B33pProcessor original;
+    mutateProcessor(original);
+
+    const auto tmp = juce::File::createTempFile(".beep");
+    REQUIRE(B33p::ProjectState::writeToFile(original, tmp));
+    REQUIRE(tmp.existsAsFile());
+    REQUIRE(tmp.getSize() > 0);
+
+    B33pProcessor restored;
+    REQUIRE(B33p::ProjectState::readFromFile(restored, tmp));
+
+    REQUIRE(restored.getPattern().getLengthSeconds()
+            == Approx(original.getPattern().getLengthSeconds()));
+    REQUIRE(restored.getLooping() == original.getLooping());
+    REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::filterCutoffHz));
+
+    tmp.deleteFile();
+}
+
+TEST_CASE("ProjectState: readFromFile rejects a missing file", "[state][project]")
+{
+    B33pProcessor processor;
+
+    const juce::File missing { "/nonexistent_b33p_dir/nope.beep" };
+    REQUIRE_FALSE(B33p::ProjectState::readFromFile(processor, missing));
+}
+
+TEST_CASE("ProjectState: readFromFile rejects malformed XML", "[state][project]")
+{
+    B33pProcessor processor;
+
+    const auto tmp = juce::File::createTempFile(".beep");
+    REQUIRE(tmp.replaceWithText("this is not <valid> xml{{}"));
+    REQUIRE_FALSE(B33p::ProjectState::readFromFile(processor, tmp));
+
+    tmp.deleteFile();
+}

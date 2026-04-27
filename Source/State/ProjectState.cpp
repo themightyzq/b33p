@@ -187,4 +187,23 @@ namespace B33p::ProjectState
             return juce::ValueTree::fromXml(*parsed);
         return {};
     }
+
+    bool writeToFile(B33pProcessor& processor, const juce::File& destination)
+    {
+        const auto xml = toXmlString(save(processor));
+        return destination.replaceWithText(xml);
+    }
+
+    bool readFromFile(B33pProcessor& processor, const juce::File& source)
+    {
+        if (! source.existsAsFile())
+            return false;
+
+        const auto xml  = source.loadFileAsString();
+        const auto tree = fromXmlString(xml);
+        if (! tree.isValid())
+            return false;
+
+        return load(processor, tree);
+    }
 }
