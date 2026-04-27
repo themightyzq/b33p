@@ -132,10 +132,10 @@ Framing: today the pattern editor is "place a beep here, drag it, drag its edge"
 ### Clip editing gestures — the "feels like a DAW" pass
 - [x] Cursor changes: crosshair over empty grid, open-hand over clip body, horizontal-resize over either edge
 - [x] LEFT-edge resize (only the right edge resizes today)
-- [ ] Vertical drag inside a moving clip retargets the lane (snap to lane boundaries)
-- [ ] Click + drag on empty grid creates a clip whose duration matches the dragged distance (not the fixed 100 ms default)
-- [ ] Single click on empty grid (no drag) deselects — does NOT silently create a tiny clip
-- [ ] Double-click empty grid creates a clip at default duration (a discoverable alternative to drag-create)
+- [x] Vertical drag inside a moving clip retargets the lane (snap to lane boundaries)
+- [x] Click + drag on empty grid creates a clip whose duration matches the dragged distance (not the fixed 100 ms default)
+- [x] Single click on empty grid (no drag) deselects — does NOT silently create a tiny clip
+- [x] Double-click empty grid creates a clip at default duration (a discoverable alternative to drag-create)
 - [x] Snap-target preview: a vertical guide line at the snap target while dragging or resizing
 - [x] Arrow keys nudge selected event(s) by one grid step; shift+arrow nudges by ten
 - [x] Esc deselects all events
@@ -152,7 +152,7 @@ Framing: today the pattern editor is "place a beep here, drag it, drag its edge"
 - [ ] Per-lane Mute toggle in the lane label column
 
 ### Empty-state hint
-- [ ] Update the "click in a lane to add a beep" hint to match the new gestures (mention drag-to-size and double-click-to-create)
+- [x] Update the "click in a lane to add a beep" hint to match the new gestures (mention drag-to-size and double-click-to-create)
 
 ## Phase 9 — Multi-voice patterns
 
