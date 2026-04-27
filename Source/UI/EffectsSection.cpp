@@ -1,6 +1,7 @@
 #include "EffectsSection.h"
 
 #include "Core/ParameterIDs.h"
+#include "SliderFormatting.h"
 
 namespace B33p
 {
@@ -17,6 +18,10 @@ namespace B33p
         bitDepthSlider .attachRandomizer(processor, ParameterIDs::bitcrushBitDepth);
         crushRateSlider.attachRandomizer(processor, ParameterIDs::bitcrushSampleRateHz);
         driveSlider    .attachRandomizer(processor, ParameterIDs::distortionDrive);
+
+        SliderFormatting::applyInteger(bitDepthSlider .getSlider(), " bits");
+        SliderFormatting::applyHz     (crushRateSlider.getSlider());
+        SliderFormatting::applyDecimal(driveSlider    .getSlider(), 2);
     }
 
     void EffectsSection::resized()

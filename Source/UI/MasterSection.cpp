@@ -1,6 +1,7 @@
 #include "MasterSection.h"
 
 #include "Core/ParameterIDs.h"
+#include "SliderFormatting.h"
 
 namespace B33p
 {
@@ -21,6 +22,8 @@ namespace B33p
         addAndMakeVisible(diceAllButton);
 
         gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain);
+
+        SliderFormatting::applyDecimal(gainSlider.getSlider(), 2);
     }
 
     void MasterSection::resized()
