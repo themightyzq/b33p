@@ -1,6 +1,7 @@
 #include "PatternSection.h"
 
 #include "ExportTask.h"
+#include "State/UndoableActions.h"
 
 #include <array>
 
@@ -8,14 +9,15 @@ namespace B33p
 {
     namespace
     {
-        constexpr int  kControlsHeight = 28;
-        constexpr int  kControlsGap    = 6;
-        constexpr int  kButtonWidth    = 80;
-        constexpr int  kExportWidth    = 90;
-        constexpr int  kComboWidth     = 110;
-        constexpr int  kLabelWidth     = 50;
-        constexpr int  kTimeWidth      = 90;
-        constexpr int  kRepaintHz      = 30;
+        constexpr int  kControlsHeight  = 28;
+        constexpr int  kControlsGap     = 6;
+        constexpr int  kButtonWidth     = 80;
+        constexpr int  kExportWidth     = 90;
+        constexpr int  kComboWidth      = 110;
+        constexpr int  kLabelWidth      = 50;
+        constexpr int  kTimeWidth       = 90;
+        constexpr int  kInspectorHeight = 32;
+        constexpr int  kRepaintHz       = 30;
 
         struct LengthPreset { const char* label; double seconds; };
         constexpr std::array<LengthPreset, 6> kLengthPresets {{
@@ -47,9 +49,37 @@ namespace B33p
     PatternSection::PatternSection(B33pProcessor& processorRef)
         : Section("Pattern"),
           processor(processorRef),
-          grid(processorRef)
+          grid(processorRef),
+          inspector(processorRef)
     {
         addAndMakeVisible(grid);
+        addAndMakeVisible(inspector);
+
+        // Live two-way wiring: the grid drives selection identity +
+        // content; inspector edits push back through the pattern and
+        // are picked up on the grid's next repaint.
+        grid.onSelectionChanged = [this]
+        {
+            inspector.setSelection(grid.getSelection());
+        };
+        inspector.onDeleteRequested = [this]
+        {
+            const auto sel = grid.getSelection();
+            if (! sel.valid())
+                return;
+
+            Pattern before = processor.getPattern();
+            processor.getPattern().removeEvent(sel.lane, sel.index);
+            processor.markDirty();
+            grid.clearSelection();
+            grid.repaint();
+
+            processor.getUndoManager().beginNewTransaction("Delete event");
+            processor.getUndoManager().perform(
+                new SetPatternAction(processor, &grid,
+                                     std::move(before),
+                                     processor.getPattern()));
+        };
 
         playButton.onClick = [this]
         {
@@ -255,6 +285,9 @@ namespace B33p
         gridLabel.setBounds(controlsRow.removeFromLeft(kLabelWidth));
         gridCombo.setBounds(controlsRow.removeFromLeft(kComboWidth));
 
+        // Inspector strip docks at the bottom; grid takes the rest.
+        inspector.setBounds(bounds.removeFromBottom(kInspectorHeight));
+        bounds.removeFromBottom(kControlsGap);
         grid.setBounds(bounds);
     }
 }

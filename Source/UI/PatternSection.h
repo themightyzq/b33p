@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ExportDialog.h"
+#include "InspectorStrip.h"
 #include "PatternGrid.h"
 #include "Section.h"
 #include "State/B33pProcessor.h"
@@ -32,6 +33,7 @@ namespace B33p
 
         B33pProcessor&   processor;
         PatternGrid      grid;
+        InspectorStrip   inspector;
 
         juce::TextButton playButton   { "Play" };
         juce::TextButton loopToggle   { "Loop" };

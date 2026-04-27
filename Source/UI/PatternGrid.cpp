@@ -32,6 +32,24 @@ namespace B33p
         repaint();
     }
 
+    void PatternGrid::setSelection(const Selection& newSelection)
+    {
+        const bool changed = (newSelection.lane  != selection.lane
+                            || newSelection.index != selection.index);
+        selection = newSelection;
+        if (changed && onSelectionChanged)
+            onSelectionChanged();
+    }
+
+    void PatternGrid::clearSelection()
+    {
+        if (selection.valid())
+        {
+            setSelection({});
+            repaint();
+        }
+    }
+
     juce::Rectangle<float> PatternGrid::plotArea() const
     {
         return getLocalBounds().toFloat().reduced(kOuterInset);
@@ -276,8 +294,8 @@ namespace B33p
             processor.getPattern().addEvent(lane, newEvent);
             processor.markDirty();
 
-            selection.lane  = lane;
-            selection.index = processor.getPattern().getEvents(lane).size() - 1;
+            setSelection({ lane,
+                           processor.getPattern().getEvents(lane).size() - 1 });
 
             dragMode          = DragMode::Move;
             dragStartSeconds  = xToSeconds(e.position.x);
@@ -287,8 +305,7 @@ namespace B33p
             return;
         }
 
-        selection.lane  = hit.lane;
-        selection.index = hit.index;
+        setSelection({ hit.lane, hit.index });
 
         dragMode          = (hit.kind == HitResult::Kind::RightEdge)
                                 ? DragMode::Resize
@@ -329,6 +346,11 @@ namespace B33p
         pattern.updateEvent(selection.lane, selection.index, current);
         processor.markDirty();
         repaint();
+
+        // Inspector below tracks the live drag values, not just the
+        // mouseUp end state. Cheap to fire 30+ times per drag.
+        if (onSelectionChanged)
+            onSelectionChanged();
     }
 
     void PatternGrid::mouseUp(const juce::MouseEvent&)
@@ -358,7 +380,7 @@ namespace B33p
                 Pattern before = processor.getPattern();
                 processor.getPattern().removeEvent(selection.lane, selection.index);
                 processor.markDirty();
-                selection = {};
+                setSelection({});
                 repaint();
 
                 processor.getUndoManager().beginNewTransaction("Delete event");
