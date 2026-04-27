@@ -64,11 +64,11 @@ namespace B33p
         // on every transition without each call site remembering.
         void setSelection(const Selection& newSelection);
 
-        enum class DragMode { None, Move, Resize };
+        enum class DragMode { None, Move, ResizeLeft, ResizeRight };
 
         struct HitResult
         {
-            enum class Kind { None, Body, RightEdge } kind { Kind::None };
+            enum class Kind { None, Body, LeftEdge, RightEdge } kind { Kind::None };
             int         lane  { -1 };
             std::size_t index {  0 };
         };
@@ -101,6 +101,11 @@ namespace B33p
         // Cursor hover tracking — drives the slight tint lift on the
         // event the user is about to click. lane = -1 = no hover.
         Selection hover;
+
+        // While a drag is active, the snap target time in seconds.
+        // -1 means "no preview". Drawn as a vertical guide line so
+        // the user sees where the event will land before releasing.
+        double snapPreviewSeconds { -1.0 };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternGrid)
     };

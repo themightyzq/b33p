@@ -131,12 +131,12 @@ Framing: today the pattern editor is "place a beep here, drag it, drag its edge"
 
 ### Clip editing gestures — the "feels like a DAW" pass
 - [x] Cursor changes: crosshair over empty grid, open-hand over clip body, horizontal-resize over either edge
-- [ ] LEFT-edge resize (only the right edge resizes today)
+- [x] LEFT-edge resize (only the right edge resizes today)
 - [ ] Vertical drag inside a moving clip retargets the lane (snap to lane boundaries)
 - [ ] Click + drag on empty grid creates a clip whose duration matches the dragged distance (not the fixed 100 ms default)
 - [ ] Single click on empty grid (no drag) deselects — does NOT silently create a tiny clip
 - [ ] Double-click empty grid creates a clip at default duration (a discoverable alternative to drag-create)
-- [ ] Snap-target preview: a vertical guide line at the snap target while dragging or resizing
+- [x] Snap-target preview: a vertical guide line at the snap target while dragging or resizing
 - [x] Arrow keys nudge selected event(s) by one grid step; shift+arrow nudges by ten
 - [x] Esc deselects all events
 - [x] Right-click a clip opens a context menu (Delete, Duplicate)
