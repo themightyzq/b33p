@@ -60,11 +60,12 @@ namespace B33p
         // are picked up on the grid's next repaint.
         grid.onSelectionChanged = [this]
         {
-            inspector.setSelection(grid.getSelection());
+            inspector.setSelection(grid.getPrimarySelection(),
+                                    static_cast<int>(grid.getSelectedEvents().size()));
         };
         inspector.onDeleteRequested = [this]
         {
-            const auto sel = grid.getSelection();
+            const auto sel = grid.getPrimarySelection();
             if (! sel.valid())
                 return;
 

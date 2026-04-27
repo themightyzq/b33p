@@ -132,22 +132,80 @@ namespace B33p
         repaint();
     }
 
-    void PatternGrid::setSelection(const Selection& newSelection)
+    PatternGrid::Selection PatternGrid::getPrimarySelection() const
     {
-        const bool changed = (newSelection.lane  != selection.lane
-                            || newSelection.index != selection.index);
-        selection = newSelection;
-        if (changed && onSelectionChanged)
+        if (selection.empty())
+            return {};
+        return selection.back();
+    }
+
+    bool PatternGrid::isInSelection(const Selection& s) const
+    {
+        for (const auto& existing : selection)
+            if (existing == s) return true;
+        return false;
+    }
+
+    void PatternGrid::notifySelectionChanged()
+    {
+        if (onSelectionChanged)
             onSelectionChanged();
+    }
+
+    void PatternGrid::selectOnly(const Selection& s)
+    {
+        if (selection.size() == 1 && selection.back() == s)
+            return;
+        selection.clear();
+        if (s.valid())
+            selection.push_back(s);
+        notifySelectionChanged();
+    }
+
+    void PatternGrid::addToSelection(const Selection& s)
+    {
+        if (! s.valid() || isInSelection(s))
+            return;
+        selection.push_back(s);
+        notifySelectionChanged();
+    }
+
+    void PatternGrid::toggleInSelection(const Selection& s)
+    {
+        if (! s.valid())
+            return;
+        for (auto it = selection.begin(); it != selection.end(); ++it)
+            if (*it == s)
+            {
+                selection.erase(it);
+                notifySelectionChanged();
+                return;
+            }
+        selection.push_back(s);
+        notifySelectionChanged();
     }
 
     void PatternGrid::clearSelection()
     {
-        if (selection.valid())
+        if (selection.empty())
+            return;
+        selection.clear();
+        notifySelectionChanged();
+        repaint();
+    }
+
+    void PatternGrid::selectAll()
+    {
+        selection.clear();
+        const auto& pattern = processor.getPattern();
+        for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
         {
-            setSelection({});
-            repaint();
+            const auto& events = pattern.getEvents(lane);
+            for (std::size_t i = 0; i < events.size(); ++i)
+                selection.push_back({ lane, i });
         }
+        notifySelectionChanged();
+        repaint();
     }
 
     juce::Rectangle<float> PatternGrid::plotArea() const
@@ -345,9 +403,7 @@ namespace B33p
                     continue;
 
                 const auto rect = eventRect(lane, events[i]);
-                const bool isSelected = (selection.valid()
-                                         && selection.lane  == lane
-                                         && selection.index == i);
+                const bool isSelected = isInSelection({ lane, i });
                 const bool isHover    = (hover.valid()
                                          && hover.lane  == lane
                                          && hover.index == i);
@@ -415,7 +471,9 @@ namespace B33p
             if (hit.kind == HitResult::Kind::None)
                 return;
 
-            setSelection({ hit.lane, hit.index });
+            // Single-select the right-clicked event so the menu has
+            // an unambiguous target.
+            selectOnly({ hit.lane, hit.index });
             repaint();
 
             juce::PopupMenu menu;
@@ -434,7 +492,7 @@ namespace B33p
                     if (result == 1)
                     {
                         pattern.removeEvent(laneClicked, idxClicked);
-                        setSelection({});
+                        clearSelection();
                     }
                     else if (result == 2)
                     {
@@ -444,8 +502,8 @@ namespace B33p
                             pattern.getLengthSeconds() - copy.durationSeconds,
                             copy.startSeconds + copy.durationSeconds);
                         pattern.addEvent(laneClicked, copy);
-                        setSelection({ laneClicked,
-                                       pattern.getEvents(laneClicked).size() - 1 });
+                        selectOnly({ laneClicked,
+                                     pattern.getEvents(laneClicked).size() - 1 });
                     }
                     else
                     {
@@ -488,7 +546,39 @@ namespace B33p
             return;
         }
 
-        setSelection({ hit.lane, hit.index });
+        const Selection clicked { hit.lane, hit.index };
+
+        // Selection rules:
+        //   - shift-click: toggle clicked event in/out of selection
+        //   - click on already-selected event: keep selection,
+        //     promote clicked to primary
+        //   - plain click on unselected event: replace selection
+        if (e.mods.isShiftDown())
+        {
+            toggleInSelection(clicked);
+        }
+        else if (isInSelection(clicked))
+        {
+            // Promote to primary by re-adding (vector keeps last
+            // occurrence semantics; remove then push to back).
+            for (auto it = selection.begin(); it != selection.end(); ++it)
+                if (*it == clicked) { selection.erase(it); break; }
+            selection.push_back(clicked);
+            notifySelectionChanged();
+        }
+        else
+        {
+            selectOnly(clicked);
+        }
+
+        // If shift toggled the event OUT of the selection, there is
+        // nothing to drag — bail.
+        if (! isInSelection(clicked))
+        {
+            dragMode = DragMode::None;
+            repaint();
+            return;
+        }
 
         switch (hit.kind)
         {
@@ -500,6 +590,20 @@ namespace B33p
         }
         dragStartSeconds  = xToSeconds(e.position.x);
         dragOriginalEvent = processor.getPattern().getEvents(hit.lane)[hit.index];
+
+        // For Move, capture every selected event's original position
+        // so mouseDrag can shift them all by the same delta. Resize
+        // gestures still operate on the primary only.
+        dragSubjects.clear();
+        if (dragMode == DragMode::Move)
+        {
+            for (const auto& sel : selection)
+            {
+                const auto& events = processor.getPattern().getEvents(sel.lane);
+                if (sel.index < events.size())
+                    dragSubjects.push_back({ sel, events[sel.index] });
+            }
+        }
 
         repaint();
     }
@@ -530,8 +634,8 @@ namespace B33p
             pattern.addEvent(pendingCreateLane, newEvent);
             processor.markDirty();
 
-            setSelection({ pendingCreateLane,
-                           pattern.getEvents(pendingCreateLane).size() - 1 });
+            selectOnly({ pendingCreateLane,
+                         pattern.getEvents(pendingCreateLane).size() - 1 });
 
             dragOriginalEvent = newEvent;
             dragMode          = DragMode::ResizeRight;   // continue sizing
@@ -540,49 +644,70 @@ namespace B33p
             // the current cursor position as the new right edge.
         }
 
-        if (! selection.valid())
+        if (selection.empty())
             return;
 
-        Event current = dragOriginalEvent;
+        const Selection primary = selection.back();
 
         if (dragMode == DragMode::Move)
         {
             const double deltaSec = xToSeconds(e.position.x) - dragStartSeconds;
-            current.startSeconds  = snapSeconds(dragOriginalEvent.startSeconds + deltaSec);
-            current.startSeconds  = std::clamp(current.startSeconds,
-                                               0.0,
-                                               std::max(0.0, length - current.durationSeconds));
-            snapPreviewSeconds = current.startSeconds;
 
-            // Vertical drag retargets the lane. Snap to lane row so
-            // the event jumps cleanly between lanes rather than
-            // sitting visually mid-boundary.
-            const int targetLane = yToLane(e.position.y);
-            if (targetLane >= 0 && targetLane != selection.lane)
+            // Apply the same horizontal delta to every selected
+            // event from its original position, snapping each
+            // independently and clamping into the pattern.
+            for (const auto& subj : dragSubjects)
             {
-                pattern.removeEvent(selection.lane, selection.index);
-                pattern.addEvent(targetLane, current);
-                processor.markDirty();
-                setSelection({ targetLane,
-                               pattern.getEvents(targetLane).size() - 1 });
-                repaint();
-                if (onSelectionChanged) onSelectionChanged();
-                return;
+                Event ev = subj.original;
+                ev.startSeconds = snapSeconds(subj.original.startSeconds + deltaSec);
+                ev.startSeconds = std::clamp(ev.startSeconds,
+                                              0.0,
+                                              std::max(0.0, length - ev.durationSeconds));
+                if (subj.ref.index < pattern.getEvents(subj.ref.lane).size())
+                    pattern.updateEvent(subj.ref.lane, subj.ref.index, ev);
+            }
+            // Snap-preview line follows the primary's start.
+            if (primary.index < pattern.getEvents(primary.lane).size())
+                snapPreviewSeconds = pattern.getEvents(primary.lane)[primary.index].startSeconds;
+
+            // Lane retargeting only applies when exactly one event
+            // is selected (multi-drag is horizontal-only — ALL
+            // moving to one lane would just stack on top of each
+            // other).
+            if (selection.size() == 1)
+            {
+                const int targetLane = yToLane(e.position.y);
+                if (targetLane >= 0 && targetLane != primary.lane)
+                {
+                    Event ev = pattern.getEvents(primary.lane)[primary.index];
+                    pattern.removeEvent(primary.lane, primary.index);
+                    pattern.addEvent(targetLane, ev);
+                    processor.markDirty();
+                    selectOnly({ targetLane,
+                                  pattern.getEvents(targetLane).size() - 1 });
+                    // Re-anchor the drag in the new lane.
+                    dragSubjects.clear();
+                    dragSubjects.push_back({ selection.back(), ev });
+                    repaint();
+                    notifySelectionChanged();
+                    return;
+                }
             }
         }
         else if (dragMode == DragMode::ResizeRight)
         {
+            Event current = dragOriginalEvent;
             const double cursorSec = xToSeconds(e.position.x);
             double newDuration = snapSeconds(cursorSec - current.startSeconds);
             newDuration        = std::max(kMinDurationSec, newDuration);
             newDuration        = std::min(newDuration, length - current.startSeconds);
             current.durationSeconds = newDuration;
             snapPreviewSeconds = current.startSeconds + current.durationSeconds;
+            pattern.updateEvent(primary.lane, primary.index, current);
         }
         else if (dragMode == DragMode::ResizeLeft)
         {
-            // End point stays anchored; start follows the cursor and
-            // duration shrinks/grows to compensate.
+            Event current = dragOriginalEvent;
             const double endSec   = dragOriginalEvent.startSeconds
                                    + dragOriginalEvent.durationSeconds;
             double newStart       = snapSeconds(xToSeconds(e.position.x));
@@ -591,16 +716,15 @@ namespace B33p
             current.startSeconds    = newStart;
             current.durationSeconds = endSec - newStart;
             snapPreviewSeconds      = newStart;
+            pattern.updateEvent(primary.lane, primary.index, current);
         }
 
-        pattern.updateEvent(selection.lane, selection.index, current);
         processor.markDirty();
         repaint();
 
         // Inspector below tracks the live drag values, not just the
         // mouseUp end state. Cheap to fire 30+ times per drag.
-        if (onSelectionChanged)
-            onSelectionChanged();
+        notifySelectionChanged();
     }
 
     void PatternGrid::mouseMove(const juce::MouseEvent& e)
@@ -658,8 +782,8 @@ namespace B33p
         Event newEvent { snappedStart, duration, 0.0f, 1.0f };
         processor.getPattern().addEvent(lane, newEvent);
         processor.markDirty();
-        setSelection({ lane,
-                       processor.getPattern().getEvents(lane).size() - 1 });
+        selectOnly({ lane,
+                     processor.getPattern().getEvents(lane).size() - 1 });
         repaint();
 
         processor.getUndoManager().beginNewTransaction("Create event");
@@ -677,12 +801,13 @@ namespace B33p
         {
             pendingCreateLane = -1;
             dragMode          = DragMode::None;
-            if (selection.valid())
+            if (! selection.empty())
                 clearSelection();
             return;
         }
 
         dragMode = DragMode::None;
+        dragSubjects.clear();
 
         if (snapPreviewSeconds >= 0.0)
         {
@@ -706,28 +831,118 @@ namespace B33p
 
     bool PatternGrid::keyPressed(const juce::KeyPress& key)
     {
+        const auto& mods = key.getModifiers();
+        const bool  cmd  = mods.isCommandDown();
+
+        // Cmd+A — select all events.
+        if (cmd && key.getKeyCode() == 'A')
+        {
+            selectAll();
+            return true;
+        }
+
+        // Cmd+C — copy the selected events into the internal
+        // clipboard with their startSeconds rebased to the earliest
+        // selected event's start (so paste preserves their relative
+        // timing wherever it's pasted).
+        if (cmd && key.getKeyCode() == 'C')
+        {
+            if (selection.empty()) return true;
+
+            double minStart = std::numeric_limits<double>::infinity();
+            for (const auto& sel : selection)
+            {
+                const auto& evs = processor.getPattern().getEvents(sel.lane);
+                if (sel.index < evs.size())
+                    minStart = std::min(minStart, evs[sel.index].startSeconds);
+            }
+            if (! std::isfinite(minStart))
+                return true;
+
+            clipboard.clear();
+            for (const auto& sel : selection)
+            {
+                const auto& evs = processor.getPattern().getEvents(sel.lane);
+                if (sel.index >= evs.size()) continue;
+                Event copy = evs[sel.index];
+                copy.startSeconds -= minStart;
+                clipboard.push_back({ sel.lane, copy });
+            }
+            return true;
+        }
+
+        // Cmd+V — paste the clipboard at the playhead. Each clipboard
+        // item is a (lane, event-with-relative-start); rebase to the
+        // playhead's absolute time and add to the corresponding lane.
+        if (cmd && key.getKeyCode() == 'V')
+        {
+            if (clipboard.empty()) return true;
+
+            auto& pattern  = processor.getPattern();
+            const double base = processor.getPlayheadSeconds();
+            const double len  = pattern.getLengthSeconds();
+
+            Pattern before = pattern;
+            std::vector<Selection> newSelection;
+            for (const auto& clip : clipboard)
+            {
+                Event ev = clip.event;
+                ev.startSeconds += base;
+                if (ev.startSeconds < 0.0 || ev.startSeconds >= len)
+                    continue;
+                pattern.addEvent(clip.lane, ev);
+                newSelection.push_back({ clip.lane,
+                                          pattern.getEvents(clip.lane).size() - 1 });
+            }
+            if (pattern == before)
+                return true;
+            processor.markDirty();
+            selection = std::move(newSelection);
+            notifySelectionChanged();
+            repaint();
+
+            processor.getUndoManager().beginNewTransaction("Paste events");
+            processor.getUndoManager().perform(
+                new SetPatternAction(processor, this,
+                                     std::move(before),
+                                     pattern));
+            return true;
+        }
+
         if (key == juce::KeyPress::deleteKey || key == juce::KeyPress::backspaceKey)
         {
-            if (selection.valid())
-            {
-                Pattern before = processor.getPattern();
-                processor.getPattern().removeEvent(selection.lane, selection.index);
-                processor.markDirty();
-                setSelection({});
-                repaint();
+            if (selection.empty()) return false;
 
-                processor.getUndoManager().beginNewTransaction("Delete event");
-                processor.getUndoManager().perform(
-                    new SetPatternAction(processor, this,
-                                         std::move(before),
-                                         processor.getPattern()));
-                return true;
-            }
+            Pattern before = processor.getPattern();
+
+            // Delete from highest (lane, index) downwards so removing
+            // an earlier index in the same lane doesn't shift the
+            // later indices we still hold in `selection`.
+            auto sorted = selection;
+            std::sort(sorted.begin(), sorted.end(),
+                [](const Selection& a, const Selection& b)
+                {
+                    if (a.lane != b.lane) return a.lane > b.lane;
+                    return a.index > b.index;
+                });
+            for (const auto& sel : sorted)
+                processor.getPattern().removeEvent(sel.lane, sel.index);
+
+            processor.markDirty();
+            clearSelection();
+            repaint();
+
+            processor.getUndoManager().beginNewTransaction("Delete events");
+            processor.getUndoManager().perform(
+                new SetPatternAction(processor, this,
+                                     std::move(before),
+                                     processor.getPattern()));
+            return true;
         }
 
         if (key == juce::KeyPress::escapeKey)
         {
-            if (selection.valid())
+            if (! selection.empty())
             {
                 clearSelection();
                 return true;
@@ -735,38 +950,42 @@ namespace B33p
             return false;
         }
 
-        // Arrow keys nudge the selected event. Step = one grid
+        // Arrow keys nudge every selected event. Step = one grid
         // tick; shift+arrow steps by ten. Falls back to 10 ms when
         // the grid is "Off".
         const bool isLeft  = (key == juce::KeyPress::leftKey);
         const bool isRight = (key == juce::KeyPress::rightKey);
-        if ((isLeft || isRight) && selection.valid())
+        if ((isLeft || isRight) && ! selection.empty())
         {
             const double step    = (gridSeconds > 0.0 ? gridSeconds : 0.01);
-            const int    mult    = key.getModifiers().isShiftDown() ? 10 : 1;
+            const int    mult    = mods.isShiftDown() ? 10 : 1;
             const double delta   = (isRight ? 1.0 : -1.0) * step * mult;
 
             auto&  pattern = processor.getPattern();
-            if (selection.index >= pattern.getEvents(selection.lane).size())
-                return true;
-
             Pattern before = pattern;
-            Event   ev = pattern.getEvents(selection.lane)[selection.index];
-            const double maxStart = std::max(0.0,
-                pattern.getLengthSeconds() - ev.durationSeconds);
-            ev.startSeconds = std::clamp(ev.startSeconds + delta, 0.0, maxStart);
+            bool any = false;
+            for (const auto& sel : selection)
+            {
+                if (sel.index >= pattern.getEvents(sel.lane).size())
+                    continue;
+                Event ev = pattern.getEvents(sel.lane)[sel.index];
+                const double maxStart = std::max(0.0,
+                    pattern.getLengthSeconds() - ev.durationSeconds);
+                const double newStart = std::clamp(ev.startSeconds + delta, 0.0, maxStart);
+                if (! juce::exactlyEqual(newStart, ev.startSeconds))
+                {
+                    ev.startSeconds = newStart;
+                    pattern.updateEvent(sel.lane, sel.index, ev);
+                    any = true;
+                }
+            }
+            if (! any) return true;
 
-            if (ev == pattern.getEvents(selection.lane)[selection.index])
-                return true;   // hit a clamp; nothing to do
-
-            pattern.updateEvent(selection.lane, selection.index, ev);
             processor.markDirty();
             repaint();
+            notifySelectionChanged();
 
-            if (onSelectionChanged)
-                onSelectionChanged();
-
-            processor.getUndoManager().beginNewTransaction("Nudge event");
+            processor.getUndoManager().beginNewTransaction("Nudge events");
             processor.getUndoManager().perform(
                 new SetPatternAction(processor, this,
                                      std::move(before),

@@ -150,12 +150,24 @@ namespace B33p
         setSelection({});
     }
 
-    void InspectorStrip::setSelection(const PatternGrid::Selection& selection)
+    void InspectorStrip::setSelection(const PatternGrid::Selection& primary,
+                                       int totalCount)
     {
-        currentSelection = selection;
-        const bool show = currentSelection.valid();
+        currentSelection = primary;
+        const bool single = currentSelection.valid() && totalCount == 1;
+        const bool multi  = currentSelection.valid() && totalCount > 1;
 
-        placeholder.setVisible(! show);
+        // Single-select: full controls. Multi-select: placeholder
+        // saying "N events selected" — operations like delete /
+        // nudge / paste happen from the grid's keyboard shortcuts.
+        placeholder.setVisible(! single);
+        if (multi)
+            placeholder.setText(juce::String(totalCount) + " events selected.",
+                                 juce::dontSendNotification);
+        else
+            placeholder.setText("Click an event to edit it.",
+                                 juce::dontSendNotification);
+
         for (auto* c : { (juce::Component*) &laneLabel,
                           (juce::Component*) &startLabel,
                           (juce::Component*) &durationLabel,
@@ -167,9 +179,9 @@ namespace B33p
                           (juce::Component*) &pitchSlider,
                           (juce::Component*) &velocitySlider,
                           (juce::Component*) &deleteButton })
-            c->setVisible(show);
+            c->setVisible(single);
 
-        if (show)
+        if (single)
         {
             laneCombo.setSelectedId(currentSelection.lane + 1,
                                      juce::dontSendNotification);

@@ -142,10 +142,10 @@ Framing: today the pattern editor is "place a beep here, drag it, drag its edge"
 - [x] Right-click a clip opens a context menu (Delete, Duplicate)
 
 ### Multi-select + clipboard
-- [ ] Shift-click a clip extends the selection
-- [ ] Cmd+A selects every event in the pattern
-- [ ] Cmd+C / Cmd+V duplicates the selected events to the playhead (relative timing + lane preserved)
-- [ ] Move / delete operations apply to the whole selection
+- [x] Shift-click a clip extends the selection
+- [x] Cmd+A selects every event in the pattern
+- [x] Cmd+C / Cmd+V duplicates the selected events to the playhead (relative timing + lane preserved)
+- [x] Move / delete operations apply to the whole selection
 
 ### Lane usability
 - [x] Editable lane-name field in the lane label column (replaces "1/2/3/4"; persisted in `.beep`)
