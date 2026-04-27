@@ -42,6 +42,7 @@ namespace B33p
             nameLabel.setTooltip("Double-click to rename");
             nameLabel.onTextChange = [this, i]
             {
+                processor.setSelectedLane(i);
                 const auto displayed   = laneNameLabels[static_cast<size_t>(i)].getText().trim();
                 const auto defaultText = juce::String(i + 1);
                 const juce::String stored = (displayed == defaultText)
@@ -70,6 +71,7 @@ namespace B33p
                                 juce::Colour::fromRGB(190, 60, 60));
             muteBtn.onClick = [this, i]
             {
+                processor.setSelectedLane(i);
                 const bool wantMuted = muteButtons[static_cast<size_t>(i)].getToggleState();
                 if (processor.getPattern().isLaneMuted(i) == wantMuted)
                     return;
@@ -338,6 +340,18 @@ namespace B33p
             }
         }
 
+        // Selected-lane tint — subtle background so the user sees
+        // which lane the editor sections are currently targeting.
+        {
+            const int sel = processor.getSelectedLane();
+            if (sel >= 0 && sel < Pattern::kNumLanes)
+            {
+                auto sl = laneArea(sel);
+                g.setColour(juce::Colour::fromRGB(120, 200, 255).withAlpha(0.07f));
+                g.fillRect(sl);
+            }
+        }
+
         // Lane separators
         g.setColour(juce::Colour::fromRGB(55, 55, 55));
         for (int lane = 1; lane < Pattern::kNumLanes; ++lane)
@@ -536,6 +550,10 @@ namespace B33p
             if (lane < 0)
                 return;
 
+            // Clicking anywhere in a lane row also targets that lane
+            // for the editor sections.
+            processor.setSelectedLane(lane);
+
             // Defer creation: this might be a click-to-deselect or a
             // drag-to-create-with-size. mouseDrag promotes to a real
             // event once the cursor moves past the drag threshold;
@@ -545,6 +563,9 @@ namespace B33p
             dragMode          = DragMode::PendingCreate;
             return;
         }
+
+        // Clicking on an existing event also targets its lane.
+        processor.setSelectedLane(hit.lane);
 
         const Selection clicked { hit.lane, hit.index };
 
@@ -772,6 +793,8 @@ namespace B33p
         const int lane = yToLane(e.position.y);
         if (lane < 0)
             return;
+
+        processor.setSelectedLane(lane);
 
         Pattern before = processor.getPattern();
         const double snappedStart = std::max(0.0, snapSeconds(xToSeconds(e.position.x)));

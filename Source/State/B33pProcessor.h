@@ -120,6 +120,21 @@ namespace B33p
         // fires OnFullStateLoaded for the UI to resync.
         void resetToDefaults();
 
+        // Which lane the editor sections currently target. The audio
+        // thread reads this for audition routing; the UI reads it
+        // when rebuilding section attachments. Setter clamps to
+        // [0, kNumLanes) and fires OnSelectedLaneChanged on transition.
+        int  getSelectedLane() const { return selectedLane.load(); }
+        void setSelectedLane(int lane);
+
+        using OnSelectedLaneChanged = std::function<void(int newLane)>;
+        void setOnSelectedLaneChanged(OnSelectedLaneChanged callback);
+
+        // " (Lane N)" or " (Lane N: Body)" depending on whether the
+        // pattern lane has a custom name. Used by the editor sections
+        // to telegraph which lane they're currently editing.
+        juce::String laneTitleSuffix(int lane) const;
+
         // Audio thread writes once per block, UI reads from a Timer
         // callback. atomic<double> is lock-free on every 64-bit
         // platform we support.
@@ -200,8 +215,13 @@ namespace B33p
         double                                 currentSampleRate   { 44100.0 };
 
         // Unsaved-changes flag + listener.
-        std::atomic<bool>  dirty                  { false };
-        OnDirtyChanged     onDirtyChangedCallback;
-        OnFullStateLoaded  onFullStateLoadedCallback;
+        std::atomic<bool>     dirty                       { false };
+        OnDirtyChanged        onDirtyChangedCallback;
+        OnFullStateLoaded     onFullStateLoadedCallback;
+
+        // Lane the editor UI currently targets. Atomic because the
+        // audio thread reads it when routing the audition trigger.
+        std::atomic<int>      selectedLane                { 0 };
+        OnSelectedLaneChanged onSelectedLaneChangedCallback;
     };
 }

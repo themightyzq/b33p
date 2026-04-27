@@ -37,7 +37,14 @@ namespace B33p
                              .removeFromTop(kTitleStripHeight)
                              .withTrimmedLeft(kTitleIndent)
                              .withTrimmedRight(kTitleIndent);
-        g.drawText(title, titleArea, juce::Justification::centredLeft);
+        g.drawText(title + suffix, titleArea, juce::Justification::centredLeft);
+    }
+
+    void Section::setTitleSuffix(const juce::String& s)
+    {
+        if (suffix == s) return;
+        suffix = s;
+        repaint();
     }
 
     juce::Rectangle<int> Section::getContentBounds() const

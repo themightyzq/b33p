@@ -5,31 +5,47 @@
 
 namespace B33p
 {
-    EffectsSection::EffectsSection(B33pProcessor& processor)
+    EffectsSection::EffectsSection(B33pProcessor& processorRef)
         : Section("Effects"),
-          bitDepthAttachment (processor.getApvts(), ParameterIDs::bitcrushBitDepth(0),     bitDepthSlider.getSlider()),
-          crushRateAttachment(processor.getApvts(), ParameterIDs::bitcrushSampleRateHz(0), crushRateSlider.getSlider()),
-          driveAttachment    (processor.getApvts(), ParameterIDs::distortionDrive(0),      driveSlider.getSlider())
+          processor(processorRef)
     {
         addAndMakeVisible(bitDepthSlider);
         addAndMakeVisible(crushRateSlider);
         addAndMakeVisible(driveSlider);
 
-        bitDepthSlider .attachRandomizer(processor, ParameterIDs::bitcrushBitDepth(0));
-        crushRateSlider.attachRandomizer(processor, ParameterIDs::bitcrushSampleRateHz(0));
-        driveSlider    .attachRandomizer(processor, ParameterIDs::distortionDrive(0));
+        bitDepthSlider .setTooltip("Bitcrush: lower bit depth = grittier, more 8-bit");
+        crushRateSlider.setTooltip("Sample rate reduction: lower = more aliased / lo-fi");
+        driveSlider    .setTooltip("Distortion drive: pushes the signal into soft clipping");
+
+        retargetLane(processor.getSelectedLane());
+    }
+
+    void EffectsSection::retargetLane(int lane)
+    {
+        bitDepthAttachment.reset();
+        crushRateAttachment.reset();
+        driveAttachment.reset();
+
+        bitDepthAttachment  = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+            processor.getApvts(), ParameterIDs::bitcrushBitDepth(lane),     bitDepthSlider .getSlider());
+        crushRateAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+            processor.getApvts(), ParameterIDs::bitcrushSampleRateHz(lane), crushRateSlider.getSlider());
+        driveAttachment     = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+            processor.getApvts(), ParameterIDs::distortionDrive(lane),      driveSlider    .getSlider());
+
+        bitDepthSlider .attachRandomizer(processor, ParameterIDs::bitcrushBitDepth(lane));
+        crushRateSlider.attachRandomizer(processor, ParameterIDs::bitcrushSampleRateHz(lane));
+        driveSlider    .attachRandomizer(processor, ParameterIDs::distortionDrive(lane));
 
         SliderFormatting::applyInteger(bitDepthSlider .getSlider(), " bits");
         SliderFormatting::applyHz     (crushRateSlider.getSlider());
         SliderFormatting::applyDecimal(driveSlider    .getSlider(), 2);
 
-        SliderFormatting::applyDoubleClickReset(bitDepthSlider .getSlider(), processor.getApvts(), ParameterIDs::bitcrushBitDepth(0));
-        SliderFormatting::applyDoubleClickReset(crushRateSlider.getSlider(), processor.getApvts(), ParameterIDs::bitcrushSampleRateHz(0));
-        SliderFormatting::applyDoubleClickReset(driveSlider    .getSlider(), processor.getApvts(), ParameterIDs::distortionDrive(0));
+        SliderFormatting::applyDoubleClickReset(bitDepthSlider .getSlider(), processor.getApvts(), ParameterIDs::bitcrushBitDepth(lane));
+        SliderFormatting::applyDoubleClickReset(crushRateSlider.getSlider(), processor.getApvts(), ParameterIDs::bitcrushSampleRateHz(lane));
+        SliderFormatting::applyDoubleClickReset(driveSlider    .getSlider(), processor.getApvts(), ParameterIDs::distortionDrive(lane));
 
-        bitDepthSlider .setTooltip("Bitcrush: lower bit depth = grittier, more 8-bit");
-        crushRateSlider.setTooltip("Sample rate reduction: lower = more aliased / lo-fi");
-        driveSlider    .setTooltip("Distortion drive: pushes the signal into soft clipping");
+        setTitleSuffix(processor.laneTitleSuffix(lane));
     }
 
     void EffectsSection::resized()

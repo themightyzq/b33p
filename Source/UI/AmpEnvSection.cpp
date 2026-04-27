@@ -5,13 +5,10 @@
 
 namespace B33p
 {
-    AmpEnvSection::AmpEnvSection(B33pProcessor& processor)
+    AmpEnvSection::AmpEnvSection(B33pProcessor& processorRef)
         : Section("Amp Envelope"),
-          visualizer(processor.getApvts()),
-          attackAttachment (processor.getApvts(), ParameterIDs::ampAttack(0),  attackSlider.getSlider()),
-          decayAttachment  (processor.getApvts(), ParameterIDs::ampDecay(0),   decaySlider.getSlider()),
-          sustainAttachment(processor.getApvts(), ParameterIDs::ampSustain(0), sustainSlider.getSlider()),
-          releaseAttachment(processor.getApvts(), ParameterIDs::ampRelease(0), releaseSlider.getSlider())
+          processor(processorRef),
+          visualizer(processorRef.getApvts())
     {
         addAndMakeVisible(visualizer);
         addAndMakeVisible(attackSlider);
@@ -19,25 +16,49 @@ namespace B33p
         addAndMakeVisible(sustainSlider);
         addAndMakeVisible(releaseSlider);
 
-        attackSlider .attachRandomizer(processor, ParameterIDs::ampAttack(0));
-        decaySlider  .attachRandomizer(processor, ParameterIDs::ampDecay(0));
-        sustainSlider.attachRandomizer(processor, ParameterIDs::ampSustain(0));
-        releaseSlider.attachRandomizer(processor, ParameterIDs::ampRelease(0));
+        attackSlider .setTooltip("Time to reach full volume after a note starts");
+        decaySlider  .setTooltip("Time to fall from peak down to the sustain level");
+        sustainSlider.setTooltip("Held volume while the note is on");
+        releaseSlider.setTooltip("Time to fade to silence after the note ends");
 
+        retargetLane(processor.getSelectedLane());
+    }
+
+    void AmpEnvSection::retargetLane(int lane)
+    {
+        attackAttachment.reset();
+        decayAttachment.reset();
+        sustainAttachment.reset();
+        releaseAttachment.reset();
+
+        attackAttachment  = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+            processor.getApvts(), ParameterIDs::ampAttack(lane),  attackSlider .getSlider());
+        decayAttachment   = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+            processor.getApvts(), ParameterIDs::ampDecay(lane),   decaySlider  .getSlider());
+        sustainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+            processor.getApvts(), ParameterIDs::ampSustain(lane), sustainSlider.getSlider());
+        releaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+            processor.getApvts(), ParameterIDs::ampRelease(lane), releaseSlider.getSlider());
+
+        attackSlider .attachRandomizer(processor, ParameterIDs::ampAttack(lane));
+        decaySlider  .attachRandomizer(processor, ParameterIDs::ampDecay(lane));
+        sustainSlider.attachRandomizer(processor, ParameterIDs::ampSustain(lane));
+        releaseSlider.attachRandomizer(processor, ParameterIDs::ampRelease(lane));
+
+        // SliderAttachment installs its own textFromValueFunction, so
+        // re-apply our formatting AFTER the attachment exists.
         SliderFormatting::applySeconds(attackSlider .getSlider());
         SliderFormatting::applySeconds(decaySlider  .getSlider());
         SliderFormatting::applyPercent(sustainSlider.getSlider());
         SliderFormatting::applySeconds(releaseSlider.getSlider());
 
-        SliderFormatting::applyDoubleClickReset(attackSlider .getSlider(), processor.getApvts(), ParameterIDs::ampAttack(0));
-        SliderFormatting::applyDoubleClickReset(decaySlider  .getSlider(), processor.getApvts(), ParameterIDs::ampDecay(0));
-        SliderFormatting::applyDoubleClickReset(sustainSlider.getSlider(), processor.getApvts(), ParameterIDs::ampSustain(0));
-        SliderFormatting::applyDoubleClickReset(releaseSlider.getSlider(), processor.getApvts(), ParameterIDs::ampRelease(0));
+        SliderFormatting::applyDoubleClickReset(attackSlider .getSlider(), processor.getApvts(), ParameterIDs::ampAttack(lane));
+        SliderFormatting::applyDoubleClickReset(decaySlider  .getSlider(), processor.getApvts(), ParameterIDs::ampDecay(lane));
+        SliderFormatting::applyDoubleClickReset(sustainSlider.getSlider(), processor.getApvts(), ParameterIDs::ampSustain(lane));
+        SliderFormatting::applyDoubleClickReset(releaseSlider.getSlider(), processor.getApvts(), ParameterIDs::ampRelease(lane));
 
-        attackSlider .setTooltip("Time to reach full volume after a note starts");
-        decaySlider  .setTooltip("Time to fall from peak down to the sustain level");
-        sustainSlider.setTooltip("Held volume while the note is on");
-        releaseSlider.setTooltip("Time to fade to silence after the note ends");
+        visualizer.retargetLane(lane);
+        setTitleSuffix(processor.laneTitleSuffix(lane));
     }
 
     void AmpEnvSection::resized()

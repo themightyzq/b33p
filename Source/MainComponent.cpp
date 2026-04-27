@@ -55,6 +55,28 @@ namespace B33p
         {
             pitchEnvelopeSection.refreshFromState();
             patternSection      .refreshFromState();
+            // Section attachments may now point at the wrong lane's
+            // params; re-target everything against the loaded
+            // selectedLane.
+            const int lane = processor.getSelectedLane();
+            oscillatorSection .retargetLane(lane);
+            ampEnvelopeSection.retargetLane(lane);
+            filterSection     .retargetLane(lane);
+            effectsSection    .retargetLane(lane);
+            masterSection     .retargetLane(lane);
+        });
+
+        // Lane selection changes drive the per-lane editor sections to
+        // rebuild their APVTS attachments and update their title
+        // suffixes. The pattern grid repaints to refresh the lane tint.
+        processor.setOnSelectedLaneChanged([this](int lane)
+        {
+            oscillatorSection .retargetLane(lane);
+            ampEnvelopeSection.retargetLane(lane);
+            filterSection     .retargetLane(lane);
+            effectsSection    .retargetLane(lane);
+            masterSection     .retargetLane(lane);
+            patternSection    .refreshFromState();   // repaint grid for tint
         });
 
         setWantsKeyboardFocus(true);

@@ -6,6 +6,8 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <memory>
+
 namespace B33p
 {
     class FilterSection : public Section
@@ -15,12 +17,17 @@ namespace B33p
 
         void resized() override;
 
+        void retargetLane(int lane);
+
     private:
+
+        B33pProcessor& processor;
+
         LabeledSlider cutoffSlider    { "Cutoff"    };
         LabeledSlider resonanceSlider { "Resonance" };
 
-        juce::AudioProcessorValueTreeState::SliderAttachment cutoffAttachment;
-        juce::AudioProcessorValueTreeState::SliderAttachment resonanceAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> cutoffAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> resonanceAttachment;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FilterSection)
     };

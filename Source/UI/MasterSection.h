@@ -6,6 +6,8 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <memory>
+
 namespace B33p
 {
     class MasterSection : public Section
@@ -16,15 +18,19 @@ namespace B33p
 
         void resized() override;
 
+        void retargetLane(int lane);
+
     private:
         void timerCallback() override;
         void flashAuditionButton();
+
+        B33pProcessor& processor;
 
         LabeledSlider    gainSlider     { "Gain" };
         juce::TextButton auditionButton { "Audition" };
         juce::TextButton diceAllButton  { "Dice All" };
 
-        juce::AudioProcessorValueTreeState::SliderAttachment gainAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAttachment;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MasterSection)
     };
