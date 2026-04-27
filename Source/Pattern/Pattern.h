@@ -1,5 +1,7 @@
 #pragma once
 
+#include <juce_core/juce_core.h>
+
 #include <array>
 #include <cstddef>
 #include <vector>
@@ -18,11 +20,14 @@ namespace B33p
         float  pitchOffsetSemitones { 0.0f };
     };
 
+    // Bit-exact comparison — used for snapshot equality in undo,
+    // not numeric tolerance. juce::exactlyEqual silences the
+    // -Wfloat-equal warning that JUCE's recommended flags enable.
     inline bool operator==(const Event& a, const Event& b)
     {
-        return a.startSeconds          == b.startSeconds
-            && a.durationSeconds       == b.durationSeconds
-            && a.pitchOffsetSemitones  == b.pitchOffsetSemitones;
+        return juce::exactlyEqual(a.startSeconds,         b.startSeconds)
+            && juce::exactlyEqual(a.durationSeconds,      b.durationSeconds)
+            && juce::exactlyEqual(a.pitchOffsetSemitones, b.pitchOffsetSemitones);
     }
     inline bool operator!=(const Event& a, const Event& b) { return ! (a == b); }
 
@@ -65,7 +70,8 @@ namespace B33p
         // any actual change to the pattern data).
         friend bool operator==(const Pattern& a, const Pattern& b)
         {
-            return a.lengthSeconds == b.lengthSeconds && a.lanes == b.lanes;
+            return juce::exactlyEqual(a.lengthSeconds, b.lengthSeconds)
+                && a.lanes == b.lanes;
         }
         friend bool operator!=(const Pattern& a, const Pattern& b) { return ! (a == b); }
 

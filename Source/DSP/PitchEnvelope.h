@@ -1,5 +1,7 @@
 #pragma once
 
+#include <juce_core/juce_core.h>
+
 #include <vector>
 
 namespace B33p
@@ -13,10 +15,12 @@ namespace B33p
         float semitones;
     };
 
+    // Bit-exact comparison — used for snapshot equality in undo,
+    // not numeric tolerance.
     inline bool operator==(const PitchEnvelopePoint& a, const PitchEnvelopePoint& b)
     {
-        return a.normalizedTime == b.normalizedTime
-            && a.semitones      == b.semitones;
+        return juce::exactlyEqual(a.normalizedTime, b.normalizedTime)
+            && juce::exactlyEqual(a.semitones,      b.semitones);
     }
     inline bool operator!=(const PitchEnvelopePoint& a, const PitchEnvelopePoint& b)
     {
