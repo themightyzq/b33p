@@ -196,8 +196,12 @@ namespace B33p
         // The window doesn't exist while the constructor runs;
         // this fires once after setContentOwned attaches us to the
         // DocumentWindow, which is the right moment to sync the
-        // initial title.
+        // initial title and seed keyboard focus so transport
+        // shortcuts (Space, Cmd+Z, ...) work without requiring
+        // the user to click somewhere first.
         updateWindowTitle();
+        if (isShowing())
+            grabKeyboardFocus();
     }
 
     void MainComponent::updateWindowTitle()
