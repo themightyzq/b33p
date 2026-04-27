@@ -1,6 +1,7 @@
 #include "PatternGrid.h"
 
 #include "Pattern/SnapMath.h"
+#include "State/UndoableActions.h"
 
 #include <algorithm>
 #include <cmath>
@@ -254,6 +255,10 @@ namespace B33p
     {
         grabKeyboardFocus();
 
+        // Snapshot the pattern before any mutation so mouseUp can
+        // wrap the whole gesture in a single undoable action.
+        gestureSnapshot = processor.getPattern();
+
         const auto hit = hitTestEvent(e.position);
 
         if (hit.kind == HitResult::Kind::None)
@@ -329,6 +334,19 @@ namespace B33p
     void PatternGrid::mouseUp(const juce::MouseEvent&)
     {
         dragMode = DragMode::None;
+
+        // Commit the gesture as a single undoable transaction iff
+        // it actually changed the pattern. Right-clicks above the
+        // lane area produce no diff and skip cleanly.
+        const auto& current = processor.getPattern();
+        if (current != gestureSnapshot)
+        {
+            processor.getUndoManager().beginNewTransaction("Edit pattern");
+            processor.getUndoManager().perform(
+                new SetPatternAction(processor, this,
+                                     std::move(gestureSnapshot),
+                                     current));
+        }
     }
 
     bool PatternGrid::keyPressed(const juce::KeyPress& key)
@@ -337,10 +355,17 @@ namespace B33p
         {
             if (selection.valid())
             {
+                Pattern before = processor.getPattern();
                 processor.getPattern().removeEvent(selection.lane, selection.index);
                 processor.markDirty();
                 selection = {};
                 repaint();
+
+                processor.getUndoManager().beginNewTransaction("Delete event");
+                processor.getUndoManager().perform(
+                    new SetPatternAction(processor, this,
+                                         std::move(before),
+                                         processor.getPattern()));
                 return true;
             }
         }

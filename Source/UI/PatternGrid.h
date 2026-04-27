@@ -78,6 +78,11 @@ namespace B33p
         double   dragStartSeconds { 0.0 };
         Event    dragOriginalEvent;
 
+        // Whole-pattern snapshot taken on mouseDown so the gesture
+        // (click + drag + release, or click + delete) commits as a
+        // single UndoManager transaction in mouseUp.
+        Pattern  gestureSnapshot;
+
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternGrid)
     };
 }

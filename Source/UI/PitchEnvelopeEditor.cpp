@@ -1,5 +1,7 @@
 #include "PitchEnvelopeEditor.h"
 
+#include "State/UndoableActions.h"
+
 #include <algorithm>
 
 namespace B33p
@@ -128,6 +130,10 @@ namespace B33p
 
     void PitchEnvelopeEditor::mouseDown(const juce::MouseEvent& e)
     {
+        // Snapshot before any mutation so the gesture commits as
+        // one undoable action in mouseUp.
+        gestureSnapshot = processor.getPitchCurve();
+
         const auto pos = e.position;
         const int  hit = hitTestPoint(pos);
 
@@ -211,5 +217,15 @@ namespace B33p
     void PitchEnvelopeEditor::mouseUp(const juce::MouseEvent&)
     {
         draggingIndex = -1;
+
+        const auto& current = processor.getPitchCurve();
+        if (current != gestureSnapshot)
+        {
+            processor.getUndoManager().beginNewTransaction("Edit pitch curve");
+            processor.getUndoManager().perform(
+                new SetPitchCurveAction(processor, this,
+                                        std::move(gestureSnapshot),
+                                        current));
+        }
     }
 }

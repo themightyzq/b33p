@@ -13,6 +13,16 @@ namespace B33p
         float semitones;
     };
 
+    inline bool operator==(const PitchEnvelopePoint& a, const PitchEnvelopePoint& b)
+    {
+        return a.normalizedTime == b.normalizedTime
+            && a.semitones      == b.semitones;
+    }
+    inline bool operator!=(const PitchEnvelopePoint& a, const PitchEnvelopePoint& b)
+    {
+        return ! (a == b);
+    }
+
     // User-drawn arbitrary pitch curve, played back over a per-trigger
     // duration. Output is a semitone offset; Voice combines it with
     // base pitch and event pitch offset to produce the final frequency.

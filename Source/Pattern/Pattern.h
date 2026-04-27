@@ -18,6 +18,14 @@ namespace B33p
         float  pitchOffsetSemitones { 0.0f };
     };
 
+    inline bool operator==(const Event& a, const Event& b)
+    {
+        return a.startSeconds          == b.startSeconds
+            && a.durationSeconds       == b.durationSeconds
+            && a.pitchOffsetSemitones  == b.pitchOffsetSemitones;
+    }
+    inline bool operator!=(const Event& a, const Event& b) { return ! (a == b); }
+
     // Plain-data pattern container. Four fixed lanes, each an ordered
     // vector of Events. No sorting, no overlap checks — the UI is free
     // to create events at any position, and the playback engine walks
@@ -51,6 +59,15 @@ namespace B33p
 
         void clearLane(int lane);
         void clearAll();
+
+        // Snapshot equality — used by the undo system to skip
+        // pushing no-op gestures (e.g. mouseDown + mouseUp without
+        // any actual change to the pattern data).
+        friend bool operator==(const Pattern& a, const Pattern& b)
+        {
+            return a.lengthSeconds == b.lengthSeconds && a.lanes == b.lanes;
+        }
+        friend bool operator!=(const Pattern& a, const Pattern& b) { return ! (a == b); }
 
     private:
         double                                      lengthSeconds { kDefaultLengthSeconds };
