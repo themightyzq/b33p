@@ -106,6 +106,75 @@ Goal: v0.1 is shippable.
 - [ ] CI uploads the built b33p binary on every run as a workflow artifact (so non-developer testers can grab a build without setting up the toolchain)
 - [ ] Tag `v0.1.0`
 
+## Phase 8 — Pattern editor: per-event control + intuitive clip editing
+
+Goal: every clip in the pattern has its own pitch offset and velocity, the editing gestures match standard DAW conventions, and a fresh user can figure out how to place / move / resize / nudge / delete clips without a manual.
+
+Framing: today the pattern editor is "place a beep here, drag it, drag its edge". After this phase it's a real sequencing surface — the clip editing feels native (cursor changes, snap guides, both edges resize, drag between lanes), every event carries its own pitch and dynamics, and an inspector strip exposes the numbers when you need them.
+
+### Per-event data + playback
+- [ ] `Event` gains a `velocity` field (0..1, default 1.0); operator== updated
+- [ ] Voice trigger respects per-event `pitchOffsetSemitones` (already in data, currently ignored at trigger time) and `velocity`
+- [ ] PatternRenderer / WavWriter honour velocity in the offline render
+- [ ] `.beep` serializes velocity with a default-tolerant load (no schema bump needed — new field defaults cleanly for v1 files)
+
+### Inspector panel (selected-event detail)
+- [ ] Thin inspector strip below the pattern grid; visible when an event is selected, hidden otherwise
+- [ ] Editable fields: start, duration, pitch offset (semitones), velocity, lane (dropdown)
+- [ ] Delete button
+- [ ] Each inspector edit pushes one undoable action (snapshot pattern → apply → perform)
+
+### Visual clip differentiation
+- [ ] Clip height encodes velocity (vertically centred in the lane)
+- [ ] Selected clip gets a strong outline + small resize-handle dots at the edges
+- [ ] Hover lifts the clip's tint so the cursor target reads at a glance
+
+### Clip editing gestures — the "feels like a DAW" pass
+- [ ] Cursor changes: crosshair over empty grid, open-hand over clip body, horizontal-resize over either edge
+- [ ] LEFT-edge resize (only the right edge resizes today)
+- [ ] Vertical drag inside a moving clip retargets the lane (snap to lane boundaries)
+- [ ] Click + drag on empty grid creates a clip whose duration matches the dragged distance (not the fixed 100 ms default)
+- [ ] Single click on empty grid (no drag) deselects — does NOT silently create a tiny clip
+- [ ] Double-click empty grid creates a clip at default duration (a discoverable alternative to drag-create)
+- [ ] Snap-target preview: a vertical guide line at the snap target while dragging or resizing
+- [ ] Arrow keys nudge selected event(s) by one grid step; shift+arrow nudges by ten
+- [ ] Esc deselects all events
+- [ ] Right-click a clip opens a context menu (Delete, Duplicate)
+
+### Multi-select + clipboard
+- [ ] Shift-click a clip extends the selection
+- [ ] Cmd+A selects every event in the pattern
+- [ ] Cmd+C / Cmd+V duplicates the selected events to the playhead (relative timing + lane preserved)
+- [ ] Move / delete operations apply to the whole selection
+
+### Lane usability
+- [ ] Editable lane-name field in the lane label column (replaces "1/2/3/4"; persisted in `.beep`)
+- [ ] Per-lane Mute toggle in the lane label column
+
+### Empty-state hint
+- [ ] Update the "click in a lane to add a beep" hint to match the new gestures (mention drag-to-size and double-click-to-create)
+
+## Phase 9 — Multi-voice patterns
+
+Goal: each of the 4 lanes owns its own synth voice, so the user can layer different timbres in a single pattern (the canonical droid-chatter / R2D2 / "computer console" use case). The voice editor sections (Oscillator, Amp Env, Filter, Effects, Master) edit the currently-selected lane's voice.
+
+### Architecture
+- [ ] `B33pProcessor` owns 4 `Voice` instances instead of 1
+- [ ] APVTS parameter IDs gain a lane prefix (e.g. `lane0.osc.waveform`); `ParameterIDs.h` reorganized per lane
+- [ ] Selected-lane state on the processor; the editor sections read/write the selected lane
+- [ ] Each event triggers its lane's voice; PatternRenderer mixes the four outputs
+- [ ] `.beep` schema bumped to v2; v1 → v2 migration fans the single voice's settings out to all 4 lanes' parameter sets
+
+### UI
+- [ ] Click a lane label or any event in a lane to select that lane
+- [ ] Selected lane highlights visually (lane background tint)
+- [ ] Section titles append the lane name (e.g. "Lane 1 — Oscillator")
+- [ ] Per-lane Solo button complements Phase 8's Mute
+
+### Workflow
+- [ ] "Copy lane settings to all" — fan out one voice's settings to all 4 lanes
+- [ ] Per-lane "Reset voice to defaults" in a context menu
+
 ---
 
 ## Chores / tech debt
@@ -147,7 +216,6 @@ Explicitly out of MVP scope — the standalone app is the priority and the "musi
 
 ### Workflow
 
-- [ ] **Multiple voices per project** — each lane references its own voice
 - [ ] **Preset browser** with tags, favorites, search
 - [ ] **Generator presets** — one-click starting points (droid chatter, alarms, weapon charge, UI beeps)
 - [ ] **User-configurable randomization ranges and distributions**
