@@ -1,6 +1,7 @@
 #include "FilterSection.h"
 
 #include "Core/ParameterIDs.h"
+#include "SliderFormatting.h"
 
 namespace B33p
 {
@@ -14,6 +15,9 @@ namespace B33p
 
         cutoffSlider   .attachRandomizer(processor, ParameterIDs::filterCutoffHz);
         resonanceSlider.attachRandomizer(processor, ParameterIDs::filterResonanceQ);
+
+        SliderFormatting::applyHz     (cutoffSlider   .getSlider());
+        SliderFormatting::applyDecimal(resonanceSlider.getSlider(), 2);
     }
 
     void FilterSection::resized()

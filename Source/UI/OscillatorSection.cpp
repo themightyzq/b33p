@@ -2,6 +2,7 @@
 
 #include "Core/ParameterIDs.h"
 #include "RandomizerWiring.h"
+#include "SliderFormatting.h"
 
 namespace B33p
 {
@@ -31,6 +32,8 @@ namespace B33p
         wireRandomizerButtons(processor, waveformDice, waveformLock,
                               ParameterIDs::oscWaveform);
         basePitchSlider.attachRandomizer(processor, ParameterIDs::basePitchHz);
+
+        SliderFormatting::applyHz(basePitchSlider.getSlider());
     }
 
     void OscillatorSection::resized()

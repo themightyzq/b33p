@@ -1,6 +1,7 @@
 #include "AmpEnvSection.h"
 
 #include "Core/ParameterIDs.h"
+#include "SliderFormatting.h"
 
 namespace B33p
 {
@@ -22,6 +23,11 @@ namespace B33p
         decaySlider  .attachRandomizer(processor, ParameterIDs::ampDecay);
         sustainSlider.attachRandomizer(processor, ParameterIDs::ampSustain);
         releaseSlider.attachRandomizer(processor, ParameterIDs::ampRelease);
+
+        SliderFormatting::applySeconds(attackSlider .getSlider());
+        SliderFormatting::applySeconds(decaySlider  .getSlider());
+        SliderFormatting::applyPercent(sustainSlider.getSlider());
+        SliderFormatting::applySeconds(releaseSlider.getSlider());
     }
 
     void AmpEnvSection::resized()
