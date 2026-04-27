@@ -33,6 +33,11 @@ namespace B33p
             std::size_t index {  0 };
 
             bool valid() const { return lane >= 0; }
+
+            bool operator==(const Selection& o) const
+            {
+                return lane == o.lane && index == o.index;
+            }
         };
 
         explicit PatternGrid(B33pProcessor& processor);
@@ -42,8 +47,15 @@ namespace B33p
         void   setGridSeconds(double seconds);
         double getGridSeconds() const { return gridSeconds; }
 
-        const Selection& getSelection() const { return selection; }
+        // Primary selection — the most-recently-clicked event.
+        // Returns an invalid Selection if nothing is selected.
+        // Inspector + single-target gestures use this; multi-target
+        // gestures (delete, nudge, copy, drag) iterate getSelectedEvents.
+        Selection getPrimarySelection() const;
+        const std::vector<Selection>& getSelectedEvents() const { return selection; }
+
         void clearSelection();
+        void selectAll();
 
         // Pulls the per-lane name + mute state out of the pattern
         // and writes it into the label / button children. Called
@@ -67,9 +79,23 @@ namespace B33p
         bool keyPressed(const juce::KeyPress& key) override;
 
     private:
-        // Bottleneck for selection writes so onSelectionChanged fires
-        // on every transition without each call site remembering.
-        void setSelection(const Selection& newSelection);
+        // Selection writes go through these so onSelectionChanged
+        // fires on every actual change without each call site
+        // remembering to do so.
+        void selectOnly       (const Selection& s);
+        void addToSelection   (const Selection& s);
+        void toggleInSelection(const Selection& s);
+        bool isInSelection    (const Selection& s) const;
+        void notifySelectionChanged();
+
+        // One per selected event during a Move drag — captures the
+        // event's original position so each can be shifted by the
+        // same delta independently.
+        struct DragSubject
+        {
+            Selection ref;
+            Event     original;
+        };
 
         enum class DragMode { None, Move, ResizeLeft, ResizeRight, PendingCreate };
 
@@ -94,11 +120,15 @@ namespace B33p
         B33pProcessor& processor;
         double         gridSeconds { 0.1 };
 
-        Selection selection;
+        // Multi-selection. The back element is the "primary" — the
+        // most-recently-clicked event the inspector shows and that
+        // resize gestures pin to.
+        std::vector<Selection> selection;
 
         DragMode dragMode { DragMode::None };
         double   dragStartSeconds { 0.0 };
-        Event    dragOriginalEvent;
+        Event    dragOriginalEvent;          // primary's original (Resize)
+        std::vector<DragSubject> dragSubjects; // all (Move)
         int      pendingCreateLane { -1 };
 
         // mouseDown position kept around so PendingCreate can decide
@@ -122,6 +152,13 @@ namespace B33p
         // -1 means "no preview". Drawn as a vertical guide line so
         // the user sees where the event will land before releasing.
         double snapPreviewSeconds { -1.0 };
+
+        // Internal app clipboard — what Cmd+C captured. Each entry
+        // stores a lane and an Event whose startSeconds is RELATIVE
+        // to the earliest copied event so paste can drop the group
+        // at the playhead while preserving relative timing.
+        struct ClipboardItem { int lane; Event event; };
+        std::vector<ClipboardItem> clipboard;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternGrid)
     };

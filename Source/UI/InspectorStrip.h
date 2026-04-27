@@ -26,9 +26,12 @@ namespace B33p
         explicit InspectorStrip(B33pProcessor& processor);
 
         // Identity change — the selection now points at a different
-        // event (or to nothing). Re-reads everything and rebuilds the
-        // lane combo's selected item, etc.
-        void setSelection(const PatternGrid::Selection& selection);
+        // event (or to nothing). totalCount is the size of the full
+        // multi-selection; > 1 hides the controls and shows an "N
+        // events selected" placeholder so the user has a single-
+        // event mental model when editing fields.
+        void setSelection(const PatternGrid::Selection& primary,
+                          int totalCount = 1);
 
         // Same selection, content changed — typical mid-drag refresh
         // from the grid. Cheaper than setSelection.
