@@ -22,8 +22,8 @@ namespace B33p
         SliderFormatting::applyDoubleClickReset(cutoffSlider   .getSlider(), processor.getApvts(), ParameterIDs::filterCutoffHz);
         SliderFormatting::applyDoubleClickReset(resonanceSlider.getSlider(), processor.getApvts(), ParameterIDs::filterResonanceQ);
 
-        cutoffSlider   .setTooltip("Lowpass cutoff — frequencies above are rolled off");
-        resonanceSlider.setTooltip("Emphasis around the cutoff — higher = more whistly");
+        cutoffSlider   .setTooltip("Lowpass cutoff: frequencies above are rolled off");
+        resonanceSlider.setTooltip("Emphasis around the cutoff: higher = more whistly");
     }
 
     void FilterSection::resized()

@@ -87,7 +87,7 @@ namespace B33p
                                    settings.destination);
 
         if (! exportSucceeded)
-            errorMessage = "Could not write WAV — check that the destination path is writable.";
+            errorMessage = "Could not write WAV. Check that the destination path is writable.";
 
         setProgress(1.0);
     }

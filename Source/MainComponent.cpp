@@ -283,7 +283,7 @@ namespace B33p
         const juce::String juceVer  { juce::SystemStats::getJUCEVersion() };
 
         const juce::String body =
-            juce::String("b33p — small synthesized sounds.\n\n")
+            juce::String("b33p: small synthesized sounds.\n\n")
           + "Version "      + version + "\n"
           + "Author "       + author  + "\n"
           + "License "      + license + "\n\n"
