@@ -66,6 +66,7 @@ target_sources(B33p PRIVATE
     Source/UI/ExportDialog.cpp
     Source/UI/ExportTask.cpp
     Source/UI/FilterSection.cpp
+    Source/UI/IconButton.cpp
     Source/UI/LabeledSlider.cpp
     Source/UI/MasterSection.cpp
     Source/UI/OscillatorSection.cpp

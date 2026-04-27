@@ -1,5 +1,6 @@
 #pragma once
 
+#include "IconButton.h"
 #include "LabeledSlider.h"
 #include "Section.h"
 #include "State/B33pProcessor.h"
@@ -16,9 +17,9 @@ namespace B33p
         void resized() override;
 
     private:
-        juce::ComboBox   waveformSelector;
-        juce::TextButton waveformDice { "D" };
-        juce::TextButton waveformLock { "L" };
+        juce::ComboBox waveformSelector;
+        IconButton     waveformDice { IconButton::Glyph::Die  };
+        IconButton     waveformLock { IconButton::Glyph::Lock };
 
         LabeledSlider    basePitchSlider { "Pitch" };
 

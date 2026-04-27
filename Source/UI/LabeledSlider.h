@@ -1,5 +1,6 @@
 #pragma once
 
+#include "IconButton.h"
 #include "State/B33pProcessor.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -32,10 +33,10 @@ namespace B33p
         void resized() override;
 
     private:
-        juce::Slider     slider;
-        juce::Label      label;
-        juce::TextButton diceButton { "D" };
-        juce::TextButton lockButton { "L" };
+        juce::Slider slider;
+        juce::Label  label;
+        IconButton   diceButton { IconButton::Glyph::Die  };
+        IconButton   lockButton { IconButton::Glyph::Lock };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LabeledSlider)
     };
