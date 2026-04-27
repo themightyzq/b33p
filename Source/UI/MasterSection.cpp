@@ -24,6 +24,9 @@ namespace B33p
         gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain);
 
         SliderFormatting::applyDecimal(gainSlider.getSlider(), 2);
+        SliderFormatting::applyDoubleClickReset(gainSlider.getSlider(),
+                                                processor.getApvts(),
+                                                ParameterIDs::voiceGain);
 
         gainSlider    .setTooltip("Master output level");
         auditionButton.setTooltip("Play a single beep with the current settings (Space)");
