@@ -54,6 +54,8 @@ namespace B33p
         void mouseDown(const juce::MouseEvent& e) override;
         void mouseDrag(const juce::MouseEvent& e) override;
         void mouseUp  (const juce::MouseEvent& e) override;
+        void mouseMove(const juce::MouseEvent& e) override;
+        void mouseExit(const juce::MouseEvent& e) override;
 
         bool keyPressed(const juce::KeyPress& key) override;
 
@@ -95,6 +97,10 @@ namespace B33p
         // (click + drag + release, or click + delete) commits as a
         // single UndoManager transaction in mouseUp.
         Pattern  gestureSnapshot;
+
+        // Cursor hover tracking — drives the slight tint lift on the
+        // event the user is about to click. lane = -1 = no hover.
+        Selection hover;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternGrid)
     };
