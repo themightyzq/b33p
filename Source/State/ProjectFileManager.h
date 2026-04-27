@@ -34,9 +34,12 @@ namespace B33p
 
         // Cmd+S: writes to the open file if there is one, otherwise
         // forwards to saveAs(). parent is the component to centre
-        // the file chooser sheet over.
-        void save  (juce::Component* parent);
-        void saveAs(juce::Component* parent);
+        // the file chooser sheet over. The optional onComplete
+        // callback fires with the outcome — used by the close-while-
+        // dirty prompt to gate the quit on a successful save.
+        using OnSaveComplete = std::function<void(bool success)>;
+        void save  (juce::Component* parent, OnSaveComplete onComplete = {});
+        void saveAs(juce::Component* parent, OnSaveComplete onComplete = {});
         void open  (juce::Component* parent);
 
         // Direct-open path for OS-driven file open events
@@ -47,7 +50,8 @@ namespace B33p
         void openFile(const juce::File& file);
 
     private:
-        void writeAndReport(const juce::File& destination);
+        void writeAndReport(const juce::File& destination,
+                            OnSaveComplete onComplete = {});
         void readAndReport (const juce::File& source);
 
         B33pProcessor&                     processor;
