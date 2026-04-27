@@ -33,7 +33,7 @@ namespace B33p
                                                 ParameterIDs::voiceGain);
 
         gainSlider    .setTooltip("Master output level");
-        auditionButton.setTooltip("Play a single beep with the current settings (Space)");
+        auditionButton.setTooltip("Play a single beep with the current settings (Shift+Space)");
         diceAllButton .setTooltip("Roll random values for every unlocked parameter");
     }
 
