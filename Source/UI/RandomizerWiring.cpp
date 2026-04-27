@@ -23,6 +23,7 @@ namespace B33p
         {
             processor.getRandomizer().setLocked(parameterID,
                                                 lockButton.getToggleState());
+            processor.markDirty();
         };
     }
 }

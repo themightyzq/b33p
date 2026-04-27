@@ -173,6 +173,12 @@ namespace B33p::ProjectState
             randomizer.setLocked(lockNode.getProperty(kLockId, "").toString(), true);
         }
 
+        // The restore touched APVTS, pitch curve, and looping state;
+        // each of those independently flagged the processor dirty.
+        // The whole point of "load" is "state now matches disk", so
+        // markClean wins after all the bulk mutations are done.
+        processor.markClean();
+
         return true;
     }
 

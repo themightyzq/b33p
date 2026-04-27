@@ -1,5 +1,6 @@
 #include "ProjectFileManager.h"
 
+#include "B33pProcessor.h"
 #include "ProjectState.h"
 
 namespace B33p
@@ -102,6 +103,9 @@ namespace B33p
                       "Could not write project to:\n" + destination.getFullPathName());
             return;
         }
+
+        // In-memory state now matches the on-disk file.
+        processor.markClean();
 
         if (currentFile != destination)
         {

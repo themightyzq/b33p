@@ -31,6 +31,7 @@ namespace B33p
         addAndMakeVisible(patternSection);
 
         fileManager.setOnStateChanged([this] { updateWindowTitle(); });
+        processor.setOnDirtyChanged ([this] { updateWindowTitle(); });
 
         setWantsKeyboardFocus(true);
 
@@ -105,9 +106,11 @@ namespace B33p
         if (dw == nullptr)
             return;
 
-        const auto& file = fileManager.getCurrentFile();
-        const auto name  = file == juce::File() ? juce::String("Untitled")
-                                                  : file.getFileName();
-        dw->setName("b33p - " + name);
+        const auto& file   = fileManager.getCurrentFile();
+        const auto  name   = file == juce::File() ? juce::String("Untitled")
+                                                     : file.getFileName();
+        const auto  suffix = processor.isDirty() ? juce::String(" *")
+                                                  : juce::String();
+        dw->setName("b33p - " + name + suffix);
     }
 }

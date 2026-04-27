@@ -12,12 +12,56 @@ namespace B33p
         constexpr float kAuditionDurationSeconds = 0.5f;
     }
 
+    namespace
+    {
+        // Listener-bookkeeping list — kept in sync with
+        // ParameterIDs.h so any new parameter automatically takes
+        // part in dirty tracking.
+        constexpr const char* const kAllParamIds[] = {
+            ParameterIDs::oscWaveform,
+            ParameterIDs::basePitchHz,
+            ParameterIDs::ampAttack,
+            ParameterIDs::ampDecay,
+            ParameterIDs::ampSustain,
+            ParameterIDs::ampRelease,
+            ParameterIDs::filterCutoffHz,
+            ParameterIDs::filterResonanceQ,
+            ParameterIDs::bitcrushBitDepth,
+            ParameterIDs::bitcrushSampleRateHz,
+            ParameterIDs::distortionDrive,
+            ParameterIDs::voiceGain,
+        };
+    }
+
     B33pProcessor::B33pProcessor()
         : juce::AudioProcessor(BusesProperties()
               .withOutput("Output", juce::AudioChannelSet::stereo(), true))
         , apvts(*this, &undoManager, "B33pParameters", createParameterLayout())
         , randomizer(apvts)
     {
+        registerAsApvtsListener();
+    }
+
+    B33pProcessor::~B33pProcessor()
+    {
+        unregisterAsApvtsListener();
+    }
+
+    void B33pProcessor::registerAsApvtsListener()
+    {
+        for (const char* id : kAllParamIds)
+            apvts.addParameterListener(id, this);
+    }
+
+    void B33pProcessor::unregisterAsApvtsListener()
+    {
+        for (const char* id : kAllParamIds)
+            apvts.removeParameterListener(id, this);
+    }
+
+    void B33pProcessor::parameterChanged(const juce::String&, float)
+    {
+        markDirty();
     }
 
     void B33pProcessor::prepareToPlay(double sampleRate, int /*blockSize*/)
@@ -35,8 +79,11 @@ namespace B33p
 
     void B33pProcessor::setPitchCurve(std::vector<PitchEnvelopePoint> newCurve)
     {
-        const juce::ScopedLock lock(pitchCurveLock);
-        pitchCurve = std::move(newCurve);
+        {
+            const juce::ScopedLock lock(pitchCurveLock);
+            pitchCurve = std::move(newCurve);
+        }
+        markDirty();
     }
 
     std::vector<PitchEnvelopePoint> B33pProcessor::getPitchCurveCopy() const
@@ -84,6 +131,35 @@ namespace B33p
     void B33pProcessor::stopPlayback()
     {
         playing.store(false, std::memory_order_release);
+    }
+
+    void B33pProcessor::setLooping(bool shouldLoop)
+    {
+        if (looping.exchange(shouldLoop) != shouldLoop)
+            markDirty();
+    }
+
+    void B33pProcessor::markDirty()
+    {
+        if (! dirty.exchange(true))
+            notifyDirtyChanged();
+    }
+
+    void B33pProcessor::markClean()
+    {
+        if (dirty.exchange(false))
+            notifyDirtyChanged();
+    }
+
+    void B33pProcessor::setOnDirtyChanged(OnDirtyChanged callback)
+    {
+        onDirtyChangedCallback = std::move(callback);
+    }
+
+    void B33pProcessor::notifyDirtyChanged()
+    {
+        if (onDirtyChangedCallback)
+            juce::MessageManager::callAsync(onDirtyChangedCallback);
     }
 
     void B33pProcessor::pushParametersToVoice()
