@@ -95,6 +95,12 @@ namespace B33p
         });
     }
 
+    void ProjectFileManager::openFile(const juce::File& file)
+    {
+        if (file != juce::File())
+            readAndReport(file);
+    }
+
     void ProjectFileManager::writeAndReport(const juce::File& destination)
     {
         if (! ProjectState::writeToFile(processor, destination))

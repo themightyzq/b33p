@@ -47,6 +47,7 @@ juce_add_gui_app(B33p
     COMPANY_NAME        "${B33P_COMPANY_NAME}"
     BUNDLE_ID           "${B33P_BUNDLE_ID}"
     VERSION             "${PROJECT_VERSION}"
+    DOCUMENT_EXTENSIONS "beep"
 )
 
 target_sources(B33p PRIVATE

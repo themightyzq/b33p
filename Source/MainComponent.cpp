@@ -71,6 +71,11 @@ namespace B33p
         patternSection.setBounds(patternRow);
     }
 
+    void MainComponent::openProjectFile(const juce::File& file)
+    {
+        fileManager.openFile(file);
+    }
+
     bool MainComponent::keyPressed(const juce::KeyPress& key)
     {
         if (key == juce::KeyPress::spaceKey)

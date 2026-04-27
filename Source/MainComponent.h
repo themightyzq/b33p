@@ -25,6 +25,11 @@ namespace B33p
 
         bool keyPressed(const juce::KeyPress& key) override;
 
+        // OS-driven file open (Finder double-click, dock drop).
+        // Routes to ProjectFileManager so failure surfaces the
+        // same alert as the dialog-driven Open command.
+        void openProjectFile(const juce::File& file);
+
     private:
         void parentHierarchyChanged() override;
         void updateWindowTitle();
