@@ -16,19 +16,21 @@ namespace B33p
 
         void resized() override;
 
+        void retargetLane(int lane);
+
     private:
+
+        B33pProcessor& processor;
+
         juce::ComboBox waveformSelector;
         IconButton     waveformDice { IconButton::Glyph::Die  };
         IconButton     waveformLock { IconButton::Glyph::Lock };
 
         LabeledSlider    basePitchSlider { "Pitch" };
 
-        // ComboBoxAttachment is unique_ptr because it must be
-        // constructed after the ComboBox has its items populated —
-        // the attachment's initial parameterChanged pushes into the
-        // combo, which would be a no-op on an empty item list.
+        // unique_ptr so retargetLane can swap them out.
         std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> waveformAttachment;
-        juce::AudioProcessorValueTreeState::SliderAttachment                    basePitchAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   basePitchAttachment;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OscillatorSection)
     };

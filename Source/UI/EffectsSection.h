@@ -6,6 +6,8 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <memory>
+
 namespace B33p
 {
     class EffectsSection : public Section
@@ -15,14 +17,19 @@ namespace B33p
 
         void resized() override;
 
+        void retargetLane(int lane);
+
     private:
+
+        B33pProcessor& processor;
+
         LabeledSlider bitDepthSlider  { "Bits"  };
         LabeledSlider crushRateSlider { "Rate"  };
         LabeledSlider driveSlider     { "Drive" };
 
-        juce::AudioProcessorValueTreeState::SliderAttachment bitDepthAttachment;
-        juce::AudioProcessorValueTreeState::SliderAttachment crushRateAttachment;
-        juce::AudioProcessorValueTreeState::SliderAttachment driveAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> bitDepthAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> crushRateAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> driveAttachment;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EffectsSection)
     };

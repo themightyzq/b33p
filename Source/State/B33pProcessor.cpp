@@ -165,6 +165,30 @@ namespace B33p
         onFullStateLoadedCallback = std::move(callback);
     }
 
+    void B33pProcessor::setSelectedLane(int lane)
+    {
+        const int clamped = std::clamp(lane, 0, Pattern::kNumLanes - 1);
+        if (selectedLane.exchange(clamped) == clamped)
+            return;
+        if (onSelectedLaneChangedCallback)
+            onSelectedLaneChangedCallback(clamped);
+    }
+
+    void B33pProcessor::setOnSelectedLaneChanged(OnSelectedLaneChanged callback)
+    {
+        onSelectedLaneChangedCallback = std::move(callback);
+    }
+
+    juce::String B33pProcessor::laneTitleSuffix(int lane) const
+    {
+        const auto& name = pattern.getLaneName(lane);
+        juce::String s = " (Lane " + juce::String(lane + 1);
+        if (name.isNotEmpty())
+            s += ": " + name;
+        s += ")";
+        return s;
+    }
+
     void B33pProcessor::notifyDirtyChanged()
     {
         if (onDirtyChangedCallback)
@@ -307,14 +331,14 @@ namespace B33p
         }
 
         // ---- Audition trigger fires before the per-sample loop ----
-        // Always plays lane 0 for now; selected-lane routing arrives
-        // in the next Phase 9 commit.
+        // Routes to whichever lane the editor sections currently
+        // target so the user hears the voice they're tweaking.
         if (pendingAudition.exchange(false, std::memory_order_acq_rel))
         {
             Event auditionEvent { 0.0,
                                   static_cast<double>(kAuditionDurationSeconds),
                                   0.0f };
-            triggerVoiceFromEvent(0, auditionEvent);
+            triggerVoiceFromEvent(selectedLane.load(), auditionEvent);
         }
 
         auto* left  = numChannels > 0 ? buffer.getWritePointer(0) : nullptr;

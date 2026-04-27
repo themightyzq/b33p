@@ -6,11 +6,9 @@
 
 namespace B33p
 {
-    OscillatorSection::OscillatorSection(B33pProcessor& processor)
+    OscillatorSection::OscillatorSection(B33pProcessor& processorRef)
         : Section("Oscillator"),
-          basePitchAttachment(processor.getApvts(),
-                              ParameterIDs::basePitchHz(0),
-                              basePitchSlider.getSlider())
+          processor(processorRef)
     {
         // Item IDs (1..5) match B33p::Oscillator::Waveform enum order
         // so the APVTS choice index maps cleanly at wiring time.
@@ -20,26 +18,50 @@ namespace B33p
         waveformSelector.addItem("Saw",      4);
         waveformSelector.addItem("Noise",    5);
 
-        waveformAttachment = std::make_unique<
-            juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-                processor.getApvts(), ParameterIDs::oscWaveform(0), waveformSelector);
-
         addAndMakeVisible(waveformSelector);
         addAndMakeVisible(waveformDice);
         addAndMakeVisible(waveformLock);
         addAndMakeVisible(basePitchSlider);
 
-        wireRandomizerButtons(processor, waveformDice, waveformLock,
-                              ParameterIDs::oscWaveform(0));
-        basePitchSlider.attachRandomizer(processor, ParameterIDs::basePitchHz(0));
+        waveformSelector.setTooltip("Oscillator waveform");
+        basePitchSlider .setTooltip("Base pitch of the oscillator");
 
+        retargetLane(processor.getSelectedLane());
+    }
+
+    void OscillatorSection::retargetLane(int lane)
+    {
+        // Drop the old attachments first; constructing a new one
+        // immediately starts pushing parameter values into the
+        // controls, which is what we want.
+        waveformAttachment.reset();
+        basePitchAttachment.reset();
+
+        waveformAttachment = std::make_unique<
+            juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+                processor.getApvts(),
+                ParameterIDs::oscWaveform(lane),
+                waveformSelector);
+
+        basePitchAttachment = std::make_unique<
+            juce::AudioProcessorValueTreeState::SliderAttachment>(
+                processor.getApvts(),
+                ParameterIDs::basePitchHz(lane),
+                basePitchSlider.getSlider());
+
+        wireRandomizerButtons(processor, waveformDice, waveformLock,
+                              ParameterIDs::oscWaveform(lane));
+        basePitchSlider.attachRandomizer(processor, ParameterIDs::basePitchHz(lane));
+
+        // SliderAttachment installs its own textFromValueFunction at
+        // construction, so re-apply our formatting AFTER the
+        // attachment exists.
         SliderFormatting::applyHz(basePitchSlider.getSlider());
         SliderFormatting::applyDoubleClickReset(basePitchSlider.getSlider(),
                                                 processor.getApvts(),
-                                                ParameterIDs::basePitchHz(0));
+                                                ParameterIDs::basePitchHz(lane));
 
-        waveformSelector.setTooltip("Oscillator waveform");
-        basePitchSlider .setTooltip("Base pitch of the oscillator");
+        setTitleSuffix(processor.laneTitleSuffix(lane));
     }
 
     void OscillatorSection::resized()

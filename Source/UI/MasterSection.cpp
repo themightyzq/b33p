@@ -5,36 +5,46 @@
 
 namespace B33p
 {
-    MasterSection::MasterSection(B33pProcessor& processor)
+    MasterSection::MasterSection(B33pProcessor& processorRef)
         : Section("Master"),
-          gainAttachment(processor.getApvts(), ParameterIDs::voiceGain(0), gainSlider.getSlider())
+          processor(processorRef)
     {
         addAndMakeVisible(gainSlider);
 
-        auditionButton.onClick = [this, &processor]
+        auditionButton.onClick = [this]
         {
             processor.triggerAudition();
             flashAuditionButton();
         };
         addAndMakeVisible(auditionButton);
 
-        diceAllButton.onClick = [&processor]
+        diceAllButton.onClick = [this]
         {
             juce::Random rng;
             processor.getRandomizer().rollAllUnlocked(rng);
         };
         addAndMakeVisible(diceAllButton);
 
-        gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain(0));
-
-        SliderFormatting::applyDecimal(gainSlider.getSlider(), 2);
-        SliderFormatting::applyDoubleClickReset(gainSlider.getSlider(),
-                                                processor.getApvts(),
-                                                ParameterIDs::voiceGain(0));
-
         gainSlider    .setTooltip("Master output level");
         auditionButton.setTooltip("Play a single beep with the current settings (Shift+Space)");
         diceAllButton .setTooltip("Roll random values for every unlocked parameter");
+
+        retargetLane(processor.getSelectedLane());
+    }
+
+    void MasterSection::retargetLane(int lane)
+    {
+        gainAttachment.reset();
+        gainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+            processor.getApvts(), ParameterIDs::voiceGain(lane), gainSlider.getSlider());
+
+        gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain(lane));
+        SliderFormatting::applyDecimal(gainSlider.getSlider(), 2);
+        SliderFormatting::applyDoubleClickReset(gainSlider.getSlider(),
+                                                processor.getApvts(),
+                                                ParameterIDs::voiceGain(lane));
+
+        setTitleSuffix(processor.laneTitleSuffix(lane));
     }
 
     void MasterSection::flashAuditionButton()

@@ -24,10 +24,19 @@ namespace B33p
 
         void paint(juce::Graphics& g) override;
 
+        // Switch which lane's amp-env params drive the painted curve.
+        // Detaches the listener from the old lane's params and attaches
+        // to the new lane's. Repaints once with the new values.
+        void retargetLane(int lane);
+
     private:
         void parameterChanged(const juce::String& parameterID, float newValue) override;
 
+        void detachListeners(int lane);
+        void attachListeners(int lane);
+
         juce::AudioProcessorValueTreeState& apvts;
+        int currentLane { 0 };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AmpEnvelopeVisualizer)
     };

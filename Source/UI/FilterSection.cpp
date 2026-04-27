@@ -5,25 +5,39 @@
 
 namespace B33p
 {
-    FilterSection::FilterSection(B33pProcessor& processor)
+    FilterSection::FilterSection(B33pProcessor& processorRef)
         : Section("Filter"),
-          cutoffAttachment   (processor.getApvts(), ParameterIDs::filterCutoffHz(0),   cutoffSlider.getSlider()),
-          resonanceAttachment(processor.getApvts(), ParameterIDs::filterResonanceQ(0), resonanceSlider.getSlider())
+          processor(processorRef)
     {
         addAndMakeVisible(cutoffSlider);
         addAndMakeVisible(resonanceSlider);
 
-        cutoffSlider   .attachRandomizer(processor, ParameterIDs::filterCutoffHz(0));
-        resonanceSlider.attachRandomizer(processor, ParameterIDs::filterResonanceQ(0));
+        cutoffSlider   .setTooltip("Lowpass cutoff: frequencies above are rolled off");
+        resonanceSlider.setTooltip("Emphasis around the cutoff: higher = more whistly");
+
+        retargetLane(processor.getSelectedLane());
+    }
+
+    void FilterSection::retargetLane(int lane)
+    {
+        cutoffAttachment.reset();
+        resonanceAttachment.reset();
+
+        cutoffAttachment    = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+            processor.getApvts(), ParameterIDs::filterCutoffHz(lane),   cutoffSlider   .getSlider());
+        resonanceAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+            processor.getApvts(), ParameterIDs::filterResonanceQ(lane), resonanceSlider.getSlider());
+
+        cutoffSlider   .attachRandomizer(processor, ParameterIDs::filterCutoffHz(lane));
+        resonanceSlider.attachRandomizer(processor, ParameterIDs::filterResonanceQ(lane));
 
         SliderFormatting::applyHz     (cutoffSlider   .getSlider());
         SliderFormatting::applyDecimal(resonanceSlider.getSlider(), 2);
 
-        SliderFormatting::applyDoubleClickReset(cutoffSlider   .getSlider(), processor.getApvts(), ParameterIDs::filterCutoffHz(0));
-        SliderFormatting::applyDoubleClickReset(resonanceSlider.getSlider(), processor.getApvts(), ParameterIDs::filterResonanceQ(0));
+        SliderFormatting::applyDoubleClickReset(cutoffSlider   .getSlider(), processor.getApvts(), ParameterIDs::filterCutoffHz(lane));
+        SliderFormatting::applyDoubleClickReset(resonanceSlider.getSlider(), processor.getApvts(), ParameterIDs::filterResonanceQ(lane));
 
-        cutoffSlider   .setTooltip("Lowpass cutoff: frequencies above are rolled off");
-        resonanceSlider.setTooltip("Emphasis around the cutoff: higher = more whistly");
+        setTitleSuffix(processor.laneTitleSuffix(lane));
     }
 
     void FilterSection::resized()
