@@ -160,22 +160,36 @@ namespace B33p
     juce::PopupMenu MainComponent::getMenuForIndex(int topLevelIndex,
                                                    const juce::String& /*menuName*/)
     {
+        // Helper: build a menu item that also shows its keyboard
+        // shortcut on the right-hand side. Item keeps the dispatch
+        // ID used by menuItemSelected.
+        auto withShortcut = [](int id, juce::String text,
+                                juce::String shortcutText, bool enabled = true)
+        {
+            juce::PopupMenu::Item item;
+            item.itemID                = id;
+            item.text                  = std::move(text);
+            item.shortcutKeyDescription = std::move(shortcutText);
+            item.isEnabled             = enabled;
+            return item;
+        };
+
         juce::PopupMenu m;
         switch (topLevelIndex)
         {
             case 0: // File
-                m.addItem(MenuId::FileOpen,   "Open...",        true);
-                m.addItem(MenuId::FileSave,   "Save",           true);
-                m.addItem(MenuId::FileSaveAs, "Save As...",     true);
+                m.addItem(withShortcut(MenuId::FileOpen,   "Open...",    "Cmd+O"));
+                m.addItem(withShortcut(MenuId::FileSave,   "Save",       "Cmd+S"));
+                m.addItem(withShortcut(MenuId::FileSaveAs, "Save As...", "Cmd+Shift+S"));
                 break;
             case 1: // Edit
-                m.addItem(MenuId::EditUndo, "Undo",
-                          processor.getUndoManager().canUndo());
-                m.addItem(MenuId::EditRedo, "Redo",
-                          processor.getUndoManager().canRedo());
+                m.addItem(withShortcut(MenuId::EditUndo, "Undo", "Cmd+Z",
+                                       processor.getUndoManager().canUndo()));
+                m.addItem(withShortcut(MenuId::EditRedo, "Redo", "Cmd+Shift+Z",
+                                       processor.getUndoManager().canRedo()));
                 break;
             case 2: // Help
-                m.addItem(MenuId::HelpAbout, "About b33p", true);
+                m.addItem(withShortcut(MenuId::HelpAbout, "About b33p", "Cmd+/"));
                 break;
             default:
                 break;
