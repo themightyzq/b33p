@@ -15,6 +15,7 @@
 namespace B33p
 {
     class MainComponent : public juce::Component
+                        , public juce::MenuBarModel
     {
     public:
         explicit MainComponent(B33pProcessor& processor);
@@ -30,6 +31,13 @@ namespace B33p
         // same alert as the dialog-driven Open command.
         void openProjectFile(const juce::File& file);
 
+        // juce::MenuBarModel
+        juce::StringArray getMenuBarNames() override;
+        juce::PopupMenu   getMenuForIndex(int topLevelIndex,
+                                          const juce::String& menuName) override;
+        void              menuItemSelected(int menuItemId,
+                                           int topLevelIndex) override;
+
     private:
         void parentHierarchyChanged() override;
         void updateWindowTitle();
@@ -42,6 +50,11 @@ namespace B33p
         // declaring it is enough — every Component with a non-empty
         // tooltip text gets picked up automatically.
         juce::TooltipWindow tooltipWindow { this, 700 };
+
+        // In-window menu bar — kept in the window rather than
+        // setMacMainMenu so the layout is identical on every OS
+        // and we don't need an #ifdef __APPLE__ here.
+        juce::MenuBarComponent menuBar { this };
 
         OscillatorSection oscillatorSection;
         AmpEnvSection     ampEnvelopeSection;
