@@ -51,11 +51,12 @@ namespace B33p
 
         void paint(juce::Graphics& g) override;
 
-        void mouseDown(const juce::MouseEvent& e) override;
-        void mouseDrag(const juce::MouseEvent& e) override;
-        void mouseUp  (const juce::MouseEvent& e) override;
-        void mouseMove(const juce::MouseEvent& e) override;
-        void mouseExit(const juce::MouseEvent& e) override;
+        void mouseDown       (const juce::MouseEvent& e) override;
+        void mouseDrag       (const juce::MouseEvent& e) override;
+        void mouseUp         (const juce::MouseEvent& e) override;
+        void mouseMove       (const juce::MouseEvent& e) override;
+        void mouseExit       (const juce::MouseEvent& e) override;
+        void mouseDoubleClick(const juce::MouseEvent& e) override;
 
         bool keyPressed(const juce::KeyPress& key) override;
 
@@ -64,7 +65,7 @@ namespace B33p
         // on every transition without each call site remembering.
         void setSelection(const Selection& newSelection);
 
-        enum class DragMode { None, Move, ResizeLeft, ResizeRight };
+        enum class DragMode { None, Move, ResizeLeft, ResizeRight, PendingCreate };
 
         struct HitResult
         {
@@ -92,6 +93,12 @@ namespace B33p
         DragMode dragMode { DragMode::None };
         double   dragStartSeconds { 0.0 };
         Event    dragOriginalEvent;
+        int      pendingCreateLane { -1 };
+
+        // mouseDown position kept around so PendingCreate can decide
+        // "this was a click" vs "this was a drag" using the standard
+        // 4 px JUCE drag threshold.
+        juce::Point<float> mouseDownPos;
 
         // Whole-pattern snapshot taken on mouseDown so the gesture
         // (click + drag + release, or click + delete) commits as a

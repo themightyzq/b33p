@@ -238,7 +238,8 @@ namespace B33p
 
             g.setColour(juce::Colour::fromRGB(110, 110, 110));
             g.setFont(juce::FontOptions(12.0f));
-            g.drawText("Click in a lane to add a beep. Drag to move, drag the right edge to resize.",
+            g.drawText("Drag in a lane to draw a beep, or double-click for default size. "
+                       "Drag a beep to move it (vertically to switch lanes), drag its edges to resize.",
                        hintArea, juce::Justification::centred);
         }
 
@@ -378,6 +379,7 @@ namespace B33p
         // Snapshot the pattern before any mutation so mouseUp can
         // wrap the whole gesture in a single undoable action.
         gestureSnapshot = processor.getPattern();
+        mouseDownPos    = e.position;
 
         const auto hit = hitTestEvent(e.position);
 
@@ -387,23 +389,13 @@ namespace B33p
             if (lane < 0)
                 return;
 
-            const double snappedStart = std::max(0.0, snapSeconds(xToSeconds(e.position.x)));
-            const double length = processor.getPattern().getLengthSeconds();
-            const double duration = std::min(kDefaultDurationSec,
-                                             std::max(kMinDurationSec, length - snappedStart));
-
-            Event newEvent { snappedStart, duration, 0.0f };
-            processor.getPattern().addEvent(lane, newEvent);
-            processor.markDirty();
-
-            setSelection({ lane,
-                           processor.getPattern().getEvents(lane).size() - 1 });
-
-            dragMode          = DragMode::Move;
+            // Defer creation: this might be a click-to-deselect or a
+            // drag-to-create-with-size. mouseDrag promotes to a real
+            // event once the cursor moves past the drag threshold;
+            // mouseUp without drag deselects.
+            pendingCreateLane = lane;
             dragStartSeconds  = xToSeconds(e.position.x);
-            dragOriginalEvent = newEvent;
-
-            repaint();
+            dragMode          = DragMode::PendingCreate;
             return;
         }
 
@@ -425,11 +417,42 @@ namespace B33p
 
     void PatternGrid::mouseDrag(const juce::MouseEvent& e)
     {
-        if (dragMode == DragMode::None || ! selection.valid())
+        if (dragMode == DragMode::None)
             return;
 
         auto&       pattern = processor.getPattern();
         const double length = pattern.getLengthSeconds();
+
+        // Promote a pending click into a real event the first time
+        // the cursor moves past the standard drag threshold.
+        if (dragMode == DragMode::PendingCreate)
+        {
+            constexpr float kDragThreshold = 4.0f;
+            if (e.position.getDistanceFrom(mouseDownPos) < kDragThreshold)
+                return;
+
+            const double snappedStart = std::max(0.0, snapSeconds(dragStartSeconds));
+            const double cursorSec    = xToSeconds(e.position.x);
+            double duration           = snapSeconds(cursorSec - snappedStart);
+            duration                  = std::max(kMinDurationSec, duration);
+            duration                  = std::min(duration, length - snappedStart);
+
+            Event newEvent { snappedStart, duration, 0.0f, 1.0f };
+            pattern.addEvent(pendingCreateLane, newEvent);
+            processor.markDirty();
+
+            setSelection({ pendingCreateLane,
+                           pattern.getEvents(pendingCreateLane).size() - 1 });
+
+            dragOriginalEvent = newEvent;
+            dragMode          = DragMode::ResizeRight;   // continue sizing
+            pendingCreateLane = -1;
+            // Fall through to the ResizeRight branch below to apply
+            // the current cursor position as the new right edge.
+        }
+
+        if (! selection.valid())
+            return;
 
         Event current = dragOriginalEvent;
 
@@ -441,6 +464,22 @@ namespace B33p
                                                0.0,
                                                std::max(0.0, length - current.durationSeconds));
             snapPreviewSeconds = current.startSeconds;
+
+            // Vertical drag retargets the lane. Snap to lane row so
+            // the event jumps cleanly between lanes rather than
+            // sitting visually mid-boundary.
+            const int targetLane = yToLane(e.position.y);
+            if (targetLane >= 0 && targetLane != selection.lane)
+            {
+                pattern.removeEvent(selection.lane, selection.index);
+                pattern.addEvent(targetLane, current);
+                processor.markDirty();
+                setSelection({ targetLane,
+                               pattern.getEvents(targetLane).size() - 1 });
+                repaint();
+                if (onSelectionChanged) onSelectionChanged();
+                return;
+            }
         }
         else if (dragMode == DragMode::ResizeRight)
         {
@@ -507,8 +546,53 @@ namespace B33p
         }
     }
 
+    void PatternGrid::mouseDoubleClick(const juce::MouseEvent& e)
+    {
+        // Double-click only matters on empty grid — over an event it
+        // falls through to the single-click selection behaviour from
+        // mouseDown. Creates with the default duration so users have
+        // a discoverable alternative to drag-to-create.
+        const auto hit = hitTestEvent(e.position);
+        if (hit.kind != HitResult::Kind::None)
+            return;
+
+        const int lane = yToLane(e.position.y);
+        if (lane < 0)
+            return;
+
+        Pattern before = processor.getPattern();
+        const double snappedStart = std::max(0.0, snapSeconds(xToSeconds(e.position.x)));
+        const double length = before.getLengthSeconds();
+        const double duration = std::min(kDefaultDurationSec,
+                                         std::max(kMinDurationSec, length - snappedStart));
+
+        Event newEvent { snappedStart, duration, 0.0f, 1.0f };
+        processor.getPattern().addEvent(lane, newEvent);
+        processor.markDirty();
+        setSelection({ lane,
+                       processor.getPattern().getEvents(lane).size() - 1 });
+        repaint();
+
+        processor.getUndoManager().beginNewTransaction("Create event");
+        processor.getUndoManager().perform(
+            new SetPatternAction(processor, this,
+                                 std::move(before),
+                                 processor.getPattern()));
+    }
+
     void PatternGrid::mouseUp(const juce::MouseEvent&)
     {
+        // PendingCreate that never crossed the drag threshold = a
+        // bare click on empty grid. Treat it as "deselect".
+        if (dragMode == DragMode::PendingCreate)
+        {
+            pendingCreateLane = -1;
+            dragMode          = DragMode::None;
+            if (selection.valid())
+                clearSelection();
+            return;
+        }
+
         dragMode = DragMode::None;
 
         if (snapPreviewSeconds >= 0.0)
