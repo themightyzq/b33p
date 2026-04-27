@@ -190,6 +190,26 @@ namespace B33p
                        juce::Justification::centred);
         }
 
+        // First-run hint — drawn only when every lane is empty so it
+        // disappears the moment the user adds their first beep.
+        bool anyEvents = false;
+        for (int lane = 0; lane < Pattern::kNumLanes && ! anyEvents; ++lane)
+            anyEvents = ! pattern.getEvents(lane).empty();
+
+        if (! anyEvents)
+        {
+            const auto hintArea = juce::Rectangle<float>(
+                frame.getX() + kLaneLabelWidth,
+                frame.getY() + kRulerHeight,
+                frame.getWidth() - kLaneLabelWidth,
+                frame.getBottom() - (frame.getY() + kRulerHeight));
+
+            g.setColour(juce::Colour::fromRGB(110, 110, 110));
+            g.setFont(juce::FontOptions(12.0f));
+            g.drawText("Click in a lane to add a beep — drag to move, drag the right edge to resize",
+                       hintArea, juce::Justification::centred);
+        }
+
         // Events
         for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
         {
