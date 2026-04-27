@@ -103,6 +103,7 @@ The app lands at `build/B33p_artefacts/b33p`.
 | `Cmd/Ctrl + O` | Open project |
 | `Cmd/Ctrl + E` | Export WAV |
 | `Cmd/Ctrl + D` | Dice all unlocked |
+| `Cmd/Ctrl + /` | About b33p |
 | `Delete` / `Backspace` | Delete selected event |
 
 ## File format

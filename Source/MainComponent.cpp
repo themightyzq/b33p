@@ -93,6 +93,14 @@ namespace B33p
         if (cmd && code == 'S')            { fileManager.save  (this); return true; }
         if (cmd && code == 'O')            { fileManager.open  (this); return true; }
 
+        // Cmd+/ — About box. Slash is rarely used by JUCE controls
+        // for anything else, so it bubbles up reliably.
+        if (cmd && (code == '/' || key.getTextCharacter() == '/'))
+        {
+            showAboutDialog();
+            return true;
+        }
+
         return false;
     }
 
@@ -117,5 +125,31 @@ namespace B33p
         const auto  suffix = processor.isDirty() ? juce::String(" *")
                                                   : juce::String();
         dw->setName("b33p - " + name + suffix);
+    }
+
+    void MainComponent::showAboutDialog()
+    {
+        // String literals so any of version, author, or license can
+        // be tweaked here without recompiling more than this file.
+        const juce::String version  { B33P_VERSION_STRING };
+        const juce::String author   { "ZQ SFX (themightyzq)" };
+        const juce::String license  { "GPL-3.0-or-later" };
+        const juce::String juceVer  { juce::SystemStats::getJUCEVersion() };
+
+        const juce::String body =
+            juce::String("b33p — small synthesized sounds.\n\n")
+          + "Version "      + version + "\n"
+          + "Author "       + author  + "\n"
+          + "License "      + license + "\n\n"
+          + "Built with " + juceVer + " and Catch2.\n\n"
+          + "Source: github.com/themightyzq/b33p";
+
+        juce::AlertWindow::showAsync(
+            juce::MessageBoxOptions()
+                .withIconType(juce::MessageBoxIconType::InfoIcon)
+                .withTitle("About b33p")
+                .withMessage(body)
+                .withButton("OK"),
+            nullptr);
     }
 }

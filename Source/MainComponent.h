@@ -33,6 +33,7 @@ namespace B33p
     private:
         void parentHierarchyChanged() override;
         void updateWindowTitle();
+        void showAboutDialog();
 
         B33pProcessor&      processor;
         ProjectFileManager  fileManager;
