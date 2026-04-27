@@ -57,6 +57,11 @@ namespace B33p
             else
                 processor.startPlayback();
         };
+        // Initial colour matches the "ready to play" state so the
+        // button doesn't flash default-grey for the first 33 ms
+        // before the timer's first tick.
+        playButton.setColour(juce::TextButton::buttonColourId,
+                             juce::Colour::fromRGB(60, 140, 70));
         addAndMakeVisible(playButton);
 
         loopToggle.setClickingTogglesState(true);
@@ -180,7 +185,16 @@ namespace B33p
     void PatternSection::timerCallback()
     {
         const bool playing = processor.isPlaying();
+
+        // Recolour even when the text is unchanged — JUCE's
+        // setButtonText skips the repaint if the string matches,
+        // and the colour change is the visual cue we care about.
+        const auto stopRed   = juce::Colour::fromRGB(190,  60,  60);
+        const auto playGreen = juce::Colour::fromRGB( 60, 140,  70);
+
         playButton.setButtonText(playing ? "Stop" : "Play");
+        playButton.setColour(juce::TextButton::buttonColourId,
+                             playing ? stopRed : playGreen);
 
         if (playing)
             grid.repaint();
