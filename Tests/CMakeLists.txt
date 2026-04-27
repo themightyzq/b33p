@@ -33,6 +33,7 @@ add_executable(B33pTests
     ${B33P_DSP_SOURCES}
     ${CMAKE_SOURCE_DIR}/Source/State/ParameterLayout.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/ParameterRandomizer.cpp
+    ${CMAKE_SOURCE_DIR}/Source/State/ProjectFileManager.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/ProjectState.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/B33pProcessor.cpp
     ${CMAKE_SOURCE_DIR}/Source/Pattern/Pattern.cpp

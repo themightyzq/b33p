@@ -1,6 +1,7 @@
 #pragma once
 
 #include "State/B33pProcessor.h"
+#include "State/ProjectFileManager.h"
 #include "UI/AmpEnvSection.h"
 #include "UI/EffectsSection.h"
 #include "UI/FilterSection.h"
@@ -25,7 +26,11 @@ namespace B33p
         bool keyPressed(const juce::KeyPress& key) override;
 
     private:
-        B33pProcessor& processor;
+        void parentHierarchyChanged() override;
+        void updateWindowTitle();
+
+        B33pProcessor&      processor;
+        ProjectFileManager  fileManager;
 
         OscillatorSection oscillatorSection;
         AmpEnvSection     ampEnvelopeSection;

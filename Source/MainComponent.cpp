@@ -13,6 +13,7 @@ namespace B33p
 
     MainComponent::MainComponent(B33pProcessor& processorRef)
         : processor(processorRef),
+          fileManager(processorRef),
           oscillatorSection   (processor),
           ampEnvelopeSection  (processor),
           filterSection       (processor),
@@ -28,6 +29,8 @@ namespace B33p
         addAndMakeVisible(masterSection);
         addAndMakeVisible(pitchEnvelopeSection);
         addAndMakeVisible(patternSection);
+
+        fileManager.setOnStateChanged([this] { updateWindowTitle(); });
 
         setWantsKeyboardFocus(true);
 
@@ -74,6 +77,37 @@ namespace B33p
             processor.triggerAudition();
             return true;
         }
+
+        const auto& mods = key.getModifiers();
+        const bool cmd   = mods.isCommandDown();
+        const bool shift = mods.isShiftDown();
+        const int  code  = key.getKeyCode();
+
+        if (cmd && shift && code == 'S')   { fileManager.saveAs(this); return true; }
+        if (cmd && code == 'S')            { fileManager.save  (this); return true; }
+        if (cmd && code == 'O')            { fileManager.open  (this); return true; }
+
         return false;
+    }
+
+    void MainComponent::parentHierarchyChanged()
+    {
+        // The window doesn't exist while the constructor runs;
+        // this fires once after setContentOwned attaches us to the
+        // DocumentWindow, which is the right moment to sync the
+        // initial title.
+        updateWindowTitle();
+    }
+
+    void MainComponent::updateWindowTitle()
+    {
+        auto* dw = findParentComponentOfClass<juce::DocumentWindow>();
+        if (dw == nullptr)
+            return;
+
+        const auto& file = fileManager.getCurrentFile();
+        const auto name  = file == juce::File() ? juce::String("Untitled")
+                                                  : file.getFileName();
+        dw->setName("b33p - " + name);
     }
 }

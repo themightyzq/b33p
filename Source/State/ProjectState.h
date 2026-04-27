@@ -44,5 +44,15 @@ namespace B33p
         // serialization path.
         juce::String     toXmlString(const juce::ValueTree& projectTree);
         juce::ValueTree  fromXmlString(const juce::String& xml);
+
+        // Disk I/O wrappers. writeToFile serialises via save +
+        // toXmlString and overwrites the destination atomically;
+        // readFromFile parses via fromXmlString + load. Both
+        // return true on success. Failure modes: missing source
+        // file, malformed XML, version mismatch, unwriteable
+        // destination. Errors surface as false; logging is the
+        // caller's job.
+        bool writeToFile(B33pProcessor& processor, const juce::File& destination);
+        bool readFromFile(B33pProcessor& processor, const juce::File& source);
     }
 }
