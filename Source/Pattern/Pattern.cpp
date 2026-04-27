@@ -72,8 +72,9 @@ namespace B33p
 
     void Pattern::resetAllLaneMeta()
     {
-        for (auto& n : laneNames) n = juce::String{};
-        for (auto& m : laneMuted) m = false;
+        for (auto& n : laneNames)  n = juce::String{};
+        for (auto& m : laneMuted)  m = false;
+        for (auto& s : laneSoloed) s = false;
     }
 
     const juce::String& Pattern::getLaneName(int lane) const
@@ -103,5 +104,26 @@ namespace B33p
         if (! laneInRange(lane))
             return;
         laneMuted[static_cast<std::size_t>(lane)] = muted;
+    }
+
+    bool Pattern::isLaneSoloed(int lane) const
+    {
+        if (! laneInRange(lane))
+            return false;
+        return laneSoloed[static_cast<std::size_t>(lane)];
+    }
+
+    void Pattern::setLaneSoloed(int lane, bool soloed)
+    {
+        if (! laneInRange(lane))
+            return;
+        laneSoloed[static_cast<std::size_t>(lane)] = soloed;
+    }
+
+    bool Pattern::anyLaneSoloed() const
+    {
+        for (bool s : laneSoloed)
+            if (s) return true;
+        return false;
     }
 }

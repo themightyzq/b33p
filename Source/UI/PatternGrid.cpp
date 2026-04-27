@@ -10,9 +10,10 @@ namespace B33p
 {
     namespace
     {
-        constexpr float  kLaneLabelWidth     = 80.0f;  // wider to fit name + mute
+        constexpr float  kLaneLabelWidth     = 100.0f; // wider to fit name + mute + solo
         constexpr float  kLaneLabelInset     = 4.0f;
         constexpr float  kMuteButtonWidth    = 22.0f;
+        constexpr float  kSoloButtonWidth    = 22.0f;
         constexpr float  kRulerHeight        = 20.0f;
         constexpr float  kOuterInset         = 1.0f;
         constexpr float  kLaneInset          = 3.0f;   // vertical padding inside each lane
@@ -87,6 +88,31 @@ namespace B33p
                                          processor.getPattern()));
             };
             addAndMakeVisible(muteBtn);
+
+            auto& soloBtn = soloButtons[static_cast<size_t>(i)];
+            soloBtn.setButtonText("S");
+            soloBtn.setClickingTogglesState(true);
+            soloBtn.setTooltip("Solo lane (only soloed lanes play)");
+            soloBtn.setColour(juce::TextButton::buttonOnColourId,
+                                juce::Colour::fromRGB(220, 200, 60));
+            soloBtn.onClick = [this, i]
+            {
+                processor.setSelectedLane(i);
+                const bool wantSoloed = soloButtons[static_cast<size_t>(i)].getToggleState();
+                if (processor.getPattern().isLaneSoloed(i) == wantSoloed)
+                    return;
+
+                Pattern before = processor.getPattern();
+                processor.getPattern().setLaneSoloed(i, wantSoloed);
+                processor.markDirty();
+
+                processor.getUndoManager().beginNewTransaction("Toggle lane solo");
+                processor.getUndoManager().perform(
+                    new SetPatternAction(processor, this,
+                                         std::move(before),
+                                         processor.getPattern()));
+            };
+            addAndMakeVisible(soloBtn);
         }
 
         refreshLaneMetaFromPattern();
@@ -106,6 +132,9 @@ namespace B33p
                               .reduced(static_cast<int>(kLaneLabelInset));
 
             const int muteW = static_cast<int>(kMuteButtonWidth);
+            const int soloW = static_cast<int>(kSoloButtonWidth);
+            soloButtons   [static_cast<size_t>(i)].setBounds(strip.removeFromRight(soloW));
+            strip.removeFromRight(2);
             muteButtons   [static_cast<size_t>(i)].setBounds(strip.removeFromRight(muteW));
             strip.removeFromRight(2);
             laneNameLabels[static_cast<size_t>(i)].setBounds(strip);
@@ -124,6 +153,9 @@ namespace B33p
                 displayed, juce::dontSendNotification);
             muteButtons[static_cast<size_t>(i)].setToggleState(
                 processor.getPattern().isLaneMuted(i),
+                juce::dontSendNotification);
+            soloButtons[static_cast<size_t>(i)].setToggleState(
+                processor.getPattern().isLaneSoloed(i),
                 juce::dontSendNotification);
         }
     }
