@@ -189,6 +189,41 @@ namespace B33p
         return s;
     }
 
+    void B33pProcessor::copyLaneSettingsToAll(int sourceLane)
+    {
+        if (sourceLane < 0 || sourceLane >= Pattern::kNumLanes)
+            return;
+
+        const auto srcIds = ParameterIDs::allForLane(sourceLane);
+
+        undoManager.beginNewTransaction("Copy lane to all lanes");
+
+        for (int dest = 0; dest < Pattern::kNumLanes; ++dest)
+        {
+            if (dest == sourceLane) continue;
+            const auto dstIds = ParameterIDs::allForLane(dest);
+            for (size_t i = 0; i < srcIds.size(); ++i)
+            {
+                auto* src = apvts.getParameter(srcIds[i]);
+                auto* dst = apvts.getParameter(dstIds[i]);
+                if (src != nullptr && dst != nullptr)
+                    dst->setValueNotifyingHost(src->getValue());
+            }
+        }
+    }
+
+    void B33pProcessor::resetLaneVoice(int lane)
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return;
+
+        undoManager.beginNewTransaction("Reset lane voice");
+
+        for (const auto& id : ParameterIDs::allForLane(lane))
+            if (auto* p = apvts.getParameter(id))
+                p->setValueNotifyingHost(p->getDefaultValue());
+    }
+
     void B33pProcessor::notifyDirtyChanged()
     {
         if (onDirtyChangedCallback)

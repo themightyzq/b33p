@@ -22,6 +22,8 @@ namespace B33p
             FileSaveAs,
             EditUndo,
             EditRedo,
+            LaneCopyToAll,
+            LaneResetVoice,
             HelpAbout,
         };
     }
@@ -274,7 +276,7 @@ namespace B33p
 
     juce::StringArray MainComponent::getMenuBarNames()
     {
-        return { "File", "Edit", "Help" };
+        return { "File", "Edit", "Lane", "Help" };
     }
 
     juce::PopupMenu MainComponent::getMenuForIndex(int topLevelIndex,
@@ -310,7 +312,15 @@ namespace B33p
                 m.addItem(withShortcut(MenuId::EditRedo, "Redo", "Cmd+Shift+Z",
                                        processor.getUndoManager().canRedo()));
                 break;
-            case 2: // Help
+            case 2: // Lane (the currently-selected one)
+            {
+                const int lane = processor.getSelectedLane();
+                const juce::String tag = "Lane " + juce::String(lane + 1);
+                m.addItem(MenuId::LaneCopyToAll,  "Copy " + tag + " voice to all lanes");
+                m.addItem(MenuId::LaneResetVoice, "Reset " + tag + " voice to defaults");
+                break;
+            }
+            case 3: // Help
                 m.addItem(withShortcut(MenuId::HelpAbout, "About b33p", "Cmd+/"));
                 break;
             default:
@@ -333,6 +343,10 @@ namespace B33p
             case MenuId::FileSaveAs: fileManager.saveAs(this);                  break;
             case MenuId::EditUndo:   processor.getUndoManager().undo();         break;
             case MenuId::EditRedo:   processor.getUndoManager().redo();         break;
+            case MenuId::LaneCopyToAll:
+                processor.copyLaneSettingsToAll(processor.getSelectedLane());   break;
+            case MenuId::LaneResetVoice:
+                processor.resetLaneVoice(processor.getSelectedLane());          break;
             case MenuId::HelpAbout:  showAboutDialog();                         break;
             default:                                                            break;
         }
