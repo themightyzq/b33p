@@ -25,12 +25,29 @@ namespace B33p
     class PatternGrid : public juce::Component
     {
     public:
+        // Public so the inspector strip below the grid can read which
+        // event the user has selected. lane = -1 means "no selection".
+        struct Selection
+        {
+            int         lane  { -1 };
+            std::size_t index {  0 };
+
+            bool valid() const { return lane >= 0; }
+        };
+
         explicit PatternGrid(B33pProcessor& processor);
 
         // 0 (or negative) means "no snap" — clicks land at the exact
         // cursor position and grid lines are not drawn.
         void   setGridSeconds(double seconds);
         double getGridSeconds() const { return gridSeconds; }
+
+        const Selection& getSelection() const { return selection; }
+        void clearSelection();
+
+        // Fires whenever `selection` changes, including transitions to
+        // / from "no selection". Used by the inspector strip to redraw.
+        std::function<void()> onSelectionChanged;
 
         void paint(juce::Graphics& g) override;
 
@@ -41,13 +58,9 @@ namespace B33p
         bool keyPressed(const juce::KeyPress& key) override;
 
     private:
-        struct Selection
-        {
-            int         lane  { -1 };
-            std::size_t index {  0 };
-
-            bool valid() const { return lane >= 0; }
-        };
+        // Bottleneck for selection writes so onSelectionChanged fires
+        // on every transition without each call site remembering.
+        void setSelection(const Selection& newSelection);
 
         enum class DragMode { None, Move, Resize };
 

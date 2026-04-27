@@ -119,10 +119,10 @@ Framing: today the pattern editor is "place a beep here, drag it, drag its edge"
 - [x] `.beep` serializes velocity with a default-tolerant load (no schema bump needed — new field defaults cleanly for v1 files)
 
 ### Inspector panel (selected-event detail)
-- [ ] Thin inspector strip below the pattern grid; visible when an event is selected, hidden otherwise
-- [ ] Editable fields: start, duration, pitch offset (semitones), velocity, lane (dropdown)
-- [ ] Delete button
-- [ ] Each inspector edit pushes one undoable action (snapshot pattern → apply → perform)
+- [x] Thin inspector strip below the pattern grid; visible when an event is selected, hidden otherwise
+- [x] Editable fields: start, duration, pitch offset (semitones), velocity, lane (dropdown)
+- [x] Delete button
+- [x] Each inspector edit pushes one undoable action (snapshot pattern → apply → perform)
 
 ### Visual clip differentiation
 - [ ] Clip height encodes velocity (vertically centred in the lane)
