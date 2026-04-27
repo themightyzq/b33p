@@ -112,7 +112,20 @@ namespace B33p
         auto laneRectF = laneArea(lane).reduced(0.0f, kLaneInset);
         const float x1 = secondsToX(e.startSeconds);
         const float x2 = secondsToX(e.startSeconds + e.durationSeconds);
-        return { x1, laneRectF.getY(), std::max(2.0f, x2 - x1), laneRectF.getHeight() };
+
+        // Velocity drives the visible height: a v=1.0 event fills
+        // the whole lane row, v=0.5 is half height. A small floor
+        // keeps even silent (v=0) events visible enough to grab.
+        const float v        = juce::jlimit(0.0f, 1.0f, e.velocity);
+        const float fullH    = laneRectF.getHeight();
+        const float minH     = std::min(fullH, 8.0f);
+        const float visibleH = std::max(minH, fullH * v);
+        const float yCentre  = laneRectF.getCentreY();
+
+        return { x1,
+                 yCentre - visibleH * 0.5f,
+                 std::max(2.0f, x2 - x1),
+                 visibleH };
     }
 
     PatternGrid::HitResult PatternGrid::hitTestEvent(juce::Point<float> p) const
@@ -245,16 +258,36 @@ namespace B33p
                 const bool isSelected = (selection.valid()
                                          && selection.lane  == lane
                                          && selection.index == i);
+                const bool isHover    = (hover.valid()
+                                         && hover.lane  == lane
+                                         && hover.index == i);
 
-                g.setColour(isSelected
-                                ? juce::Colour::fromRGB(120, 200, 255)
-                                : juce::Colour::fromRGB(80, 150, 220));
+                // Fill: selected > hover > idle. The hover lift is
+                // small (10..15 RGB units) — enough to read as
+                // "this is the click target" without competing
+                // with the selection accent.
+                juce::Colour fill { 80, 150, 220 };
+                if (isSelected)   fill = { 120, 200, 255 };
+                else if (isHover) fill = {  95, 170, 235 };
+                g.setColour(fill);
                 g.fillRoundedRectangle(rect, kEventCorner);
 
                 g.setColour(isSelected
                                 ? juce::Colour::fromRGB(230, 240, 255)
                                 : juce::Colour::fromRGB(30, 30, 30));
-                g.drawRoundedRectangle(rect, kEventCorner, 1.0f);
+                g.drawRoundedRectangle(rect, kEventCorner,
+                                        isSelected ? 1.6f : 1.0f);
+
+                // Resize-handle dots on the selected event so the
+                // edges read as grabbable handles, not just an outline.
+                if (isSelected)
+                {
+                    const float r  = 2.5f;
+                    const float cy = rect.getCentreY();
+                    g.setColour(juce::Colour::fromRGB(230, 240, 255));
+                    g.fillEllipse(rect.getX()      - r, cy - r, r * 2.0f, r * 2.0f);
+                    g.fillEllipse(rect.getRight()  - r, cy - r, r * 2.0f, r * 2.0f);
+                }
             }
         }
 
@@ -351,6 +384,29 @@ namespace B33p
         // mouseUp end state. Cheap to fire 30+ times per drag.
         if (onSelectionChanged)
             onSelectionChanged();
+    }
+
+    void PatternGrid::mouseMove(const juce::MouseEvent& e)
+    {
+        const auto hit = hitTestEvent(e.position);
+        Selection newHover;
+        if (hit.kind != HitResult::Kind::None)
+            newHover = { hit.lane, hit.index };
+
+        if (newHover.lane != hover.lane || newHover.index != hover.index)
+        {
+            hover = newHover;
+            repaint();
+        }
+    }
+
+    void PatternGrid::mouseExit(const juce::MouseEvent&)
+    {
+        if (hover.valid())
+        {
+            hover = {};
+            repaint();
+        }
     }
 
     void PatternGrid::mouseUp(const juce::MouseEvent&)

@@ -125,9 +125,9 @@ Framing: today the pattern editor is "place a beep here, drag it, drag its edge"
 - [x] Each inspector edit pushes one undoable action (snapshot pattern → apply → perform)
 
 ### Visual clip differentiation
-- [ ] Clip height encodes velocity (vertically centred in the lane)
-- [ ] Selected clip gets a strong outline + small resize-handle dots at the edges
-- [ ] Hover lifts the clip's tint so the cursor target reads at a glance
+- [x] Clip height encodes velocity (vertically centred in the lane)
+- [x] Selected clip gets a strong outline + small resize-handle dots at the edges
+- [x] Hover lifts the clip's tint so the cursor target reads at a glance
 
 ### Clip editing gestures — the "feels like a DAW" pass
 - [ ] Cursor changes: crosshair over empty grid, open-hand over clip body, horizontal-resize over either edge
