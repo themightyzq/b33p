@@ -146,9 +146,9 @@ namespace B33p
             HitResult r;
             r.lane  = lane;
             r.index = i;
-            r.kind  = (p.x >= rect.getRight() - kResizeEdgeWidth)
-                          ? HitResult::Kind::RightEdge
-                          : HitResult::Kind::Body;
+            if      (p.x <= rect.getX()     + kResizeEdgeWidth) r.kind = HitResult::Kind::LeftEdge;
+            else if (p.x >= rect.getRight() - kResizeEdgeWidth) r.kind = HitResult::Kind::RightEdge;
+            else                                                r.kind = HitResult::Kind::Body;
             return r;
         }
         return none;
@@ -291,6 +291,17 @@ namespace B33p
             }
         }
 
+        // Snap-target preview — drawn during an active drag to show
+        // where the manipulated edge will land on release.
+        if (snapPreviewSeconds >= 0.0)
+        {
+            const float x = secondsToX(snapPreviewSeconds);
+            g.setColour(juce::Colour::fromRGB(230, 240, 255).withAlpha(0.55f));
+            g.drawLine(x, frame.getY() + kRulerHeight,
+                       x, frame.getBottom(),
+                       1.0f);
+        }
+
         // Playhead — only drawn while the processor is playing.
         if (processor.isPlaying())
         {
@@ -398,9 +409,14 @@ namespace B33p
 
         setSelection({ hit.lane, hit.index });
 
-        dragMode          = (hit.kind == HitResult::Kind::RightEdge)
-                                ? DragMode::Resize
-                                : DragMode::Move;
+        switch (hit.kind)
+        {
+            case HitResult::Kind::LeftEdge:  dragMode = DragMode::ResizeLeft;  break;
+            case HitResult::Kind::RightEdge: dragMode = DragMode::ResizeRight; break;
+            case HitResult::Kind::Body:
+            case HitResult::Kind::None:
+            default:                         dragMode = DragMode::Move;        break;
+        }
         dragStartSeconds  = xToSeconds(e.position.x);
         dragOriginalEvent = processor.getPattern().getEvents(hit.lane)[hit.index];
 
@@ -424,14 +440,29 @@ namespace B33p
             current.startSeconds  = std::clamp(current.startSeconds,
                                                0.0,
                                                std::max(0.0, length - current.durationSeconds));
+            snapPreviewSeconds = current.startSeconds;
         }
-        else if (dragMode == DragMode::Resize)
+        else if (dragMode == DragMode::ResizeRight)
         {
             const double cursorSec = xToSeconds(e.position.x);
             double newDuration = snapSeconds(cursorSec - current.startSeconds);
             newDuration        = std::max(kMinDurationSec, newDuration);
             newDuration        = std::min(newDuration, length - current.startSeconds);
             current.durationSeconds = newDuration;
+            snapPreviewSeconds = current.startSeconds + current.durationSeconds;
+        }
+        else if (dragMode == DragMode::ResizeLeft)
+        {
+            // End point stays anchored; start follows the cursor and
+            // duration shrinks/grows to compensate.
+            const double endSec   = dragOriginalEvent.startSeconds
+                                   + dragOriginalEvent.durationSeconds;
+            double newStart       = snapSeconds(xToSeconds(e.position.x));
+            newStart              = std::max(0.0,
+                std::min(newStart, endSec - kMinDurationSec));
+            current.startSeconds    = newStart;
+            current.durationSeconds = endSec - newStart;
+            snapPreviewSeconds      = newStart;
         }
 
         pattern.updateEvent(selection.lane, selection.index, current);
@@ -460,7 +491,8 @@ namespace B33p
         // Cursor affordance: edge = resize, body = drag, lane row =
         // crosshair (will create / select), elsewhere = normal.
         juce::MouseCursor cur { juce::MouseCursor::NormalCursor };
-        if      (hit.kind == HitResult::Kind::RightEdge) cur = juce::MouseCursor::LeftRightResizeCursor;
+        if      (hit.kind == HitResult::Kind::LeftEdge
+              || hit.kind == HitResult::Kind::RightEdge) cur = juce::MouseCursor::LeftRightResizeCursor;
         else if (hit.kind == HitResult::Kind::Body)      cur = juce::MouseCursor::DraggingHandCursor;
         else if (yToLane(e.position.y) >= 0)             cur = juce::MouseCursor::CrosshairCursor;
         setMouseCursor(cur);
@@ -478,6 +510,12 @@ namespace B33p
     void PatternGrid::mouseUp(const juce::MouseEvent&)
     {
         dragMode = DragMode::None;
+
+        if (snapPreviewSeconds >= 0.0)
+        {
+            snapPreviewSeconds = -1.0;
+            repaint();
+        }
 
         // Commit the gesture as a single undoable transaction iff
         // it actually changed the pattern. Right-clicks above the
