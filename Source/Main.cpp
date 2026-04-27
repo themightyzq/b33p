@@ -50,7 +50,21 @@ namespace B33p
             processor.reset();
         }
 
-        void systemRequestedQuit() override        { quit(); }
+        void systemRequestedQuit() override
+        {
+            // Detour through the dirty-prompt before honouring the
+            // quit. If the user picks Cancel in the prompt, quit()
+            // is never called and the app keeps running.
+            if (mainWindow != nullptr)
+            {
+                if (auto* mc = mainWindow->getMainComponent())
+                {
+                    mc->confirmDiscardThen([] { JUCEApplication::quit(); });
+                    return;
+                }
+            }
+            quit();
+        }
 
         // Re-routes "open with file" requests from the OS into the
         // already-running instance. On macOS this fires when the

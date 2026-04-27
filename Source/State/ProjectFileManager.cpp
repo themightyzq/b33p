@@ -38,17 +38,17 @@ namespace B33p
         onStateChangedCallback = std::move(callback);
     }
 
-    void ProjectFileManager::save(juce::Component* parent)
+    void ProjectFileManager::save(juce::Component* parent, OnSaveComplete onComplete)
     {
         if (currentFile == juce::File())
         {
-            saveAs(parent);
+            saveAs(parent, std::move(onComplete));
             return;
         }
-        writeAndReport(currentFile);
+        writeAndReport(currentFile, std::move(onComplete));
     }
 
-    void ProjectFileManager::saveAs(juce::Component* parent)
+    void ProjectFileManager::saveAs(juce::Component* parent, OnSaveComplete onComplete)
     {
         const auto initial = defaultStartLocation(currentFile)
                                  .getChildFile(currentFile != juce::File()
@@ -62,16 +62,20 @@ namespace B33p
                         | juce::FileBrowserComponent::canSelectFiles
                         | juce::FileBrowserComponent::warnAboutOverwriting;
 
-        fileChooser->launchAsync(flags, [this, parent](const juce::FileChooser& fc)
+        fileChooser->launchAsync(flags,
+            [this, parent, onComplete = std::move(onComplete)](const juce::FileChooser& fc) mutable
         {
             juce::ignoreUnused(parent);
             const auto chosen = fc.getResult();
             if (chosen == juce::File())
+            {
+                if (onComplete) onComplete(false);
                 return;
+            }
             // Force the .beep extension if the user dropped or
             // edited it away — keeps the file-type association
             // and the Open dialog filter both predictable.
-            writeAndReport(chosen.withFileExtension(".beep"));
+            writeAndReport(chosen.withFileExtension(".beep"), std::move(onComplete));
         });
     }
 
@@ -101,12 +105,14 @@ namespace B33p
             readAndReport(file);
     }
 
-    void ProjectFileManager::writeAndReport(const juce::File& destination)
+    void ProjectFileManager::writeAndReport(const juce::File& destination,
+                                             OnSaveComplete onComplete)
     {
         if (! ProjectState::writeToFile(processor, destination))
         {
             showError("Save failed",
                       "Could not write project to:\n" + destination.getFullPathName());
+            if (onComplete) onComplete(false);
             return;
         }
 
@@ -119,6 +125,8 @@ namespace B33p
             if (onStateChangedCallback)
                 onStateChangedCallback();
         }
+
+        if (onComplete) onComplete(true);
     }
 
     void ProjectFileManager::readAndReport(const juce::File& source)

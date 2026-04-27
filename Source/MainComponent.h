@@ -31,6 +31,14 @@ namespace B33p
         // same alert as the dialog-driven Open command.
         void openProjectFile(const juce::File& file);
 
+        // Shows a Save / Discard / Cancel prompt if the project is
+        // dirty, then runs `proceed` only if the user picked Save
+        // (and the save succeeded) or Discard. Cancel is a no-op.
+        // If the project is already clean, `proceed` runs immediately.
+        // Used by the close-button / quit handler to prevent
+        // accidental loss of unsaved work.
+        void confirmDiscardThen(std::function<void()> proceed);
+
         // juce::MenuBarModel
         juce::StringArray getMenuBarNames() override;
         juce::PopupMenu   getMenuForIndex(int topLevelIndex,

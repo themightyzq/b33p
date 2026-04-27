@@ -94,6 +94,43 @@ namespace B33p
         fileManager.openFile(file);
     }
 
+    void MainComponent::confirmDiscardThen(std::function<void()> proceed)
+    {
+        if (! processor.isDirty())
+        {
+            if (proceed) proceed();
+            return;
+        }
+
+        // Button index in the result: 1 = Save, 2 = Discard, 0 = Cancel.
+        // JUCE assigns 1..N for the order they're added; "Cancel" is
+        // mapped to 0 by withButton when it is the last/escape choice.
+        juce::AlertWindow::showAsync(
+            juce::MessageBoxOptions()
+                .withIconType(juce::MessageBoxIconType::WarningIcon)
+                .withTitle("Unsaved changes")
+                .withMessage("This project has unsaved changes. Save before closing?")
+                .withButton("Save")
+                .withButton("Discard")
+                .withButton("Cancel"),
+            [this, next = std::move(proceed)](int result) mutable
+            {
+                if (result == 1) // Save
+                {
+                    fileManager.save(this,
+                        [afterSave = std::move(next)](bool ok)
+                        {
+                            if (ok && afterSave) afterSave();
+                        });
+                }
+                else if (result == 2) // Discard
+                {
+                    if (next) next();
+                }
+                // result == 0 (Cancel): drop the proceed callback.
+            });
+    }
+
     bool MainComponent::keyPressed(const juce::KeyPress& key)
     {
         if (key == juce::KeyPress::spaceKey)
