@@ -16,8 +16,8 @@ namespace B33p
         void resized() override;
 
     private:
-        LabeledSlider cutoffSlider    { "Cutoff" };
-        LabeledSlider resonanceSlider { "Q"      };
+        LabeledSlider cutoffSlider    { "Cutoff"    };
+        LabeledSlider resonanceSlider { "Resonance" };
 
         juce::AudioProcessorValueTreeState::SliderAttachment cutoffAttachment;
         juce::AudioProcessorValueTreeState::SliderAttachment resonanceAttachment;
