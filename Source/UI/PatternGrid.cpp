@@ -306,6 +306,64 @@ namespace B33p
     {
         grabKeyboardFocus();
 
+        // Right-click on an event opens a context menu (Delete /
+        // Duplicate). Right-click on empty grid is a no-op.
+        if (e.mods.isPopupMenu())
+        {
+            const auto hit = hitTestEvent(e.position);
+            if (hit.kind == HitResult::Kind::None)
+                return;
+
+            setSelection({ hit.lane, hit.index });
+            repaint();
+
+            juce::PopupMenu menu;
+            menu.addItem(1, "Delete");
+            menu.addItem(2, "Duplicate");
+            const int laneClicked  = hit.lane;
+            const std::size_t idxClicked = hit.index;
+            menu.showMenuAsync(juce::PopupMenu::Options{},
+                [this, laneClicked, idxClicked](int result)
+                {
+                    auto& pattern = processor.getPattern();
+                    if (idxClicked >= pattern.getEvents(laneClicked).size())
+                        return;
+
+                    Pattern before = pattern;
+                    if (result == 1)
+                    {
+                        pattern.removeEvent(laneClicked, idxClicked);
+                        setSelection({});
+                    }
+                    else if (result == 2)
+                    {
+                        Event copy = pattern.getEvents(laneClicked)[idxClicked];
+                        // Place the duplicate immediately after the original.
+                        copy.startSeconds = std::min(
+                            pattern.getLengthSeconds() - copy.durationSeconds,
+                            copy.startSeconds + copy.durationSeconds);
+                        pattern.addEvent(laneClicked, copy);
+                        setSelection({ laneClicked,
+                                       pattern.getEvents(laneClicked).size() - 1 });
+                    }
+                    else
+                    {
+                        return; // dismissed
+                    }
+
+                    processor.markDirty();
+                    repaint();
+
+                    processor.getUndoManager().beginNewTransaction(
+                        result == 1 ? "Delete event" : "Duplicate event");
+                    processor.getUndoManager().perform(
+                        new SetPatternAction(processor, this,
+                                             std::move(before),
+                                             pattern));
+                });
+            return;
+        }
+
         // Snapshot the pattern before any mutation so mouseUp can
         // wrap the whole gesture in a single undoable action.
         gestureSnapshot = processor.getPattern();
@@ -398,6 +456,14 @@ namespace B33p
             hover = newHover;
             repaint();
         }
+
+        // Cursor affordance: edge = resize, body = drag, lane row =
+        // crosshair (will create / select), elsewhere = normal.
+        juce::MouseCursor cur { juce::MouseCursor::NormalCursor };
+        if      (hit.kind == HitResult::Kind::RightEdge) cur = juce::MouseCursor::LeftRightResizeCursor;
+        else if (hit.kind == HitResult::Kind::Body)      cur = juce::MouseCursor::DraggingHandCursor;
+        else if (yToLane(e.position.y) >= 0)             cur = juce::MouseCursor::CrosshairCursor;
+        setMouseCursor(cur);
     }
 
     void PatternGrid::mouseExit(const juce::MouseEvent&)
@@ -447,6 +513,56 @@ namespace B33p
                 return true;
             }
         }
+
+        if (key == juce::KeyPress::escapeKey)
+        {
+            if (selection.valid())
+            {
+                clearSelection();
+                return true;
+            }
+            return false;
+        }
+
+        // Arrow keys nudge the selected event. Step = one grid
+        // tick; shift+arrow steps by ten. Falls back to 10 ms when
+        // the grid is "Off".
+        const bool isLeft  = (key == juce::KeyPress::leftKey);
+        const bool isRight = (key == juce::KeyPress::rightKey);
+        if ((isLeft || isRight) && selection.valid())
+        {
+            const double step    = (gridSeconds > 0.0 ? gridSeconds : 0.01);
+            const int    mult    = key.getModifiers().isShiftDown() ? 10 : 1;
+            const double delta   = (isRight ? 1.0 : -1.0) * step * mult;
+
+            auto&  pattern = processor.getPattern();
+            if (selection.index >= pattern.getEvents(selection.lane).size())
+                return true;
+
+            Pattern before = pattern;
+            Event   ev = pattern.getEvents(selection.lane)[selection.index];
+            const double maxStart = std::max(0.0,
+                pattern.getLengthSeconds() - ev.durationSeconds);
+            ev.startSeconds = std::clamp(ev.startSeconds + delta, 0.0, maxStart);
+
+            if (ev == pattern.getEvents(selection.lane)[selection.index])
+                return true;   // hit a clamp; nothing to do
+
+            pattern.updateEvent(selection.lane, selection.index, ev);
+            processor.markDirty();
+            repaint();
+
+            if (onSelectionChanged)
+                onSelectionChanged();
+
+            processor.getUndoManager().beginNewTransaction("Nudge event");
+            processor.getUndoManager().perform(
+                new SetPatternAction(processor, this,
+                                     std::move(before),
+                                     pattern));
+            return true;
+        }
+
         return false;
     }
 }
