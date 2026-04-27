@@ -14,6 +14,7 @@ namespace B33p
         constexpr int  kExportWidth    = 90;
         constexpr int  kComboWidth     = 110;
         constexpr int  kLabelWidth     = 50;
+        constexpr int  kTimeWidth      = 90;
         constexpr int  kRepaintHz      = 30;
 
         struct LengthPreset { const char* label; double seconds; };
@@ -71,6 +72,15 @@ namespace B33p
             processor.setLooping(loopToggle.getToggleState());
         };
         addAndMakeVisible(loopToggle);
+
+        // Playhead readout. Updates from the same 30 Hz timer as
+        // the grid; shows "0.00 / 5.00s" at rest so the user can
+        // see the pattern's total length without playing it.
+        timeLabel.setJustificationType(juce::Justification::centredLeft);
+        timeLabel.setFont(juce::FontOptions(11.0f, juce::Font::plain));
+        timeLabel.setColour(juce::Label::textColourId,
+                             juce::Colour::fromRGB(170, 170, 170));
+        addAndMakeVisible(timeLabel);
 
         // Length combo
         lengthLabel.setText("Length:", juce::dontSendNotification);
@@ -208,6 +218,12 @@ namespace B33p
         playButton.setColour(juce::TextButton::buttonColourId,
                              playing ? stopRed : playGreen);
 
+        const double headSec   = playing ? processor.getPlayheadSeconds() : 0.0;
+        const double lengthSec = processor.getPattern().getLengthSeconds();
+        timeLabel.setText(juce::String(headSec,   2) + " / "
+                        + juce::String(lengthSec, 2) + "s",
+                          juce::dontSendNotification);
+
         if (playing)
             grid.repaint();
     }
@@ -227,6 +243,9 @@ namespace B33p
         playButton.setBounds(controlsRow.removeFromLeft(kButtonWidth));
         controlsRow.removeFromLeft(kControlsGap);
         loopToggle.setBounds(controlsRow.removeFromLeft(kButtonWidth));
+        controlsRow.removeFromLeft(kControlsGap);
+
+        timeLabel.setBounds(controlsRow.removeFromLeft(kTimeWidth));
         controlsRow.removeFromLeft(kControlsGap);
 
         lengthLabel.setBounds(controlsRow.removeFromLeft(kLabelWidth));
