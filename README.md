@@ -34,7 +34,9 @@ Roadmap highlights — not built yet, not promised on a date, but on the list. F
 
 ## Screenshots
 
-_Screenshots live in `docs/images/`. Nothing to show yet — check back around v0.1._
+![b33p main window — voice editor, pitch envelope, and pattern sequencer](docs/images/hero.png)
+
+The full editor at default state: oscillator, amp envelope (with live ADSR visualiser), filter, effects, master with audition + dice-all, the drawable pitch envelope, and the pattern sequencer with grid-snap and WAV export. Every continuous parameter has a per-knob dice (`D`) and lock (`L`) so you can roll only what you haven't pinned.
 
 ## Installation
 
