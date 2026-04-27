@@ -36,6 +36,8 @@ namespace B33p
         juce::TextButton playButton   { "Play" };
         juce::TextButton loopToggle   { "Loop" };
 
+        juce::Label      timeLabel;
+
         juce::Label      lengthLabel;
         juce::ComboBox   lengthCombo;
 
