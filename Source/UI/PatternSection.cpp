@@ -152,7 +152,7 @@ namespace B33p
         exportButton.onClick = [this] { onExportClicked(); };
         addAndMakeVisible(exportButton);
 
-        playButton  .setTooltip("Play the pattern from the start");
+        playButton  .setTooltip("Play the pattern from the start (Space)");
         loopToggle  .setTooltip("Loop playback when the end is reached");
         lengthCombo .setTooltip("Total length of the pattern");
         gridCombo   .setTooltip("Snap event positions to this grid (Off = free)");

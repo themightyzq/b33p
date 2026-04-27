@@ -142,9 +142,16 @@ namespace B33p
 
     bool MainComponent::keyPressed(const juce::KeyPress& key)
     {
-        if (key == juce::KeyPress::spaceKey)
+        // Spacebar = pattern play/stop (DAW convention).
+        // Shift+Space = audition the voice (the old Space behaviour).
+        if (key.getKeyCode() == juce::KeyPress::spaceKey)
         {
-            processor.triggerAudition();
+            if (key.getModifiers().isShiftDown())
+                processor.triggerAudition();
+            else if (processor.isPlaying())
+                processor.stopPlayback();
+            else
+                processor.startPlayback();
             return true;
         }
 
