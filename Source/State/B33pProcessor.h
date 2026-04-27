@@ -82,6 +82,13 @@ namespace B33p
         void   stopPlayback();
         bool   isPlaying() const     { return playing.load(std::memory_order_acquire); }
 
+        // Rebuild the pattern snapshot from the live Pattern and
+        // atomic-store it into the slot the audio thread reads.
+        // Cheap (a copy + sort of a small vector) and safe to call
+        // any time. Used by the message-thread timer to push live
+        // pattern edits into a running playback session.
+        void   refreshPatternSnapshot();
+
         void   setLooping(bool shouldLoop);
         bool   getLooping() const          { return looping.load(); }
 

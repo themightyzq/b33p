@@ -133,6 +133,12 @@ namespace B33p
         playing.store(false, std::memory_order_release);
     }
 
+    void B33pProcessor::refreshPatternSnapshot()
+    {
+        auto snap = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern));
+        std::atomic_store(&snapshotSlot, snap);
+    }
+
     void B33pProcessor::setLooping(bool shouldLoop)
     {
         if (looping.exchange(shouldLoop) != shouldLoop)
@@ -262,6 +268,30 @@ namespace B33p
             activeSnapshot.reset();
         }
         audioThreadPlaying = nowPlaying;
+
+        // ---- Live snapshot swap while playing ---------------------
+        // The message-thread timer republishes the snapshot whenever
+        // the pattern is mutated. Compare pointers; if the slot
+        // changed, take the new snapshot and re-seed nextEventIndex
+        // from the current playhead so we don't re-fire events that
+        // have already played in this loop iteration.
+        if (audioThreadPlaying)
+        {
+            auto latest = std::atomic_load(&snapshotSlot);
+            if (latest != activeSnapshot)
+            {
+                activeSnapshot = latest;
+                nextEventIndex = 0;
+                if (activeSnapshot != nullptr)
+                {
+                    const double now = playheadSeconds.load();
+                    const auto& evs  = activeSnapshot->events;
+                    while (nextEventIndex < static_cast<int>(evs.size())
+                           && evs[static_cast<size_t>(nextEventIndex)].startSeconds < now)
+                        ++nextEventIndex;
+                }
+            }
+        }
 
         // ---- Audition trigger fires before the per-sample loop ----
         if (pendingAudition.exchange(false, std::memory_order_acq_rel))

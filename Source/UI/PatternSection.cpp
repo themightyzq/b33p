@@ -255,7 +255,14 @@ namespace B33p
                           juce::dontSendNotification);
 
         if (playing)
+        {
+            // Republish the snapshot so any pattern edits the user
+            // made since the last tick (add / remove / drag /
+            // inspector edit / undo / redo) are picked up on the
+            // audio thread within ~33 ms — fast enough to feel live.
+            processor.refreshPatternSnapshot();
             grid.repaint();
+        }
     }
 
     void PatternSection::resized()
