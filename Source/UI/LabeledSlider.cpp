@@ -18,6 +18,10 @@ namespace B33p
         slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
                                kTextBoxWidth, kTextBoxHeight);
+        // While dragging, show the live formatted value in a popup
+        // bubble next to the cursor — the small below-knob text box
+        // is hard to read mid-gesture.
+        slider.setPopupDisplayEnabled(true, false, nullptr);
         addAndMakeVisible(slider);
 
         label.setText(name, juce::dontSendNotification);
