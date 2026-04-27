@@ -159,21 +159,21 @@ Framing: today the pattern editor is "place a beep here, drag it, drag its edge"
 Goal: each of the 4 lanes owns its own synth voice, so the user can layer different timbres in a single pattern (the canonical droid-chatter / R2D2 / "computer console" use case). The voice editor sections (Oscillator, Amp Env, Filter, Effects, Master) edit the currently-selected lane's voice.
 
 ### Architecture
-- [ ] `B33pProcessor` owns 4 `Voice` instances instead of 1
-- [ ] APVTS parameter IDs gain a lane prefix (e.g. `lane0.osc.waveform`); `ParameterIDs.h` reorganized per lane
-- [ ] Selected-lane state on the processor; the editor sections read/write the selected lane
-- [ ] Each event triggers its lane's voice; PatternRenderer mixes the four outputs
-- [ ] `.beep` schema bumped to v2; v1 → v2 migration fans the single voice's settings out to all 4 lanes' parameter sets
+- [x] `B33pProcessor` owns 4 `Voice` instances instead of 1
+- [x] APVTS parameter IDs gain a lane prefix (e.g. `lane0_osc_waveform`); `ParameterIDs.h` reorganized per lane
+- [x] Selected-lane state on the processor; the editor sections read/write the selected lane
+- [x] Each event triggers its lane's voice; PatternRenderer mixes the four outputs
+- [x] `.beep` schema bumped to v2; v1 → v2 migration fans the single voice's settings out to all 4 lanes' parameter sets
 
 ### UI
-- [ ] Click a lane label or any event in a lane to select that lane
-- [ ] Selected lane highlights visually (lane background tint)
-- [ ] Section titles append the lane name (e.g. "Lane 1 — Oscillator")
-- [ ] Per-lane Solo button complements Phase 8's Mute
+- [x] Click a lane label or any event in a lane to select that lane
+- [x] Selected lane highlights visually (lane background tint)
+- [x] Section titles append the lane name (e.g. "Oscillator (Lane 1)")
+- [x] Per-lane Solo button complements Phase 8's Mute
 
 ### Workflow
-- [ ] "Copy lane settings to all" — fan out one voice's settings to all 4 lanes
-- [ ] Per-lane "Reset voice to defaults" in a context menu
+- [x] "Copy lane settings to all" — fan out one voice's settings to all 4 lanes (Lane menu)
+- [x] Per-lane "Reset voice to defaults" in a context menu (Lane menu)
 
 ---
 

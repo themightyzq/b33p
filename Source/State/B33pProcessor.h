@@ -135,6 +135,15 @@ namespace B33p
         // to telegraph which lane they're currently editing.
         juce::String laneTitleSuffix(int lane) const;
 
+        // Copies every voice parameter from sourceLane onto all the
+        // other lanes (or just one destLane if specified). One
+        // undoable transaction per call.
+        void copyLaneSettingsToAll(int sourceLane);
+
+        // Resets one lane's voice parameters to their defaults.
+        // One undoable transaction.
+        void resetLaneVoice(int lane);
+
         // Audio thread writes once per block, UI reads from a Timer
         // callback. atomic<double> is lock-free on every 64-bit
         // platform we support.
