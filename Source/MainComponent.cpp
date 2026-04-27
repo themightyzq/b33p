@@ -9,6 +9,20 @@ namespace B33p
         constexpr int kTopRowHeight   = 260;
         constexpr int kMidRowHeight   = 180;
         constexpr int kPitchRowHeight = 180;
+        constexpr int kMenuBarHeight  = 24;
+
+        // Menu item IDs. Kept in one enum so the dispatch in
+        // menuItemSelected stays readable. IDs must be > 0 — JUCE
+        // treats 0 as "nothing selected".
+        enum MenuId
+        {
+            FileOpen = 1,
+            FileSave,
+            FileSaveAs,
+            EditUndo,
+            EditRedo,
+            HelpAbout,
+        };
     }
 
     MainComponent::MainComponent(B33pProcessor& processorRef)
@@ -22,6 +36,7 @@ namespace B33p
           pitchEnvelopeSection(processor),
           patternSection      (processor)
     {
+        addAndMakeVisible(menuBar);
         addAndMakeVisible(oscillatorSection);
         addAndMakeVisible(ampEnvelopeSection);
         addAndMakeVisible(filterSection);
@@ -35,7 +50,7 @@ namespace B33p
 
         setWantsKeyboardFocus(true);
 
-        setSize(900, 920);
+        setSize(900, 920 + kMenuBarHeight);
     }
 
     void MainComponent::paint(juce::Graphics& g)
@@ -45,7 +60,10 @@ namespace B33p
 
     void MainComponent::resized()
     {
-        auto bounds = getLocalBounds().reduced(kOuterPadding);
+        auto fullBounds = getLocalBounds();
+        menuBar.setBounds(fullBounds.removeFromTop(kMenuBarHeight));
+
+        auto bounds = fullBounds.reduced(kOuterPadding);
 
         auto topRow = bounds.removeFromTop(kTopRowHeight);
         bounds.removeFromTop(kGap);
@@ -132,6 +150,51 @@ namespace B33p
         const auto  suffix = processor.isDirty() ? juce::String(" *")
                                                   : juce::String();
         dw->setName("b33p - " + name + suffix);
+    }
+
+    juce::StringArray MainComponent::getMenuBarNames()
+    {
+        return { "File", "Edit", "Help" };
+    }
+
+    juce::PopupMenu MainComponent::getMenuForIndex(int topLevelIndex,
+                                                   const juce::String& /*menuName*/)
+    {
+        juce::PopupMenu m;
+        switch (topLevelIndex)
+        {
+            case 0: // File
+                m.addItem(MenuId::FileOpen,   "Open...",        true);
+                m.addItem(MenuId::FileSave,   "Save",           true);
+                m.addItem(MenuId::FileSaveAs, "Save As...",     true);
+                break;
+            case 1: // Edit
+                m.addItem(MenuId::EditUndo, "Undo",
+                          processor.getUndoManager().canUndo());
+                m.addItem(MenuId::EditRedo, "Redo",
+                          processor.getUndoManager().canRedo());
+                break;
+            case 2: // Help
+                m.addItem(MenuId::HelpAbout, "About b33p", true);
+                break;
+            default:
+                break;
+        }
+        return m;
+    }
+
+    void MainComponent::menuItemSelected(int menuItemId, int /*topLevelIndex*/)
+    {
+        switch (menuItemId)
+        {
+            case MenuId::FileOpen:   fileManager.open  (this);                  break;
+            case MenuId::FileSave:   fileManager.save  (this);                  break;
+            case MenuId::FileSaveAs: fileManager.saveAs(this);                  break;
+            case MenuId::EditUndo:   processor.getUndoManager().undo();         break;
+            case MenuId::EditRedo:   processor.getUndoManager().redo();         break;
+            case MenuId::HelpAbout:  showAboutDialog();                         break;
+            default:                                                            break;
+        }
     }
 
     void MainComponent::showAboutDialog()
