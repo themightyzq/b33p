@@ -191,17 +191,49 @@ namespace B33p
         return false;
     }
 
+    MainComponent::~MainComponent()
+    {
+        if (auto* host = keyListenerHost.getComponent())
+            host->removeKeyListener(this);
+    }
+
     void MainComponent::parentHierarchyChanged()
     {
-        // The window doesn't exist while the constructor runs;
-        // this fires once after setContentOwned attaches us to the
-        // DocumentWindow, which is the right moment to sync the
-        // initial title and seed keyboard focus so transport
-        // shortcuts (Space, Cmd+Z, ...) work without requiring
-        // the user to click somewhere first.
+        // The window doesn't exist while the constructor runs; this
+        // fires once after setContentOwned attaches us to the
+        // DocumentWindow. Sync the title, seed keyboard focus, and
+        // hook a window-level KeyListener so Space + Shift+Space
+        // work even when no component has focus (or when focus is
+        // sitting on the menu bar / a button that doesn't bubble).
         updateWindowTitle();
         if (isShowing())
             grabKeyboardFocus();
+
+        if (auto* tlw = getTopLevelComponent();
+            tlw != nullptr && tlw != keyListenerHost.getComponent())
+        {
+            if (auto* prev = keyListenerHost.getComponent())
+                prev->removeKeyListener(this);
+            tlw->addKeyListener(this);
+            keyListenerHost = tlw;
+        }
+    }
+
+    bool MainComponent::keyPressed(const juce::KeyPress& key,
+                                    juce::Component* originatingComponent)
+    {
+        // While a text input has focus, every keystroke (Space
+        // included) belongs to the field. Don't intercept.
+        if (dynamic_cast<juce::TextEditor*>(originatingComponent) != nullptr)
+            return false;
+
+        // Only handle the transport keys here — everything else
+        // (Cmd+S, Cmd+Z, ...) goes through the Component-style
+        // keyPressed via normal bubble-up.
+        if (key.getKeyCode() == juce::KeyPress::spaceKey)
+            return keyPressed(key);
+
+        return false;
     }
 
     void MainComponent::updateWindowTitle()

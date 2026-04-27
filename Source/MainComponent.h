@@ -16,15 +16,23 @@ namespace B33p
 {
     class MainComponent : public juce::Component
                         , public juce::MenuBarModel
+                        , public juce::KeyListener
     {
     public:
         explicit MainComponent(B33pProcessor& processor);
-        ~MainComponent() override = default;
+        ~MainComponent() override;
 
         void paint(juce::Graphics& g) override;
         void resized() override;
 
         bool keyPressed(const juce::KeyPress& key) override;
+
+        // KeyListener — registered on the top-level window so
+        // transport keys (Space, Shift+Space) work even when no
+        // component has focus. TextEditor focus is treated as
+        // "user is typing, don't intercept".
+        bool keyPressed(const juce::KeyPress& key,
+                        juce::Component* originatingComponent) override;
 
         // OS-driven file open (Finder double-click, dock drop).
         // Routes to ProjectFileManager so failure surfaces the
@@ -50,6 +58,11 @@ namespace B33p
         void parentHierarchyChanged() override;
         void updateWindowTitle();
         void showAboutDialog();
+
+        // The top-level component we registered the KeyListener on,
+        // kept so the destructor can deregister cleanly even after
+        // the window is mid-teardown.
+        juce::Component::SafePointer<juce::Component> keyListenerHost;
 
         B33pProcessor&      processor;
         ProjectFileManager  fileManager;
