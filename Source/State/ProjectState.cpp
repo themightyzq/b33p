@@ -1,7 +1,10 @@
 #include "ProjectState.h"
 
 #include "B33pProcessor.h"
+#include "Core/ParameterIDs.h"
 #include "Pattern/Pattern.h"
+
+#include <vector>
 
 namespace B33p::ProjectState
 {
@@ -101,11 +104,89 @@ namespace B33p::ProjectState
         return root;
     }
 
+    namespace
+    {
+        // v1 → v2: parameter IDs grew a per-lane prefix when the
+        // single voice became four voices. The single set of v1
+        // parameters is fanned out to every lane so a v1 file
+        // sounds identical when reloaded under v2 (every lane
+        // plays the same timbre until the user starts editing
+        // individual lanes).
+        struct ParamRename { const char* v1; juce::String (*v2)(int); };
+        constexpr ParamRename kParamRenames[] = {
+            { ParameterIDs::v1::oscWaveform,           ParameterIDs::oscWaveform           },
+            { ParameterIDs::v1::basePitchHz,           ParameterIDs::basePitchHz           },
+            { ParameterIDs::v1::ampAttack,             ParameterIDs::ampAttack             },
+            { ParameterIDs::v1::ampDecay,              ParameterIDs::ampDecay              },
+            { ParameterIDs::v1::ampSustain,            ParameterIDs::ampSustain            },
+            { ParameterIDs::v1::ampRelease,            ParameterIDs::ampRelease            },
+            { ParameterIDs::v1::filterCutoffHz,        ParameterIDs::filterCutoffHz        },
+            { ParameterIDs::v1::filterResonanceQ,      ParameterIDs::filterResonanceQ      },
+            { ParameterIDs::v1::bitcrushBitDepth,      ParameterIDs::bitcrushBitDepth      },
+            { ParameterIDs::v1::bitcrushSampleRateHz,  ParameterIDs::bitcrushSampleRateHz  },
+            { ParameterIDs::v1::distortionDrive,       ParameterIDs::distortionDrive       },
+            { ParameterIDs::v1::voiceGain,             ParameterIDs::voiceGain             },
+        };
+
+        // Rewrites the embedded APVTS subtree: each <PARAM id="X"/>
+        // entry with a v1 ID becomes four <PARAM id="laneN_X"/>
+        // entries with the same value.
+        void migrateApvtsV1ToV2(juce::ValueTree apvtsState)
+        {
+            // Snapshot the v1 PARAM children first so we can wipe
+            // them and re-add the lane-prefixed equivalents without
+            // iterator invalidation.
+            struct Existing { juce::String id; juce::var value; };
+            std::vector<Existing> existing;
+            for (auto child : apvtsState)
+                if (child.hasType("PARAM"))
+                    existing.push_back({ child.getProperty("id").toString(),
+                                          child.getProperty("value") });
+
+            // Drop every v1 PARAM child.
+            for (int i = apvtsState.getNumChildren() - 1; i >= 0; --i)
+            {
+                auto child = apvtsState.getChild(i);
+                if (child.hasType("PARAM"))
+                    apvtsState.removeChild(child, nullptr);
+            }
+
+            // For each known v1 ID, fan its value out to all four lanes.
+            for (const auto& e : existing)
+            {
+                for (const auto& rename : kParamRenames)
+                {
+                    if (e.id != rename.v1)
+                        continue;
+                    for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+                    {
+                        juce::ValueTree p { "PARAM" };
+                        p.setProperty("id",    rename.v2(lane), nullptr);
+                        p.setProperty("value", e.value,         nullptr);
+                        apvtsState.appendChild(p, nullptr);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     juce::ValueTree migrate(juce::ValueTree tree)
     {
-        // No migrations needed yet. Once v2 lands, switch on the
-        // current version and apply transformations until the tree
-        // matches kCurrentVersion.
+        const int version = tree.getProperty(kVersion, 0);
+
+        if (version == 1)
+        {
+            // v1 → v2: fan the single voice's APVTS parameters out
+            // to all four lanes. Pitch curve, pattern, and locks
+            // round-trip unchanged.
+            const auto paramsNode = tree.getChildWithName(kParameters);
+            if (paramsNode.getNumChildren() > 0)
+                migrateApvtsV1ToV2(paramsNode.getChild(0));
+
+            tree.setProperty(kVersion, 2, nullptr);
+        }
+
         return tree;
     }
 

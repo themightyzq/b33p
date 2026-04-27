@@ -8,10 +8,10 @@ namespace B33p
     AmpEnvSection::AmpEnvSection(B33pProcessor& processor)
         : Section("Amp Envelope"),
           visualizer(processor.getApvts()),
-          attackAttachment (processor.getApvts(), ParameterIDs::ampAttack,  attackSlider.getSlider()),
-          decayAttachment  (processor.getApvts(), ParameterIDs::ampDecay,   decaySlider.getSlider()),
-          sustainAttachment(processor.getApvts(), ParameterIDs::ampSustain, sustainSlider.getSlider()),
-          releaseAttachment(processor.getApvts(), ParameterIDs::ampRelease, releaseSlider.getSlider())
+          attackAttachment (processor.getApvts(), ParameterIDs::ampAttack(0),  attackSlider.getSlider()),
+          decayAttachment  (processor.getApvts(), ParameterIDs::ampDecay(0),   decaySlider.getSlider()),
+          sustainAttachment(processor.getApvts(), ParameterIDs::ampSustain(0), sustainSlider.getSlider()),
+          releaseAttachment(processor.getApvts(), ParameterIDs::ampRelease(0), releaseSlider.getSlider())
     {
         addAndMakeVisible(visualizer);
         addAndMakeVisible(attackSlider);
@@ -19,20 +19,20 @@ namespace B33p
         addAndMakeVisible(sustainSlider);
         addAndMakeVisible(releaseSlider);
 
-        attackSlider .attachRandomizer(processor, ParameterIDs::ampAttack);
-        decaySlider  .attachRandomizer(processor, ParameterIDs::ampDecay);
-        sustainSlider.attachRandomizer(processor, ParameterIDs::ampSustain);
-        releaseSlider.attachRandomizer(processor, ParameterIDs::ampRelease);
+        attackSlider .attachRandomizer(processor, ParameterIDs::ampAttack(0));
+        decaySlider  .attachRandomizer(processor, ParameterIDs::ampDecay(0));
+        sustainSlider.attachRandomizer(processor, ParameterIDs::ampSustain(0));
+        releaseSlider.attachRandomizer(processor, ParameterIDs::ampRelease(0));
 
         SliderFormatting::applySeconds(attackSlider .getSlider());
         SliderFormatting::applySeconds(decaySlider  .getSlider());
         SliderFormatting::applyPercent(sustainSlider.getSlider());
         SliderFormatting::applySeconds(releaseSlider.getSlider());
 
-        SliderFormatting::applyDoubleClickReset(attackSlider .getSlider(), processor.getApvts(), ParameterIDs::ampAttack);
-        SliderFormatting::applyDoubleClickReset(decaySlider  .getSlider(), processor.getApvts(), ParameterIDs::ampDecay);
-        SliderFormatting::applyDoubleClickReset(sustainSlider.getSlider(), processor.getApvts(), ParameterIDs::ampSustain);
-        SliderFormatting::applyDoubleClickReset(releaseSlider.getSlider(), processor.getApvts(), ParameterIDs::ampRelease);
+        SliderFormatting::applyDoubleClickReset(attackSlider .getSlider(), processor.getApvts(), ParameterIDs::ampAttack(0));
+        SliderFormatting::applyDoubleClickReset(decaySlider  .getSlider(), processor.getApvts(), ParameterIDs::ampDecay(0));
+        SliderFormatting::applyDoubleClickReset(sustainSlider.getSlider(), processor.getApvts(), ParameterIDs::ampSustain(0));
+        SliderFormatting::applyDoubleClickReset(releaseSlider.getSlider(), processor.getApvts(), ParameterIDs::ampRelease(0));
 
         attackSlider .setTooltip("Time to reach full volume after a note starts");
         decaySlider  .setTooltip("Time to fall from peak down to the sustain level");

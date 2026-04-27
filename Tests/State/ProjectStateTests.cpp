@@ -17,11 +17,11 @@ namespace
         auto& apvts = processor.getApvts();
 
         // Move several parameters off their defaults.
-        if (auto* p = apvts.getParameter(B33p::ParameterIDs::basePitchHz))
+        if (auto* p = apvts.getParameter(B33p::ParameterIDs::basePitchHz(0)))
             p->setValueNotifyingHost(0.25f);   // some non-default normalised value
-        if (auto* p = apvts.getParameter(B33p::ParameterIDs::ampAttack))
+        if (auto* p = apvts.getParameter(B33p::ParameterIDs::ampAttack(0)))
             p->setValueNotifyingHost(0.5f);
-        if (auto* p = apvts.getParameter(B33p::ParameterIDs::voiceGain))
+        if (auto* p = apvts.getParameter(B33p::ParameterIDs::voiceGain(0)))
             p->setValueNotifyingHost(0.7f);
 
         // Custom pitch curve.
@@ -44,8 +44,8 @@ namespace
 
         // Lock a couple of parameters.
         auto& randomizer = processor.getRandomizer();
-        randomizer.setLocked(B33p::ParameterIDs::filterCutoffHz, true);
-        randomizer.setLocked(B33p::ParameterIDs::distortionDrive, true);
+        randomizer.setLocked(B33p::ParameterIDs::filterCutoffHz(0), true);
+        randomizer.setLocked(B33p::ParameterIDs::distortionDrive(0), true);
     }
 }
 
@@ -73,13 +73,13 @@ TEST_CASE("ProjectState: round-trip preserves APVTS values", "[state][project]")
     auto& a = original.getApvts();
     auto& b = restored.getApvts();
 
-    const char* const ids[] = {
-        B33p::ParameterIDs::basePitchHz,
-        B33p::ParameterIDs::ampAttack,
-        B33p::ParameterIDs::voiceGain,
-        B33p::ParameterIDs::filterCutoffHz,
+    const juce::String ids[] = {
+        B33p::ParameterIDs::basePitchHz(0),
+        B33p::ParameterIDs::ampAttack(0),
+        B33p::ParameterIDs::voiceGain(0),
+        B33p::ParameterIDs::filterCutoffHz(0),
     };
-    for (const char* id : ids)
+    for (const auto& id : ids)
         REQUIRE(a.getRawParameterValue(id)->load()
                 == Approx(b.getRawParameterValue(id)->load()));
 }
@@ -139,6 +139,47 @@ TEST_CASE("ProjectState: round-trip preserves pattern length, loop and events",
     }
 }
 
+TEST_CASE("ProjectState: v1 file fans the single voice's APVTS params out to all 4 lanes",
+          "[state][project]")
+{
+    // Hand-rolled v1 tree: one APVTS PARAM per param ID (no lane prefix),
+    // version=1. After load + migrate, all four lanes should carry the
+    // same value the v1 file specified.
+    juce::ValueTree root { "B33P" };
+    root.setProperty("version", 1, nullptr);
+
+    juce::ValueTree params { "PARAMETERS" };
+    juce::ValueTree apvts  { "B33pParameters" };
+
+    auto addParam = [&apvts](const juce::String& id, double value)
+    {
+        juce::ValueTree p { "PARAM" };
+        p.setProperty("id",    id,    nullptr);
+        p.setProperty("value", value, nullptr);
+        apvts.appendChild(p, nullptr);
+    };
+    addParam(B33p::ParameterIDs::v1::basePitchHz,    880.0);
+    addParam(B33p::ParameterIDs::v1::voiceGain,      0.42);
+    addParam(B33p::ParameterIDs::v1::filterCutoffHz, 1234.0);
+
+    params.appendChild(apvts, nullptr);
+    root.appendChild(params, nullptr);
+
+    B33pProcessor processor;
+    REQUIRE(B33p::ProjectState::load(processor, root));
+
+    auto& a = processor.getApvts();
+    for (int lane = 0; lane < B33p::Pattern::kNumLanes; ++lane)
+    {
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::basePitchHz(lane))->load()
+                == Approx(880.0f).margin(1.0f));
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::voiceGain(lane))->load()
+                == Approx(0.42f).margin(0.001f));
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::filterCutoffHz(lane))->load()
+                == Approx(1234.0f).margin(1.0f));
+    }
+}
+
 TEST_CASE("ProjectState: events from a v1 file (no velocity property) load with velocity 1.0",
           "[state][project]")
 {
@@ -184,9 +225,9 @@ TEST_CASE("ProjectState: round-trip preserves locks", "[state][project]")
     B33pProcessor restored;
     REQUIRE(B33p::ProjectState::load(restored, tree));
 
-    REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::filterCutoffHz));
-    REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::distortionDrive));
-    REQUIRE_FALSE(restored.getRandomizer().isLocked(B33p::ParameterIDs::basePitchHz));
+    REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::filterCutoffHz(0)));
+    REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::distortionDrive(0)));
+    REQUIRE_FALSE(restored.getRandomizer().isLocked(B33p::ParameterIDs::basePitchHz(0)));
 }
 
 TEST_CASE("ProjectState: load rejects a non-B33P root", "[state][project]")
@@ -252,7 +293,7 @@ TEST_CASE("ProjectState: getStateInformation/setStateInformation round-trip",
     REQUIRE(restored.getPattern().getLengthSeconds()
             == Approx(original.getPattern().getLengthSeconds()));
     REQUIRE(restored.getLooping() == original.getLooping());
-    REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::filterCutoffHz));
+    REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::filterCutoffHz(0)));
 }
 
 TEST_CASE("ProjectState: writeToFile / readFromFile round-trip via temp file",
@@ -272,7 +313,7 @@ TEST_CASE("ProjectState: writeToFile / readFromFile round-trip via temp file",
     REQUIRE(restored.getPattern().getLengthSeconds()
             == Approx(original.getPattern().getLengthSeconds()));
     REQUIRE(restored.getLooping() == original.getLooping());
-    REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::filterCutoffHz));
+    REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::filterCutoffHz(0)));
 
     tmp.deleteFile();
 }
@@ -311,7 +352,7 @@ TEST_CASE("Dirty: setting an APVTS parameter marks dirty", "[state][dirty]")
     B33pProcessor processor;
     REQUIRE_FALSE(processor.isDirty());
 
-    if (auto* p = processor.getApvts().getParameter(B33p::ParameterIDs::voiceGain))
+    if (auto* p = processor.getApvts().getParameter(B33p::ParameterIDs::voiceGain(0)))
         p->setValueNotifyingHost(0.42f);
 
     REQUIRE(processor.isDirty());

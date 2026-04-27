@@ -9,36 +9,45 @@ namespace B33p
 {
     namespace
     {
-        // Pulls every voice parameter out of APVTS into a plain
-        // PatternRenderer::Config — keeps the renderer ignorant of
-        // APVTS and gives the export thread a value-type snapshot
-        // that is decoupled from later UI edits.
+        // Pulls every voice parameter for one lane out of APVTS into
+        // a plain LaneConfig.
+        PatternRenderer::LaneConfig buildLaneConfig(
+            const juce::AudioProcessorValueTreeState& apvts, int lane)
+        {
+            PatternRenderer::LaneConfig lc;
+            lc.waveform = static_cast<Oscillator::Waveform>(
+                juce::jlimit(0, 4,
+                    static_cast<int>(apvts.getRawParameterValue(
+                        ParameterIDs::oscWaveform(lane))->load())));
+            lc.basePitchHz          = apvts.getRawParameterValue(ParameterIDs::basePitchHz(lane))->load();
+            lc.ampAttack            = apvts.getRawParameterValue(ParameterIDs::ampAttack(lane))->load();
+            lc.ampDecay             = apvts.getRawParameterValue(ParameterIDs::ampDecay(lane))->load();
+            lc.ampSustain           = apvts.getRawParameterValue(ParameterIDs::ampSustain(lane))->load();
+            lc.ampRelease           = apvts.getRawParameterValue(ParameterIDs::ampRelease(lane))->load();
+            lc.filterCutoffHz       = apvts.getRawParameterValue(ParameterIDs::filterCutoffHz(lane))->load();
+            lc.filterResonanceQ     = apvts.getRawParameterValue(ParameterIDs::filterResonanceQ(lane))->load();
+            lc.bitcrushBitDepth     = apvts.getRawParameterValue(ParameterIDs::bitcrushBitDepth(lane))->load();
+            lc.bitcrushSampleRateHz = apvts.getRawParameterValue(ParameterIDs::bitcrushSampleRateHz(lane))->load();
+            lc.distortionDrive      = apvts.getRawParameterValue(ParameterIDs::distortionDrive(lane))->load();
+            lc.gain                 = apvts.getRawParameterValue(ParameterIDs::voiceGain(lane))->load();
+            return lc;
+        }
+
+        // Pulls every lane's voice parameters out of APVTS into a
+        // plain PatternRenderer::Config — keeps the renderer ignorant
+        // of APVTS and gives the export thread a value-type snapshot
+        // decoupled from later UI edits.
         PatternRenderer::Config buildConfig(const B33pProcessor& processor,
                                             double sampleRate)
         {
             PatternRenderer::Config c;
             c.sampleRate     = sampleRate;
             c.maxTailSeconds = 5.0;
+            c.pitchCurve     = processor.getPitchCurveCopy();
 
             const auto& apvts = processor.getApvts();
-
-            c.waveform = static_cast<Oscillator::Waveform>(
-                juce::jlimit(0, 4,
-                    static_cast<int>(apvts.getRawParameterValue(
-                        ParameterIDs::oscWaveform)->load())));
-
-            c.basePitchHz         = apvts.getRawParameterValue(ParameterIDs::basePitchHz)->load();
-            c.ampAttack           = apvts.getRawParameterValue(ParameterIDs::ampAttack)->load();
-            c.ampDecay            = apvts.getRawParameterValue(ParameterIDs::ampDecay)->load();
-            c.ampSustain          = apvts.getRawParameterValue(ParameterIDs::ampSustain)->load();
-            c.ampRelease          = apvts.getRawParameterValue(ParameterIDs::ampRelease)->load();
-            c.filterCutoffHz      = apvts.getRawParameterValue(ParameterIDs::filterCutoffHz)->load();
-            c.filterResonanceQ    = apvts.getRawParameterValue(ParameterIDs::filterResonanceQ)->load();
-            c.bitcrushBitDepth    = apvts.getRawParameterValue(ParameterIDs::bitcrushBitDepth)->load();
-            c.bitcrushSampleRateHz= apvts.getRawParameterValue(ParameterIDs::bitcrushSampleRateHz)->load();
-            c.distortionDrive     = apvts.getRawParameterValue(ParameterIDs::distortionDrive)->load();
-            c.gain                = apvts.getRawParameterValue(ParameterIDs::voiceGain)->load();
-            c.pitchCurve          = processor.getPitchCurveCopy();
+            for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+                c.lanes[static_cast<size_t>(lane)] = buildLaneConfig(apvts, lane);
 
             return c;
         }

@@ -151,8 +151,9 @@ namespace B33p
         void  setStateInformation(const void* data, int sizeInBytes) override;
 
     private:
-        void pushParametersToVoice();
-        void triggerVoiceFromEvent(const Event& event);
+        void pushParametersToVoices();
+        void pushParametersToLane(int lane);
+        void triggerVoiceFromEvent(int lane, const Event& event);
 
         // juce::AudioProcessorValueTreeState::Listener
         void parameterChanged(const juce::String& parameterID, float newValue) override;
@@ -165,12 +166,15 @@ namespace B33p
         juce::AudioProcessorValueTreeState apvts;
         ParameterRandomizer                randomizer;
 
-        Voice voice;
+        // One Voice per pattern lane. Each lane's events trigger
+        // its own voice; the pattern engine sums all four voices
+        // each sample.
+        std::array<Voice, Pattern::kNumLanes> voices;
 
         // Curve writes lock on the message thread; audio-thread reads
-        // use a ScopedTryLock and fall back to whatever curve the Voice
-        // already has. The race window is tiny but real once live audio
-        // is wired.
+        // use a ScopedTryLock and fall back to whatever curve each
+        // voice already has. One curve is shared across all four
+        // voices for now — per-lane pitch curves are post-MVP.
         mutable juce::CriticalSection pitchCurveLock;
         std::vector<PitchEnvelopePoint> pitchCurve { { 0.0f, 0.0f }, { 1.0f, 0.0f } };
 
@@ -190,7 +194,9 @@ namespace B33p
         bool                                   audioThreadPlaying { false };
         std::shared_ptr<const PatternSnapshot> activeSnapshot;
         int                                    nextEventIndex     { 0 };
-        int                                    samplesUntilNoteOff { 0 };
+        // Per-lane sample-accurate noteOff countdowns. 0 = no
+        // pending noteOff; > 0 counts down each sample.
+        std::array<int, Pattern::kNumLanes>    samplesUntilNoteOff { { 0, 0, 0, 0 } };
         double                                 currentSampleRate   { 44100.0 };
 
         // Unsaved-changes flag + listener.

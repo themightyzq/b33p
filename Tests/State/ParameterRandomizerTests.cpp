@@ -18,7 +18,7 @@ TEST_CASE("ParameterRandomizer: rollOne on an unlocked parameter changes its val
     B33p::ParameterRandomizer randomizer(apvts);
     juce::Random rng(42);
 
-    const juce::String id     = B33p::ParameterIDs::filterCutoffHz;
+    const juce::String id     = B33p::ParameterIDs::filterCutoffHz(0);
     const float        before = apvts.getRawParameterValue(id)->load();
 
     REQUIRE(randomizer.rollOne(id, rng));
@@ -32,7 +32,7 @@ TEST_CASE("ParameterRandomizer: rollOne on a locked parameter is a no-op", "[sta
     B33p::ParameterRandomizer randomizer(apvts);
     juce::Random rng(42);
 
-    const juce::String id     = B33p::ParameterIDs::filterCutoffHz;
+    const juce::String id     = B33p::ParameterIDs::filterCutoffHz(0);
     const float        before = apvts.getRawParameterValue(id)->load();
 
     randomizer.setLocked(id, true);
@@ -58,7 +58,7 @@ TEST_CASE("ParameterRandomizer: rolled values stay inside the parameter's range"
     B33p::ParameterRandomizer randomizer(apvts);
     juce::Random rng(42);
 
-    const juce::String id    = B33p::ParameterIDs::filterCutoffHz;
+    const juce::String id    = B33p::ParameterIDs::filterCutoffHz(0);
     auto*              param = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(id));
     REQUIRE(param != nullptr);
 
@@ -80,15 +80,15 @@ TEST_CASE("ParameterRandomizer: rollAllUnlocked skips locked parameters", "[stat
     B33p::ParameterRandomizer randomizer(apvts);
     juce::Random rng(42);
 
-    randomizer.setLocked(B33p::ParameterIDs::basePitchHz, true);
+    randomizer.setLocked(B33p::ParameterIDs::basePitchHz(0), true);
 
-    const float beforeLocked   = apvts.getRawParameterValue(B33p::ParameterIDs::basePitchHz)->load();
-    const float beforeUnlocked = apvts.getRawParameterValue(B33p::ParameterIDs::ampAttack)->load();
+    const float beforeLocked   = apvts.getRawParameterValue(B33p::ParameterIDs::basePitchHz(0))->load();
+    const float beforeUnlocked = apvts.getRawParameterValue(B33p::ParameterIDs::ampAttack(0))->load();
 
     randomizer.rollAllUnlocked(rng);
 
-    REQUIRE(apvts.getRawParameterValue(B33p::ParameterIDs::basePitchHz)->load() == beforeLocked);
-    REQUIRE(apvts.getRawParameterValue(B33p::ParameterIDs::ampAttack)->load()   != Approx(beforeUnlocked));
+    REQUIRE(apvts.getRawParameterValue(B33p::ParameterIDs::basePitchHz(0))->load() == beforeLocked);
+    REQUIRE(apvts.getRawParameterValue(B33p::ParameterIDs::ampAttack(0))->load()   != Approx(beforeUnlocked));
 }
 
 TEST_CASE("ParameterRandomizer: choice parameters roll across multiple valid indices", "[state][randomizer]")
@@ -99,13 +99,13 @@ TEST_CASE("ParameterRandomizer: choice parameters roll across multiple valid ind
     juce::Random rng(42);
 
     auto* waveform = dynamic_cast<juce::AudioParameterChoice*>(
-        apvts.getParameter(B33p::ParameterIDs::oscWaveform));
+        apvts.getParameter(B33p::ParameterIDs::oscWaveform(0)));
     REQUIRE(waveform != nullptr);
 
     std::set<int> observedIndices;
     for (int i = 0; i < 100; ++i)
     {
-        randomizer.rollOne(B33p::ParameterIDs::oscWaveform, rng);
+        randomizer.rollOne(B33p::ParameterIDs::oscWaveform(0), rng);
         observedIndices.insert(waveform->getIndex());
     }
 
@@ -131,14 +131,14 @@ TEST_CASE("ParameterRandomizer: seeded rngs produce identical outputs across ins
     r1.rollAllUnlocked(rng1);
     r2.rollAllUnlocked(rng2);
 
-    const char* const ids[] = {
-        B33p::ParameterIDs::basePitchHz,
-        B33p::ParameterIDs::filterCutoffHz,
-        B33p::ParameterIDs::ampAttack,
-        B33p::ParameterIDs::voiceGain,
+    const juce::String ids[] = {
+        B33p::ParameterIDs::basePitchHz(0),
+        B33p::ParameterIDs::filterCutoffHz(0),
+        B33p::ParameterIDs::ampAttack(0),
+        B33p::ParameterIDs::voiceGain(0),
     };
 
-    for (const char* id : ids)
+    for (const auto& id : ids)
     {
         REQUIRE(proc1.getApvts().getRawParameterValue(id)->load()
                 == proc2.getApvts().getRawParameterValue(id)->load());
@@ -151,12 +151,12 @@ TEST_CASE("ParameterRandomizer: lock state persists across rolls", "[state][rand
     B33p::ParameterRandomizer randomizer(processor.getApvts());
     juce::Random rng(42);
 
-    randomizer.setLocked(B33p::ParameterIDs::voiceGain, true);
-    REQUIRE(randomizer.isLocked(B33p::ParameterIDs::voiceGain));
+    randomizer.setLocked(B33p::ParameterIDs::voiceGain(0), true);
+    REQUIRE(randomizer.isLocked(B33p::ParameterIDs::voiceGain(0)));
 
     randomizer.rollAllUnlocked(rng);
-    REQUIRE(randomizer.isLocked(B33p::ParameterIDs::voiceGain));
+    REQUIRE(randomizer.isLocked(B33p::ParameterIDs::voiceGain(0)));
 
-    randomizer.setLocked(B33p::ParameterIDs::voiceGain, false);
-    REQUIRE_FALSE(randomizer.isLocked(B33p::ParameterIDs::voiceGain));
+    randomizer.setLocked(B33p::ParameterIDs::voiceGain(0), false);
+    REQUIRE_FALSE(randomizer.isLocked(B33p::ParameterIDs::voiceGain(0)));
 }

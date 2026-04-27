@@ -11,7 +11,7 @@ namespace B33p
         // .beep file format version. Bump on any breaking schema
         // change and add a corresponding case to the migrate()
         // function below — never break older saved projects.
-        inline constexpr int kCurrentVersion = 1;
+        inline constexpr int kCurrentVersion = 2;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

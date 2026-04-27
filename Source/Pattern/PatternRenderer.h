@@ -6,6 +6,7 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 
+#include <array>
 #include <vector>
 
 namespace B33p
@@ -32,11 +33,11 @@ namespace B33p
     class PatternRenderer
     {
     public:
-        struct Config
+        // Per-lane voice configuration. Each lane in the rendered
+        // pattern has its own voice with these settings; the four
+        // voices are mixed sample-by-sample.
+        struct LaneConfig
         {
-            double sampleRate     { 48000.0 };
-            double maxTailSeconds { 5.0 };
-
             Oscillator::Waveform waveform { Oscillator::Waveform::Sine };
             float basePitchHz             { 440.0f };
 
@@ -53,13 +54,24 @@ namespace B33p
 
             float distortionDrive { 1.0f };
             float gain            { 1.0f };
+        };
 
+        struct Config
+        {
+            double sampleRate     { 48000.0 };
+            double maxTailSeconds { 5.0 };
+
+            // Pitch curve is shared across all four lanes for now —
+            // matches the live processor. Per-lane curves are
+            // post-MVP polish.
             std::vector<PitchEnvelopePoint> pitchCurve;
+
+            std::array<LaneConfig, Pattern::kNumLanes> lanes;
         };
 
         // Renders the pattern to a single-channel float buffer.
         // The buffer length is exactly the rendered sample count
-        // (pattern samples + however much tail the voice produced
+        // (pattern samples + however much tail the voices produce
         // before going inactive, capped at maxTailSeconds).
         static juce::AudioBuffer<float> render(const Pattern& pattern,
                                                const Config& config);

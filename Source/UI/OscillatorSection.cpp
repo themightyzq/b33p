@@ -9,7 +9,7 @@ namespace B33p
     OscillatorSection::OscillatorSection(B33pProcessor& processor)
         : Section("Oscillator"),
           basePitchAttachment(processor.getApvts(),
-                              ParameterIDs::basePitchHz,
+                              ParameterIDs::basePitchHz(0),
                               basePitchSlider.getSlider())
     {
         // Item IDs (1..5) match B33p::Oscillator::Waveform enum order
@@ -22,7 +22,7 @@ namespace B33p
 
         waveformAttachment = std::make_unique<
             juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-                processor.getApvts(), ParameterIDs::oscWaveform, waveformSelector);
+                processor.getApvts(), ParameterIDs::oscWaveform(0), waveformSelector);
 
         addAndMakeVisible(waveformSelector);
         addAndMakeVisible(waveformDice);
@@ -30,13 +30,13 @@ namespace B33p
         addAndMakeVisible(basePitchSlider);
 
         wireRandomizerButtons(processor, waveformDice, waveformLock,
-                              ParameterIDs::oscWaveform);
-        basePitchSlider.attachRandomizer(processor, ParameterIDs::basePitchHz);
+                              ParameterIDs::oscWaveform(0));
+        basePitchSlider.attachRandomizer(processor, ParameterIDs::basePitchHz(0));
 
         SliderFormatting::applyHz(basePitchSlider.getSlider());
         SliderFormatting::applyDoubleClickReset(basePitchSlider.getSlider(),
                                                 processor.getApvts(),
-                                                ParameterIDs::basePitchHz);
+                                                ParameterIDs::basePitchHz(0));
 
         waveformSelector.setTooltip("Oscillator waveform");
         basePitchSlider .setTooltip("Base pitch of the oscillator");
