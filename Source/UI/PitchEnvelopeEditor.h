@@ -20,9 +20,10 @@ namespace B33p
     // is semitones clamped to ±12 for display. Points outside that
     // range visually saturate at the edges but are stored as-is.
     //
-    // Undo support is deliberately deferred until Phase 6, when the
-    // pitch curve moves into the project ValueTree and UndoManager
-    // integration becomes idiomatic rather than ad-hoc.
+    // Each gesture (click + drag + release, or right-click delete)
+    // commits as a single UndoManager transaction by snapshotting
+    // the curve in mouseDown and pushing one SetPitchCurveAction in
+    // mouseUp if the result differs.
     class PitchEnvelopeEditor : public juce::Component
     {
     public:
@@ -42,6 +43,8 @@ namespace B33p
 
         B33pProcessor& processor;
         int            draggingIndex { -1 };
+
+        std::vector<PitchEnvelopePoint> gestureSnapshot;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PitchEnvelopeEditor)
     };
