@@ -118,6 +118,12 @@ namespace B33p
         exportButton.onClick = [this] { onExportClicked(); };
         addAndMakeVisible(exportButton);
 
+        playButton  .setTooltip("Play the pattern from the start");
+        loopToggle  .setTooltip("Loop playback when the end is reached");
+        lengthCombo .setTooltip("Total length of the pattern");
+        gridCombo   .setTooltip("Snap event positions to this grid (Off = free)");
+        exportButton.setTooltip("Render the pattern to a WAV file");
+
         startTimerHz(kRepaintHz);
     }
 

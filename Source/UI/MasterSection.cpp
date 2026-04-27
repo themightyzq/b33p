@@ -24,6 +24,10 @@ namespace B33p
         gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain);
 
         SliderFormatting::applyDecimal(gainSlider.getSlider(), 2);
+
+        gainSlider    .setTooltip("Master output level");
+        auditionButton.setTooltip("Play a single beep with the current settings (Space)");
+        diceAllButton .setTooltip("Roll random values for every unlocked parameter");
     }
 
     void MasterSection::resized()

@@ -18,6 +18,9 @@ namespace B33p
 
         SliderFormatting::applyHz     (cutoffSlider   .getSlider());
         SliderFormatting::applyDecimal(resonanceSlider.getSlider(), 2);
+
+        cutoffSlider   .setTooltip("Lowpass cutoff — frequencies above are rolled off");
+        resonanceSlider.setTooltip("Emphasis around the cutoff — higher = more whistly");
     }
 
     void FilterSection::resized()
