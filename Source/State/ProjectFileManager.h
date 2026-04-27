@@ -39,6 +39,13 @@ namespace B33p
         void saveAs(juce::Component* parent);
         void open  (juce::Component* parent);
 
+        // Direct-open path for OS-driven file open events
+        // (double-click on a .beep file in Finder, drag onto
+        // the dock icon, etc.). Skips the chooser dialog and
+        // loads the supplied file straight away. Same alert /
+        // state-changed behaviour as the dialog-driven open path.
+        void openFile(const juce::File& file);
+
     private:
         void writeAndReport(const juce::File& destination);
         void readAndReport (const juce::File& source);

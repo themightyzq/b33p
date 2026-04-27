@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current phase: Phase 6 — Project save / load**
+> **Current phase: Phase 7 — MVP polish & release**
 
 ---
 
@@ -89,12 +89,12 @@ Goal: offline-render the pattern to a WAV file the user picks.
 
 Goal: round-trip a full project (voice + pattern) through a `.beep` file.
 
-- [ ] `ValueTree` schema for the full project, versioned from v1
-- [ ] "Save As" dialog writes a `.beep`
-- [ ] "Open" dialog loads a `.beep` and restores state exactly
-- [ ] Unsaved-changes indicator in the window title
-- [ ] macOS `.beep` file-type association in the app bundle
-- [ ] Migration-function stub for future v1 → v2 transitions
+- [x] `ValueTree` schema for the full project, versioned from v1
+- [x] "Save As" dialog writes a `.beep`
+- [x] "Open" dialog loads a `.beep` and restores state exactly
+- [x] Unsaved-changes indicator in the window title
+- [x] macOS `.beep` file-type association in the app bundle
+- [x] Migration-function stub for future v1 → v2 transitions
 
 ## Phase 7 — MVP polish & release
 
