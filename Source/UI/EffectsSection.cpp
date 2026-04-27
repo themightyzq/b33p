@@ -22,6 +22,10 @@ namespace B33p
         SliderFormatting::applyInteger(bitDepthSlider .getSlider(), " bits");
         SliderFormatting::applyHz     (crushRateSlider.getSlider());
         SliderFormatting::applyDecimal(driveSlider    .getSlider(), 2);
+
+        bitDepthSlider .setTooltip("Bitcrush — lower bit depth = grittier, more 8-bit");
+        crushRateSlider.setTooltip("Sample rate reduction — lower = more aliased / lo-fi");
+        driveSlider    .setTooltip("Distortion drive — pushes the signal into soft clipping");
     }
 
     void EffectsSection::resized()

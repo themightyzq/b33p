@@ -35,6 +35,12 @@ namespace B33p
         wireRandomizerButtons(processor, diceButton, lockButton, parameterID);
     }
 
+    void LabeledSlider::setTooltip(const juce::String& text)
+    {
+        slider.setTooltip(text);
+        label .setTooltip(text);
+    }
+
     void LabeledSlider::resized()
     {
         auto bounds = getLocalBounds();

@@ -38,6 +38,11 @@ namespace B33p
         B33pProcessor&      processor;
         ProjectFileManager  fileManager;
 
+        // Owns the hover-tooltip popup for the whole window. Just
+        // declaring it is enough — every Component with a non-empty
+        // tooltip text gets picked up automatically.
+        juce::TooltipWindow tooltipWindow { this, 700 };
+
         OscillatorSection oscillatorSection;
         AmpEnvSection     ampEnvelopeSection;
         FilterSection     filterSection;

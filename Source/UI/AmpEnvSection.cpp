@@ -28,6 +28,11 @@ namespace B33p
         SliderFormatting::applySeconds(decaySlider  .getSlider());
         SliderFormatting::applyPercent(sustainSlider.getSlider());
         SliderFormatting::applySeconds(releaseSlider.getSlider());
+
+        attackSlider .setTooltip("Time to reach full volume after a note starts");
+        decaySlider  .setTooltip("Time to fall from peak down to the sustain level");
+        sustainSlider.setTooltip("Held volume while the note is on");
+        releaseSlider.setTooltip("Time to fade to silence after the note ends");
     }
 
     void AmpEnvSection::resized()

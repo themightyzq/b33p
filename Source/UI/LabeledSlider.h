@@ -30,6 +30,11 @@ namespace B33p
         void attachRandomizer(B33pProcessor& processor,
                               const juce::String& parameterID);
 
+        // Sets the same hover-tooltip on the knob and its label so
+        // the user gets the hint regardless of where their cursor
+        // lands. Dice + lock keep their own generic tooltips.
+        void setTooltip(const juce::String& text);
+
         void resized() override;
 
     private:
