@@ -102,7 +102,7 @@ Goal: v0.1 is shippable.
 
 - [x] App icon (placeholder OK if no final asset)
 - [x] About box: version, author, license, JUCE credit
-- [ ] README screenshots captured into `docs/images/`
+- [x] README screenshots captured into `docs/images/`
 - [ ] CI uploads the built b33p binary on every run as a workflow artifact (so non-developer testers can grab a build without setting up the toolchain)
 - [ ] Tag `v0.1.0`
 
