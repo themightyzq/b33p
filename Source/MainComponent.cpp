@@ -93,6 +93,13 @@ namespace B33p
         if (cmd && code == 'S')            { fileManager.save  (this); return true; }
         if (cmd && code == 'O')            { fileManager.open  (this); return true; }
 
+        // Cmd+Z / Cmd+Shift+Z. Currently covers slider edits and
+        // dice rolls (everything the APVTS owns). Pattern grid and
+        // pitch-curve edits aren't routed through UndoManager yet —
+        // that's a separate gap.
+        if (cmd && shift && code == 'Z')   { processor.getUndoManager().redo(); return true; }
+        if (cmd && code == 'Z')            { processor.getUndoManager().undo(); return true; }
+
         // Cmd+/ — About box. Slash is rarely used by JUCE controls
         // for anything else, so it bubbles up reliably.
         if (cmd && (code == '/' || key.getTextCharacter() == '/'))
