@@ -30,10 +30,10 @@ TEST_CASE("PatternSnapshot: events from all lanes are flattened and sorted by st
     const auto snap = makeSnapshot(p);
 
     REQUIRE(snap.events.size() == 4);
-    REQUIRE(snap.events[0].startSeconds == Approx(0.2));
-    REQUIRE(snap.events[1].startSeconds == Approx(1.0));
-    REQUIRE(snap.events[2].startSeconds == Approx(1.5));
-    REQUIRE(snap.events[3].startSeconds == Approx(4.0));
+    REQUIRE(snap.events[0].event.startSeconds == Approx(0.2));
+    REQUIRE(snap.events[1].event.startSeconds == Approx(1.0));
+    REQUIRE(snap.events[2].event.startSeconds == Approx(1.5));
+    REQUIRE(snap.events[3].event.startSeconds == Approx(4.0));
 }
 
 TEST_CASE("PatternSnapshot: events from a muted lane are dropped",
@@ -49,7 +49,7 @@ TEST_CASE("PatternSnapshot: events from a muted lane are dropped",
     REQUIRE(snap.events.size() == 2);
     // Only lanes 0 and 2 contribute — neither sits at 1.5s.
     for (const auto& e : snap.events)
-        REQUIRE(e.startSeconds != Approx(1.5));
+        REQUIRE(e.event.startSeconds != Approx(1.5));
 }
 
 TEST_CASE("PatternSnapshot: events outside [0, length) are dropped", "[pattern][snapshot]")
@@ -66,8 +66,8 @@ TEST_CASE("PatternSnapshot: events outside [0, length) are dropped", "[pattern][
     const auto snap = makeSnapshot(p);
 
     REQUIRE(snap.events.size() == 2);
-    REQUIRE(snap.events[0].startSeconds == Approx(0.0));
-    REQUIRE(snap.events[1].startSeconds == Approx(1.5));
+    REQUIRE(snap.events[0].event.startSeconds == Approx(0.0));
+    REQUIRE(snap.events[1].event.startSeconds == Approx(1.5));
 }
 
 TEST_CASE("PatternSnapshot: per-event metadata is preserved",
@@ -79,7 +79,7 @@ TEST_CASE("PatternSnapshot: per-event metadata is preserved",
     const auto snap = makeSnapshot(p);
 
     REQUIRE(snap.events.size() == 1);
-    REQUIRE(snap.events[0].startSeconds         == Approx(0.5));
-    REQUIRE(snap.events[0].durationSeconds      == Approx(0.25));
-    REQUIRE(snap.events[0].pitchOffsetSemitones == Approx(7.0f));
+    REQUIRE(snap.events[0].event.startSeconds         == Approx(0.5));
+    REQUIRE(snap.events[0].event.durationSeconds      == Approx(0.25));
+    REQUIRE(snap.events[0].event.pitchOffsetSemitones == Approx(7.0f));
 }

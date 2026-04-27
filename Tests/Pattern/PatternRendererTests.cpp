@@ -22,13 +22,19 @@ namespace
         PatternRenderer::Config c;
         c.sampleRate     = kSampleRate;
         c.maxTailSeconds = 1.0;
-        c.waveform       = Oscillator::Waveform::Sine;
-        c.basePitchHz    = 440.0f;
-        c.ampAttack      = 0.0f;
-        c.ampDecay       = 0.0f;
-        c.ampSustain     = 1.0f;
-        c.ampRelease     = 0.05f;
-        c.gain           = 0.5f;
+
+        // The tests place events on lane 0, so configure lane 0 with
+        // the historical "default" voice settings. Lanes 1..3 keep
+        // the LaneConfig struct defaults; without events they stay
+        // silent and contribute 0 to the mix.
+        auto& lane0 = c.lanes[0];
+        lane0.waveform   = Oscillator::Waveform::Sine;
+        lane0.basePitchHz = 440.0f;
+        lane0.ampAttack   = 0.0f;
+        lane0.ampDecay    = 0.0f;
+        lane0.ampSustain  = 1.0f;
+        lane0.ampRelease  = 0.05f;
+        lane0.gain        = 0.5f;
         return c;
     }
 
@@ -100,8 +106,8 @@ TEST_CASE("PatternRenderer: tail extends past pattern length for late events",
     pattern.addEvent(0, { 0.18, 0.05, 0.0f });
 
     auto cfg = defaultConfig();
-    cfg.ampRelease     = 0.1f;
-    cfg.maxTailSeconds = 0.5;
+    cfg.lanes[0].ampRelease = 0.1f;
+    cfg.maxTailSeconds      = 0.5;
 
     const auto buf = PatternRenderer::render(pattern, cfg);
     REQUIRE(buf.getNumSamples() > static_cast<int>(0.2 * kSampleRate));
@@ -116,9 +122,9 @@ TEST_CASE("PatternRenderer: maxTailSeconds caps the tail length",
     pattern.addEvent(0, { 0.0, 0.05, 0.0f });
 
     auto cfg = defaultConfig();
-    cfg.ampSustain     = 1.0f;
-    cfg.ampRelease     = 5.0f;     // would naturally produce a 5 s tail
-    cfg.maxTailSeconds = 0.2;
+    cfg.lanes[0].ampSustain = 1.0f;
+    cfg.lanes[0].ampRelease = 5.0f;     // would naturally produce a 5 s tail
+    cfg.maxTailSeconds      = 0.2;
 
     const auto buf = PatternRenderer::render(pattern, cfg);
     const int patternSamples = static_cast<int>(0.1 * kSampleRate);
@@ -134,9 +140,9 @@ TEST_CASE("PatternRenderer: rendered audio respects gain setting",
     pattern.addEvent(0, { 0.0, 0.1, 0.0f });
 
     auto cfgFull = defaultConfig();
-    cfgFull.gain = 1.0f;
+    cfgFull.lanes[0].gain = 1.0f;
     auto cfgHalf = defaultConfig();
-    cfgHalf.gain = 0.5f;
+    cfgHalf.lanes[0].gain = 0.5f;
 
     const auto bufFull = PatternRenderer::render(pattern, cfgFull);
     const auto bufHalf = PatternRenderer::render(pattern, cfgHalf);

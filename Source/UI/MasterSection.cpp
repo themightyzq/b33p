@@ -7,7 +7,7 @@ namespace B33p
 {
     MasterSection::MasterSection(B33pProcessor& processor)
         : Section("Master"),
-          gainAttachment(processor.getApvts(), ParameterIDs::voiceGain, gainSlider.getSlider())
+          gainAttachment(processor.getApvts(), ParameterIDs::voiceGain(0), gainSlider.getSlider())
     {
         addAndMakeVisible(gainSlider);
 
@@ -25,12 +25,12 @@ namespace B33p
         };
         addAndMakeVisible(diceAllButton);
 
-        gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain);
+        gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain(0));
 
         SliderFormatting::applyDecimal(gainSlider.getSlider(), 2);
         SliderFormatting::applyDoubleClickReset(gainSlider.getSlider(),
                                                 processor.getApvts(),
-                                                ParameterIDs::voiceGain);
+                                                ParameterIDs::voiceGain(0));
 
         gainSlider    .setTooltip("Master output level");
         auditionButton.setTooltip("Play a single beep with the current settings (Shift+Space)");

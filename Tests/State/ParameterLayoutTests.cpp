@@ -13,10 +13,10 @@ namespace
 {
     struct FloatExpectation
     {
-        const char* id;
-        float       min;
-        float       max;
-        float       defaultValue;
+        juce::String id;
+        float        min;
+        float        max;
+        float        defaultValue;
     };
 
     juce::AudioParameterFloat* asFloat(juce::RangedAudioParameter* p)
@@ -35,47 +35,42 @@ TEST_CASE("ParameterLayout: B33pProcessor constructs and exposes APVTS", "[state
     REQUIRE_NOTHROW(B33p::B33pProcessor{});
 }
 
-TEST_CASE("ParameterLayout: every expected parameter ID is present", "[state][layout]")
+TEST_CASE("ParameterLayout: every expected parameter ID is present for every lane",
+          "[state][layout]")
 {
     B33p::B33pProcessor processor;
     auto& apvts = processor.getApvts();
 
-    const char* const expectedIds[] = {
-        B33p::ParameterIDs::oscWaveform,
-        B33p::ParameterIDs::basePitchHz,
-        B33p::ParameterIDs::ampAttack,
-        B33p::ParameterIDs::ampDecay,
-        B33p::ParameterIDs::ampSustain,
-        B33p::ParameterIDs::ampRelease,
-        B33p::ParameterIDs::filterCutoffHz,
-        B33p::ParameterIDs::filterResonanceQ,
-        B33p::ParameterIDs::bitcrushBitDepth,
-        B33p::ParameterIDs::bitcrushSampleRateHz,
-        B33p::ParameterIDs::distortionDrive,
-        B33p::ParameterIDs::voiceGain,
-    };
-
-    for (const char* id : expectedIds)
-        REQUIRE(apvts.getParameter(id) != nullptr);
+    for (int lane = 0; lane < B33p::Pattern::kNumLanes; ++lane)
+    {
+        for (const auto& id : B33p::ParameterIDs::allForLane(lane))
+        {
+            INFO("lane " << lane << " parameter id: " << id);
+            REQUIRE(apvts.getParameter(id) != nullptr);
+        }
+    }
 }
 
-TEST_CASE("ParameterLayout: continuous parameters have correct ranges and defaults", "[state][layout]")
+TEST_CASE("ParameterLayout: continuous parameters have correct ranges and defaults",
+          "[state][layout]")
 {
     B33p::B33pProcessor processor;
     auto& apvts = processor.getApvts();
 
+    // Spot-check lane 0; the layout function uses a single shared
+    // body for every lane so checking one lane confirms the recipe.
     const FloatExpectation expectations[] = {
-        { B33p::ParameterIDs::basePitchHz,          20.0f,    20000.0f, 440.0f  },
-        { B33p::ParameterIDs::ampAttack,            0.0f,     5.0f,     0.005f  },
-        { B33p::ParameterIDs::ampDecay,             0.0f,     5.0f,     0.05f   },
-        { B33p::ParameterIDs::ampSustain,           0.0f,     1.0f,     1.0f    },
-        { B33p::ParameterIDs::ampRelease,           0.0f,     5.0f,     0.1f    },
-        { B33p::ParameterIDs::filterCutoffHz,       20.0f,    20000.0f, 20000.0f },
-        { B33p::ParameterIDs::filterResonanceQ,     0.1f,     20.0f,    0.707f  },
-        { B33p::ParameterIDs::bitcrushBitDepth,     1.0f,     16.0f,    16.0f   },
-        { B33p::ParameterIDs::bitcrushSampleRateHz, 200.0f,   48000.0f, 48000.0f },
-        { B33p::ParameterIDs::distortionDrive,      0.1f,     100.0f,   1.0f    },
-        { B33p::ParameterIDs::voiceGain,            0.0f,     10.0f,    1.0f    },
+        { B33p::ParameterIDs::basePitchHz(0),          20.0f,    20000.0f, 440.0f  },
+        { B33p::ParameterIDs::ampAttack(0),            0.0f,     5.0f,     0.005f  },
+        { B33p::ParameterIDs::ampDecay(0),             0.0f,     5.0f,     0.05f   },
+        { B33p::ParameterIDs::ampSustain(0),           0.0f,     1.0f,     1.0f    },
+        { B33p::ParameterIDs::ampRelease(0),           0.0f,     5.0f,     0.1f    },
+        { B33p::ParameterIDs::filterCutoffHz(0),       20.0f,    20000.0f, 20000.0f },
+        { B33p::ParameterIDs::filterResonanceQ(0),     0.1f,     20.0f,    0.707f  },
+        { B33p::ParameterIDs::bitcrushBitDepth(0),     1.0f,     16.0f,    16.0f   },
+        { B33p::ParameterIDs::bitcrushSampleRateHz(0), 200.0f,   48000.0f, 48000.0f },
+        { B33p::ParameterIDs::distortionDrive(0),      0.1f,     100.0f,   1.0f    },
+        { B33p::ParameterIDs::voiceGain(0),            0.0f,     10.0f,    1.0f    },
     };
 
     for (const FloatExpectation& e : expectations)
@@ -91,12 +86,13 @@ TEST_CASE("ParameterLayout: continuous parameters have correct ranges and defaul
     }
 }
 
-TEST_CASE("ParameterLayout: waveform choice lists all five waveforms with Sine default", "[state][layout]")
+TEST_CASE("ParameterLayout: waveform choice lists all five waveforms with Sine default",
+          "[state][layout]")
 {
     B33p::B33pProcessor processor;
     auto& apvts = processor.getApvts();
 
-    auto* choice = asChoice(apvts.getParameter(B33p::ParameterIDs::oscWaveform));
+    auto* choice = asChoice(apvts.getParameter(B33p::ParameterIDs::oscWaveform(0)));
     REQUIRE(choice != nullptr);
 
     const juce::StringArray expected { "Sine", "Square", "Triangle", "Saw", "Noise" };
@@ -104,19 +100,17 @@ TEST_CASE("ParameterLayout: waveform choice lists all five waveforms with Sine d
     REQUIRE(choice->getIndex() == 0);  // Sine
 }
 
-TEST_CASE("ParameterLayout: Hz parameters are log-skewed around their centre", "[state][layout]")
+TEST_CASE("ParameterLayout: Hz parameters are log-skewed around their centre",
+          "[state][layout]")
 {
     B33p::B33pProcessor processor;
     auto& apvts = processor.getApvts();
 
-    // 0.5 normalized must map near the declared skew centre, not the
-    // linear midpoint of the range. This confirms a skew was applied
-    // rather than left linear.
-    struct SkewCheck { const char* id; float centre; };
+    struct SkewCheck { juce::String id; float centre; };
     const SkewCheck checks[] = {
-        { B33p::ParameterIDs::basePitchHz,          440.0f  },
-        { B33p::ParameterIDs::filterCutoffHz,       1000.0f },
-        { B33p::ParameterIDs::bitcrushSampleRateHz, 8000.0f },
+        { B33p::ParameterIDs::basePitchHz(0),          440.0f  },
+        { B33p::ParameterIDs::filterCutoffHz(0),       1000.0f },
+        { B33p::ParameterIDs::bitcrushSampleRateHz(0), 8000.0f },
     };
 
     for (const SkewCheck& c : checks)
@@ -126,8 +120,6 @@ TEST_CASE("ParameterLayout: Hz parameters are log-skewed around their centre", "
         REQUIRE(param != nullptr);
 
         const float mapped = param->getNormalisableRange().convertFrom0to1(0.5f);
-        // Tolerance 1 Hz: setSkewForCentre is exact in theory, but
-        // float round-trip through the normalised range adds noise.
         REQUIRE(mapped == Approx(c.centre).margin(1.0f));
     }
 }
@@ -137,12 +129,11 @@ TEST_CASE("ParameterLayout: sustain and Q stay linear (no skew applied)", "[stat
     B33p::B33pProcessor processor;
     auto& apvts = processor.getApvts();
 
-    auto* sustain = asFloat(apvts.getParameter(B33p::ParameterIDs::ampSustain));
+    auto* sustain = asFloat(apvts.getParameter(B33p::ParameterIDs::ampSustain(0)));
     REQUIRE(sustain != nullptr);
     REQUIRE(sustain->getNormalisableRange().convertFrom0to1(0.5f) == Approx(0.5f).margin(1e-5f));
 
-    auto* q = asFloat(apvts.getParameter(B33p::ParameterIDs::filterResonanceQ));
+    auto* q = asFloat(apvts.getParameter(B33p::ParameterIDs::filterResonanceQ(0)));
     REQUIRE(q != nullptr);
-    // Linear midpoint of [0.1, 20] is 10.05.
     REQUIRE(q->getNormalisableRange().convertFrom0to1(0.5f) == Approx(10.05f).margin(1e-4f));
 }

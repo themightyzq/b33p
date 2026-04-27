@@ -7,20 +7,20 @@ namespace B33p
 {
     FilterSection::FilterSection(B33pProcessor& processor)
         : Section("Filter"),
-          cutoffAttachment   (processor.getApvts(), ParameterIDs::filterCutoffHz,   cutoffSlider.getSlider()),
-          resonanceAttachment(processor.getApvts(), ParameterIDs::filterResonanceQ, resonanceSlider.getSlider())
+          cutoffAttachment   (processor.getApvts(), ParameterIDs::filterCutoffHz(0),   cutoffSlider.getSlider()),
+          resonanceAttachment(processor.getApvts(), ParameterIDs::filterResonanceQ(0), resonanceSlider.getSlider())
     {
         addAndMakeVisible(cutoffSlider);
         addAndMakeVisible(resonanceSlider);
 
-        cutoffSlider   .attachRandomizer(processor, ParameterIDs::filterCutoffHz);
-        resonanceSlider.attachRandomizer(processor, ParameterIDs::filterResonanceQ);
+        cutoffSlider   .attachRandomizer(processor, ParameterIDs::filterCutoffHz(0));
+        resonanceSlider.attachRandomizer(processor, ParameterIDs::filterResonanceQ(0));
 
         SliderFormatting::applyHz     (cutoffSlider   .getSlider());
         SliderFormatting::applyDecimal(resonanceSlider.getSlider(), 2);
 
-        SliderFormatting::applyDoubleClickReset(cutoffSlider   .getSlider(), processor.getApvts(), ParameterIDs::filterCutoffHz);
-        SliderFormatting::applyDoubleClickReset(resonanceSlider.getSlider(), processor.getApvts(), ParameterIDs::filterResonanceQ);
+        SliderFormatting::applyDoubleClickReset(cutoffSlider   .getSlider(), processor.getApvts(), ParameterIDs::filterCutoffHz(0));
+        SliderFormatting::applyDoubleClickReset(resonanceSlider.getSlider(), processor.getApvts(), ParameterIDs::filterResonanceQ(0));
 
         cutoffSlider   .setTooltip("Lowpass cutoff: frequencies above are rolled off");
         resonanceSlider.setTooltip("Emphasis around the cutoff: higher = more whistly");

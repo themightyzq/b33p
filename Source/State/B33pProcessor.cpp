@@ -14,23 +14,18 @@ namespace B33p
 
     namespace
     {
-        // Listener-bookkeeping list — kept in sync with
-        // ParameterIDs.h so any new parameter automatically takes
-        // part in dirty tracking.
-        constexpr const char* const kAllParamIds[] = {
-            ParameterIDs::oscWaveform,
-            ParameterIDs::basePitchHz,
-            ParameterIDs::ampAttack,
-            ParameterIDs::ampDecay,
-            ParameterIDs::ampSustain,
-            ParameterIDs::ampRelease,
-            ParameterIDs::filterCutoffHz,
-            ParameterIDs::filterResonanceQ,
-            ParameterIDs::bitcrushBitDepth,
-            ParameterIDs::bitcrushSampleRateHz,
-            ParameterIDs::distortionDrive,
-            ParameterIDs::voiceGain,
-        };
+        // Every APVTS parameter ID across all lanes — used for
+        // dirty-tracking listener registration and for the New /
+        // resetToDefaults reset loop. Re-derived each call so it
+        // stays in sync with ParameterIDs::allForLane.
+        std::vector<juce::String> allLaneParamIds()
+        {
+            std::vector<juce::String> ids;
+            for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+                for (auto& id : ParameterIDs::allForLane(lane))
+                    ids.push_back(id);
+            return ids;
+        }
     }
 
     B33pProcessor::B33pProcessor()
@@ -49,13 +44,13 @@ namespace B33p
 
     void B33pProcessor::registerAsApvtsListener()
     {
-        for (const char* id : kAllParamIds)
+        for (const auto& id : allLaneParamIds())
             apvts.addParameterListener(id, this);
     }
 
     void B33pProcessor::unregisterAsApvtsListener()
     {
-        for (const char* id : kAllParamIds)
+        for (const auto& id : allLaneParamIds())
             apvts.removeParameterListener(id, this);
     }
 
@@ -66,11 +61,14 @@ namespace B33p
 
     void B33pProcessor::prepareToPlay(double sampleRate, int /*blockSize*/)
     {
-        currentSampleRate    = sampleRate;
-        samplesUntilNoteOff  = 0;
+        currentSampleRate = sampleRate;
+        for (auto& n : samplesUntilNoteOff) n = 0;
         playheadSeconds.store(0.0);
-        voice.prepare(sampleRate);
-        voice.reset();
+        for (auto& v : voices)
+        {
+            v.prepare(sampleRate);
+            v.reset();
+        }
     }
 
     void B33pProcessor::releaseResources()
@@ -184,7 +182,7 @@ namespace B33p
         // Reset every APVTS parameter to its registered default.
         // setValueNotifyingHost takes a normalised value (0..1)
         // which is exactly what getDefaultValue() returns.
-        for (const char* id : kAllParamIds)
+        for (const auto& id : allLaneParamIds())
             if (auto* p = apvts.getParameter(id))
                 p->setValueNotifyingHost(p->getDefaultValue());
 
@@ -207,41 +205,55 @@ namespace B33p
         notifyFullStateLoaded();
     }
 
-    void B33pProcessor::pushParametersToVoice()
+    void B33pProcessor::pushParametersToVoices()
     {
-        const auto* wfParam = apvts.getRawParameterValue(ParameterIDs::oscWaveform);
-        voice.setWaveform(static_cast<Oscillator::Waveform>(
-            juce::jlimit(0, 4, static_cast<int>(wfParam->load()))));
-
-        voice.setBasePitchHz         (apvts.getRawParameterValue(ParameterIDs::basePitchHz)->load());
-        voice.setAmpAttack           (apvts.getRawParameterValue(ParameterIDs::ampAttack)->load());
-        voice.setAmpDecay            (apvts.getRawParameterValue(ParameterIDs::ampDecay)->load());
-        voice.setAmpSustain          (apvts.getRawParameterValue(ParameterIDs::ampSustain)->load());
-        voice.setAmpRelease          (apvts.getRawParameterValue(ParameterIDs::ampRelease)->load());
-        voice.setFilterCutoff        (apvts.getRawParameterValue(ParameterIDs::filterCutoffHz)->load());
-        voice.setFilterResonance     (apvts.getRawParameterValue(ParameterIDs::filterResonanceQ)->load());
-        voice.setBitcrushBitDepth    (apvts.getRawParameterValue(ParameterIDs::bitcrushBitDepth)->load());
-        voice.setBitcrushSampleRate  (apvts.getRawParameterValue(ParameterIDs::bitcrushSampleRateHz)->load());
-        voice.setDistortionDrive     (apvts.getRawParameterValue(ParameterIDs::distortionDrive)->load());
-        voice.setGain                (apvts.getRawParameterValue(ParameterIDs::voiceGain)->load());
+        for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+            pushParametersToLane(lane);
     }
 
-    void B33pProcessor::triggerVoiceFromEvent(const Event& event)
+    void B33pProcessor::pushParametersToLane(int lane)
     {
+        auto& v = voices[static_cast<size_t>(lane)];
+
+        const auto* wfParam = apvts.getRawParameterValue(ParameterIDs::oscWaveform(lane));
+        v.setWaveform(static_cast<Oscillator::Waveform>(
+            juce::jlimit(0, 4, static_cast<int>(wfParam->load()))));
+
+        v.setBasePitchHz         (apvts.getRawParameterValue(ParameterIDs::basePitchHz(lane))->load());
+        v.setAmpAttack           (apvts.getRawParameterValue(ParameterIDs::ampAttack(lane))->load());
+        v.setAmpDecay            (apvts.getRawParameterValue(ParameterIDs::ampDecay(lane))->load());
+        v.setAmpSustain          (apvts.getRawParameterValue(ParameterIDs::ampSustain(lane))->load());
+        v.setAmpRelease          (apvts.getRawParameterValue(ParameterIDs::ampRelease(lane))->load());
+        v.setFilterCutoff        (apvts.getRawParameterValue(ParameterIDs::filterCutoffHz(lane))->load());
+        v.setFilterResonance     (apvts.getRawParameterValue(ParameterIDs::filterResonanceQ(lane))->load());
+        v.setBitcrushBitDepth    (apvts.getRawParameterValue(ParameterIDs::bitcrushBitDepth(lane))->load());
+        v.setBitcrushSampleRate  (apvts.getRawParameterValue(ParameterIDs::bitcrushSampleRateHz(lane))->load());
+        v.setDistortionDrive     (apvts.getRawParameterValue(ParameterIDs::distortionDrive(lane))->load());
+        v.setGain                (apvts.getRawParameterValue(ParameterIDs::voiceGain(lane))->load());
+    }
+
+    void B33pProcessor::triggerVoiceFromEvent(int lane, const Event& event)
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return;
+
+        auto& v = voices[static_cast<size_t>(lane)];
+
         // Try to refresh the voice's pitch curve before triggering;
-        // if the lock is contended we keep whatever curve was last
-        // pushed in. Acceptable because the next free trigger picks
-        // it up.
+        // if the lock is contended we keep whatever curve the voice
+        // already has. The pitch curve is shared across all lanes for
+        // this MVP — per-lane curves are post-MVP polish.
         {
             const juce::ScopedTryLock tryLock(pitchCurveLock);
             if (tryLock.isLocked())
-                voice.setPitchCurve(pitchCurve);
+                v.setPitchCurve(pitchCurve);
         }
 
-        voice.trigger(static_cast<float>(event.durationSeconds),
-                      event.pitchOffsetSemitones,
-                      event.velocity);
-        samplesUntilNoteOff = static_cast<int>(event.durationSeconds * currentSampleRate);
+        v.trigger(static_cast<float>(event.durationSeconds),
+                   event.pitchOffsetSemitones,
+                   event.velocity);
+        samplesUntilNoteOff[static_cast<size_t>(lane)]
+            = static_cast<int>(event.durationSeconds * currentSampleRate);
     }
 
     void B33pProcessor::processBlock(juce::AudioBuffer<float>& buffer,
@@ -252,7 +264,7 @@ namespace B33p
         const int numSamples  = buffer.getNumSamples();
         const int numChannels = buffer.getNumChannels();
 
-        pushParametersToVoice();
+        pushParametersToVoices();
 
         // ---- Detect playback start / stop transitions -------------
         const bool nowPlaying = playing.load(std::memory_order_acquire);
@@ -264,8 +276,8 @@ namespace B33p
         }
         else if (! nowPlaying && audioThreadPlaying)
         {
-            voice.noteOff();
-            samplesUntilNoteOff = 0;
+            for (auto& v : voices)              v.noteOff();
+            for (auto& n : samplesUntilNoteOff) n = 0;
             activeSnapshot.reset();
         }
         audioThreadPlaying = nowPlaying;
@@ -288,19 +300,21 @@ namespace B33p
                     const double now = playheadSeconds.load();
                     const auto& evs  = activeSnapshot->events;
                     while (nextEventIndex < static_cast<int>(evs.size())
-                           && evs[static_cast<size_t>(nextEventIndex)].startSeconds < now)
+                           && evs[static_cast<size_t>(nextEventIndex)].event.startSeconds < now)
                         ++nextEventIndex;
                 }
             }
         }
 
         // ---- Audition trigger fires before the per-sample loop ----
+        // Always plays lane 0 for now; selected-lane routing arrives
+        // in the next Phase 9 commit.
         if (pendingAudition.exchange(false, std::memory_order_acq_rel))
         {
             Event auditionEvent { 0.0,
                                   static_cast<double>(kAuditionDurationSeconds),
                                   0.0f };
-            triggerVoiceFromEvent(auditionEvent);
+            triggerVoiceFromEvent(0, auditionEvent);
         }
 
         auto* left  = numChannels > 0 ? buffer.getWritePointer(0) : nullptr;
@@ -325,10 +339,10 @@ namespace B33p
                     }
                     else
                     {
-                        voice.noteOff();
+                        for (auto& v : voices)              v.noteOff();
+                        for (auto& n : samplesUntilNoteOff) n = 0;
                         playing.store(false, std::memory_order_release);
                         audioThreadPlaying  = false;
-                        samplesUntilNoteOff = 0;
                         activeSnapshot.reset();
                     }
                 }
@@ -337,22 +351,28 @@ namespace B33p
                 {
                     const auto& events = activeSnapshot->events;
                     while (nextEventIndex < static_cast<int>(events.size())
-                           && events[static_cast<size_t>(nextEventIndex)].startSeconds <= playhead)
+                           && events[static_cast<size_t>(nextEventIndex)].event.startSeconds <= playhead)
                     {
-                        triggerVoiceFromEvent(events[static_cast<size_t>(nextEventIndex)]);
+                        const auto& sched = events[static_cast<size_t>(nextEventIndex)];
+                        triggerVoiceFromEvent(sched.lane, sched.event);
                         ++nextEventIndex;
                     }
                 }
             }
 
-            // ---- Sample-accurate noteOff for the active note ------
-            if (samplesUntilNoteOff > 0)
+            // ---- Per-lane sample-accurate noteOff -----------------
+            for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
             {
-                if (--samplesUntilNoteOff == 0)
-                    voice.noteOff();
+                int& count = samplesUntilNoteOff[static_cast<size_t>(lane)];
+                if (count > 0 && --count == 0)
+                    voices[static_cast<size_t>(lane)].noteOff();
             }
 
-            const float s = voice.processSample();
+            // ---- Mix all four voices -----------------------------
+            float s = 0.0f;
+            for (auto& v : voices)
+                s += v.processSample();
+
             if (left  != nullptr) left[i]  = s;
             if (right != nullptr) right[i] = s;
 

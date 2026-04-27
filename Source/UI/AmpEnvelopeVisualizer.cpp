@@ -24,18 +24,20 @@ namespace B33p
     AmpEnvelopeVisualizer::AmpEnvelopeVisualizer(juce::AudioProcessorValueTreeState& apvtsRef)
         : apvts(apvtsRef)
     {
-        apvts.addParameterListener(ParameterIDs::ampAttack,  this);
-        apvts.addParameterListener(ParameterIDs::ampDecay,   this);
-        apvts.addParameterListener(ParameterIDs::ampSustain, this);
-        apvts.addParameterListener(ParameterIDs::ampRelease, this);
+        // Lane 0 is hardcoded for now; per-lane editing arrives later
+        // in Phase 9 when the visualizer follows the selected lane.
+        apvts.addParameterListener(ParameterIDs::ampAttack(0),  this);
+        apvts.addParameterListener(ParameterIDs::ampDecay(0),   this);
+        apvts.addParameterListener(ParameterIDs::ampSustain(0), this);
+        apvts.addParameterListener(ParameterIDs::ampRelease(0), this);
     }
 
     AmpEnvelopeVisualizer::~AmpEnvelopeVisualizer()
     {
-        apvts.removeParameterListener(ParameterIDs::ampAttack,  this);
-        apvts.removeParameterListener(ParameterIDs::ampDecay,   this);
-        apvts.removeParameterListener(ParameterIDs::ampSustain, this);
-        apvts.removeParameterListener(ParameterIDs::ampRelease, this);
+        apvts.removeParameterListener(ParameterIDs::ampAttack(0),  this);
+        apvts.removeParameterListener(ParameterIDs::ampDecay(0),   this);
+        apvts.removeParameterListener(ParameterIDs::ampSustain(0), this);
+        apvts.removeParameterListener(ParameterIDs::ampRelease(0), this);
     }
 
     void AmpEnvelopeVisualizer::parameterChanged(const juce::String&, float)
@@ -47,10 +49,10 @@ namespace B33p
 
     void AmpEnvelopeVisualizer::paint(juce::Graphics& g)
     {
-        const float a = apvts.getRawParameterValue(ParameterIDs::ampAttack)->load();
-        const float d = apvts.getRawParameterValue(ParameterIDs::ampDecay)->load();
-        const float s = apvts.getRawParameterValue(ParameterIDs::ampSustain)->load();
-        const float r = apvts.getRawParameterValue(ParameterIDs::ampRelease)->load();
+        const float a = apvts.getRawParameterValue(ParameterIDs::ampAttack(0))->load();
+        const float d = apvts.getRawParameterValue(ParameterIDs::ampDecay(0))->load();
+        const float s = apvts.getRawParameterValue(ParameterIDs::ampSustain(0))->load();
+        const float r = apvts.getRawParameterValue(ParameterIDs::ampRelease(0))->load();
 
         auto frame = getLocalBounds().toFloat().reduced(kOutlineInset);
 

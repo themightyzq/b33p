@@ -21,14 +21,14 @@ namespace B33p
             {
                 if (e.startSeconds < 0.0 || e.startSeconds >= snap.lengthSeconds)
                     continue;
-                snap.events.push_back(e);
+                snap.events.push_back({ lane, e });
             }
         }
 
         std::sort(snap.events.begin(), snap.events.end(),
-            [](const Event& a, const Event& b)
+            [](const ScheduledEvent& a, const ScheduledEvent& b)
             {
-                return a.startSeconds < b.startSeconds;
+                return a.event.startSeconds < b.event.startSeconds;
             });
 
         return snap;
