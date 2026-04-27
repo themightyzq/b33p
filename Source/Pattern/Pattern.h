@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstddef>
+#include <string>
 #include <vector>
 
 namespace B33p
@@ -69,18 +70,38 @@ namespace B33p
         void clearLane(int lane);
         void clearAll();
 
+        // Resets per-lane metadata (names, mute) to defaults.
+        // clearAll only touches events; load / new-project flows
+        // need this to wipe leftover names + mute from the
+        // previous project's pattern.
+        void resetAllLaneMeta();
+
+        // Per-lane name. Empty string is the "use default label"
+        // sentinel; the UI renders "1" / "2" / ... in that case.
+        const juce::String& getLaneName(int lane) const;
+        void                setLaneName(int lane, const juce::String& name);
+
+        // Per-lane mute. Muted lanes are filtered out at snapshot
+        // time so the audio thread never sees their events.
+        bool isLaneMuted(int lane) const;
+        void setLaneMuted(int lane, bool muted);
+
         // Snapshot equality — used by the undo system to skip
         // pushing no-op gestures (e.g. mouseDown + mouseUp without
         // any actual change to the pattern data).
         friend bool operator==(const Pattern& a, const Pattern& b)
         {
             return juce::exactlyEqual(a.lengthSeconds, b.lengthSeconds)
-                && a.lanes == b.lanes;
+                && a.lanes      == b.lanes
+                && a.laneNames  == b.laneNames
+                && a.laneMuted  == b.laneMuted;
         }
         friend bool operator!=(const Pattern& a, const Pattern& b) { return ! (a == b); }
 
     private:
         double                                      lengthSeconds { kDefaultLengthSeconds };
         std::array<std::vector<Event>, kNumLanes>   lanes;
+        std::array<juce::String, kNumLanes>         laneNames;
+        std::array<bool, kNumLanes>                 laneMuted { false, false, false, false };
     };
 }

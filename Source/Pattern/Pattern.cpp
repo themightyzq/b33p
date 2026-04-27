@@ -69,4 +69,39 @@ namespace B33p
         for (auto& laneEvents : lanes)
             laneEvents.clear();
     }
+
+    void Pattern::resetAllLaneMeta()
+    {
+        for (auto& n : laneNames) n = juce::String{};
+        for (auto& m : laneMuted) m = false;
+    }
+
+    const juce::String& Pattern::getLaneName(int lane) const
+    {
+        static const juce::String empty;
+        if (! laneInRange(lane))
+            return empty;
+        return laneNames[static_cast<std::size_t>(lane)];
+    }
+
+    void Pattern::setLaneName(int lane, const juce::String& name)
+    {
+        if (! laneInRange(lane))
+            return;
+        laneNames[static_cast<std::size_t>(lane)] = name;
+    }
+
+    bool Pattern::isLaneMuted(int lane) const
+    {
+        if (! laneInRange(lane))
+            return false;
+        return laneMuted[static_cast<std::size_t>(lane)];
+    }
+
+    void Pattern::setLaneMuted(int lane, bool muted)
+    {
+        if (! laneInRange(lane))
+            return;
+        laneMuted[static_cast<std::size_t>(lane)] = muted;
+    }
 }

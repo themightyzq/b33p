@@ -11,6 +11,12 @@ namespace B33p
 
         for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
         {
+            // Muted lanes never reach the audio thread — events are
+            // dropped at snapshot time so the playback loop doesn't
+            // need to know about lane state at all.
+            if (pattern.isLaneMuted(lane))
+                continue;
+
             for (const auto& e : pattern.getEvents(lane))
             {
                 if (e.startSeconds < 0.0 || e.startSeconds >= snap.lengthSeconds)

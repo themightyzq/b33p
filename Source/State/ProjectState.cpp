@@ -24,6 +24,8 @@ namespace B33p::ProjectState
         const juce::Identifier kPatternLooping        { "looping" };
         const juce::Identifier kLane                  { "LANE" };
         const juce::Identifier kLaneIndex             { "index" };
+        const juce::Identifier kLaneName              { "name" };
+        const juce::Identifier kLaneMuted             { "muted" };
         const juce::Identifier kEvent                 { "EVENT" };
         const juce::Identifier kEventStart            { "start_seconds" };
         const juce::Identifier kEventDuration         { "duration_seconds" };
@@ -68,7 +70,9 @@ namespace B33p::ProjectState
         for (int laneIdx = 0; laneIdx < Pattern::kNumLanes; ++laneIdx)
         {
             juce::ValueTree laneNode { kLane };
-            laneNode.setProperty(kLaneIndex, laneIdx, nullptr);
+            laneNode.setProperty(kLaneIndex, laneIdx,                        nullptr);
+            laneNode.setProperty(kLaneName,  pattern.getLaneName(laneIdx),    nullptr);
+            laneNode.setProperty(kLaneMuted, pattern.isLaneMuted(laneIdx),    nullptr);
 
             for (const auto& e : pattern.getEvents(laneIdx))
             {
@@ -139,6 +143,7 @@ namespace B33p::ProjectState
         const auto patternNode = tree.getChildWithName(kPattern);
         auto& pattern = processor.getPattern();
         pattern.clearAll();
+        pattern.resetAllLaneMeta();
         pattern.setLengthSeconds(
             static_cast<double>(patternNode.getProperty(kPatternLength,
                                                         Pattern::kDefaultLengthSeconds)));
@@ -151,6 +156,11 @@ namespace B33p::ProjectState
             const int laneIdx = laneNode.getProperty(kLaneIndex, -1);
             if (laneIdx < 0 || laneIdx >= Pattern::kNumLanes)
                 continue;
+
+            // Default-tolerant: pre-Phase-8 v1 files have neither
+            // attribute, so empty name + unmuted is the right default.
+            pattern.setLaneName (laneIdx, laneNode.getProperty(kLaneName, juce::String{}).toString());
+            pattern.setLaneMuted(laneIdx, static_cast<bool>(laneNode.getProperty(kLaneMuted, false)));
 
             for (auto eventNode : laneNode)
             {
