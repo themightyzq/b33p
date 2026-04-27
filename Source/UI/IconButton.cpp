@@ -21,7 +21,7 @@ namespace B33p
     {
         setTooltip(g == Glyph::Die
                        ? juce::String("Roll a random value")
-                       : juce::String("Lock — exclude from random rolls"));
+                       : juce::String("Lock to exclude from random rolls"));
     }
 
     void IconButton::paintButton(juce::Graphics& g,

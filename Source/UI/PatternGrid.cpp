@@ -207,7 +207,7 @@ namespace B33p
 
             g.setColour(juce::Colour::fromRGB(110, 110, 110));
             g.setFont(juce::FontOptions(12.0f));
-            g.drawText("Click in a lane to add a beep — drag to move, drag the right edge to resize",
+            g.drawText("Click in a lane to add a beep. Drag to move, drag the right edge to resize.",
                        hintArea, juce::Justification::centred);
         }
 

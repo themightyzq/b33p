@@ -92,7 +92,7 @@ namespace B33p
             // First-run hint — fades the moment a single point is added.
             g.setColour(juce::Colour::fromRGB(110, 110, 110));
             g.setFont(juce::FontOptions(12.0f));
-            g.drawText("Click to add pitch points — drag to shape, right-click to delete",
+            g.drawText("Click to add pitch points. Drag to shape, right-click to delete.",
                        area, juce::Justification::centred);
             return;
         }
