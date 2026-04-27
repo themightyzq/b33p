@@ -186,6 +186,7 @@ namespace B33p
         syncLengthComboToPattern();
         loopToggle.setToggleState(processor.getLooping(),
                                    juce::dontSendNotification);
+        grid.refreshLaneMetaFromPattern();
         grid.repaint();
     }
 

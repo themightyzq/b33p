@@ -38,6 +38,11 @@ namespace B33p
         {
             processor.getPattern() = afterState;
             processor.markDirty();
+            // notifyFullStateLoaded fires the message-thread callback
+            // that re-syncs widgets that don't auto-track the pattern
+            // — length combo, loop toggle, lane name labels, mute
+            // buttons. Cheap (callAsync coalesces duplicates).
+            processor.notifyFullStateLoaded();
             if (auto* c = editor.getComponent())
                 c->repaint();
             return true;
@@ -47,6 +52,7 @@ namespace B33p
         {
             processor.getPattern() = beforeState;
             processor.markDirty();
+            processor.notifyFullStateLoaded();
             if (auto* c = editor.getComponent())
                 c->repaint();
             return true;

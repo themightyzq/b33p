@@ -45,11 +45,17 @@ namespace B33p
         const Selection& getSelection() const { return selection; }
         void clearSelection();
 
+        // Pulls the per-lane name + mute state out of the pattern
+        // and writes it into the label / button children. Called
+        // after Open / New / undo so the UI tracks the model.
+        void refreshLaneMetaFromPattern();
+
         // Fires whenever `selection` changes, including transitions to
         // / from "no selection". Used by the inspector strip to redraw.
         std::function<void()> onSelectionChanged;
 
         void paint(juce::Graphics& g) override;
+        void resized()           override;
 
         void mouseDown       (const juce::MouseEvent& e) override;
         void mouseDrag       (const juce::MouseEvent& e) override;
@@ -108,6 +114,9 @@ namespace B33p
         // Cursor hover tracking — drives the slight tint lift on the
         // event the user is about to click. lane = -1 = no hover.
         Selection hover;
+
+        std::array<juce::Label,      Pattern::kNumLanes> laneNameLabels;
+        std::array<juce::TextButton, Pattern::kNumLanes> muteButtons;
 
         // While a drag is active, the snap target time in seconds.
         // -1 means "no preview". Drawn as a vertical guide line so

@@ -10,7 +10,9 @@ namespace B33p
 {
     namespace
     {
-        constexpr float  kLaneLabelWidth     = 24.0f;
+        constexpr float  kLaneLabelWidth     = 80.0f;  // wider to fit name + mute
+        constexpr float  kLaneLabelInset     = 4.0f;
+        constexpr float  kMuteButtonWidth    = 22.0f;
         constexpr float  kRulerHeight        = 20.0f;
         constexpr float  kOuterInset         = 1.0f;
         constexpr float  kLaneInset          = 3.0f;   // vertical padding inside each lane
@@ -24,6 +26,104 @@ namespace B33p
         : processor(processorRef)
     {
         setWantsKeyboardFocus(true);
+
+        for (int i = 0; i < Pattern::kNumLanes; ++i)
+        {
+            auto& nameLabel = laneNameLabels[static_cast<size_t>(i)];
+            auto& muteBtn   = muteButtons    [static_cast<size_t>(i)];
+
+            nameLabel.setEditable(false, true, false);   // double-click to edit
+            nameLabel.setJustificationType(juce::Justification::centredLeft);
+            nameLabel.setFont(juce::FontOptions(11.0f));
+            nameLabel.setColour(juce::Label::textColourId,
+                                  juce::Colour::fromRGB(190, 190, 190));
+            nameLabel.setColour(juce::Label::backgroundWhenEditingColourId,
+                                  juce::Colour::fromRGB(28, 28, 28));
+            nameLabel.setTooltip("Double-click to rename");
+            nameLabel.onTextChange = [this, i]
+            {
+                const auto displayed   = laneNameLabels[static_cast<size_t>(i)].getText().trim();
+                const auto defaultText = juce::String(i + 1);
+                const juce::String stored = (displayed == defaultText)
+                                                ? juce::String{}
+                                                : displayed;
+                if (processor.getPattern().getLaneName(i) == stored)
+                    return;
+
+                Pattern before = processor.getPattern();
+                processor.getPattern().setLaneName(i, stored);
+                processor.markDirty();
+                refreshLaneMetaFromPattern();   // re-show fallback if stored is empty
+
+                processor.getUndoManager().beginNewTransaction("Rename lane");
+                processor.getUndoManager().perform(
+                    new SetPatternAction(processor, this,
+                                         std::move(before),
+                                         processor.getPattern()));
+            };
+            addAndMakeVisible(nameLabel);
+
+            muteBtn.setButtonText("M");
+            muteBtn.setClickingTogglesState(true);
+            muteBtn.setTooltip("Mute lane");
+            muteBtn.setColour(juce::TextButton::buttonOnColourId,
+                                juce::Colour::fromRGB(190, 60, 60));
+            muteBtn.onClick = [this, i]
+            {
+                const bool wantMuted = muteButtons[static_cast<size_t>(i)].getToggleState();
+                if (processor.getPattern().isLaneMuted(i) == wantMuted)
+                    return;
+
+                Pattern before = processor.getPattern();
+                processor.getPattern().setLaneMuted(i, wantMuted);
+                processor.markDirty();
+
+                processor.getUndoManager().beginNewTransaction("Toggle lane mute");
+                processor.getUndoManager().perform(
+                    new SetPatternAction(processor, this,
+                                         std::move(before),
+                                         processor.getPattern()));
+            };
+            addAndMakeVisible(muteBtn);
+        }
+
+        refreshLaneMetaFromPattern();
+    }
+
+    void PatternGrid::resized()
+    {
+        // Lane label children sit in the kLaneLabelWidth strip on
+        // the left, one row per lane. Each row is name + mute side
+        // by side, vertically centred in the lane row.
+        for (int i = 0; i < Pattern::kNumLanes; ++i)
+        {
+            auto laneRow = laneArea(i).toNearestInt();
+            auto strip   = juce::Rectangle<int> { 0, laneRow.getY(),
+                                                   static_cast<int>(kLaneLabelWidth),
+                                                   laneRow.getHeight() }
+                              .reduced(static_cast<int>(kLaneLabelInset));
+
+            const int muteW = static_cast<int>(kMuteButtonWidth);
+            muteButtons   [static_cast<size_t>(i)].setBounds(strip.removeFromRight(muteW));
+            strip.removeFromRight(2);
+            laneNameLabels[static_cast<size_t>(i)].setBounds(strip);
+        }
+    }
+
+    void PatternGrid::refreshLaneMetaFromPattern()
+    {
+        for (int i = 0; i < Pattern::kNumLanes; ++i)
+        {
+            const auto& storedName = processor.getPattern().getLaneName(i);
+            const auto displayed   = storedName.isEmpty()
+                                         ? juce::String(i + 1)
+                                         : storedName;
+            laneNameLabels[static_cast<size_t>(i)].setText(
+                displayed, juce::dontSendNotification);
+            muteButtons[static_cast<size_t>(i)].setToggleState(
+                processor.getPattern().isLaneMuted(i),
+                juce::dontSendNotification);
+        }
     }
 
     void PatternGrid::setGridSeconds(double seconds)
@@ -208,19 +308,8 @@ namespace B33p
                        juce::Justification::centredLeft);
         }
 
-        // Lane labels
-        g.setColour(juce::Colour::fromRGB(150, 150, 150));
-        g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
-        for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
-        {
-            auto r = laneArea(lane);
-            g.drawText(juce::String(lane + 1),
-                       juce::Rectangle<float>(frame.getX(),
-                                              r.getY(),
-                                              kLaneLabelWidth,
-                                              r.getHeight()),
-                       juce::Justification::centred);
-        }
+        // Lane labels are juce::Label children — see resized() and the
+        // ctor's per-lane setup. Nothing to paint here.
 
         // First-run hint — drawn only when every lane is empty so it
         // disappears the moment the user adds their first beep.
