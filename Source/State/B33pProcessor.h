@@ -8,6 +8,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -35,9 +36,11 @@ namespace B33p
     // Save / load (getStateInformation / setStateInformation) is
     // stubbed out — that lands in Phase 6 with the .beep file format.
     class B33pProcessor : public juce::AudioProcessor
+                        , private juce::AudioProcessorValueTreeState::Listener
     {
     public:
         B33pProcessor();
+        ~B33pProcessor() override;
 
         juce::AudioProcessorValueTreeState&       getApvts()       { return apvts; }
         const juce::AudioProcessorValueTreeState& getApvts() const { return apvts; }
@@ -79,8 +82,21 @@ namespace B33p
         void   stopPlayback();
         bool   isPlaying() const     { return playing.load(std::memory_order_acquire); }
 
-        void   setLooping(bool shouldLoop) { looping.store(shouldLoop); }
+        void   setLooping(bool shouldLoop);
         bool   getLooping() const          { return looping.load(); }
+
+        // Unsaved-changes tracking. Anything that mutates persisted
+        // project state (APVTS values, pitch curve, pattern, locks)
+        // marks the processor dirty; saving / loading clears it.
+        // The callback fires on dirty<->clean transitions only,
+        // marshalled to the message thread via callAsync so the UI
+        // can update safely regardless of which thread mutated.
+        bool isDirty() const noexcept { return dirty.load(); }
+        void markDirty();
+        void markClean();
+
+        using OnDirtyChanged = std::function<void()>;
+        void setOnDirtyChanged(OnDirtyChanged callback);
 
         // Audio thread writes once per block, UI reads from a Timer
         // callback. atomic<double> is lock-free on every 64-bit
@@ -116,6 +132,13 @@ namespace B33p
         void pushParametersToVoice();
         void triggerVoiceFromEvent(const Event& event);
 
+        // juce::AudioProcessorValueTreeState::Listener
+        void parameterChanged(const juce::String& parameterID, float newValue) override;
+
+        void registerAsApvtsListener();
+        void unregisterAsApvtsListener();
+        void notifyDirtyChanged();
+
         juce::UndoManager                  undoManager;
         juce::AudioProcessorValueTreeState apvts;
         ParameterRandomizer                randomizer;
@@ -147,5 +170,9 @@ namespace B33p
         int                                    nextEventIndex     { 0 };
         int                                    samplesUntilNoteOff { 0 };
         double                                 currentSampleRate   { 44100.0 };
+
+        // Unsaved-changes flag + listener.
+        std::atomic<bool> dirty                  { false };
+        OnDirtyChanged    onDirtyChangedCallback;
     };
 }

@@ -251,3 +251,95 @@ TEST_CASE("ProjectState: readFromFile rejects malformed XML", "[state][project]"
 
     tmp.deleteFile();
 }
+
+// ---------------------------------------------------------------
+// Dirty-state machine
+// ---------------------------------------------------------------
+
+TEST_CASE("Dirty: a fresh processor starts clean", "[state][dirty]")
+{
+    B33pProcessor processor;
+    REQUIRE_FALSE(processor.isDirty());
+}
+
+TEST_CASE("Dirty: setting an APVTS parameter marks dirty", "[state][dirty]")
+{
+    B33pProcessor processor;
+    REQUIRE_FALSE(processor.isDirty());
+
+    if (auto* p = processor.getApvts().getParameter(B33p::ParameterIDs::voiceGain))
+        p->setValueNotifyingHost(0.42f);
+
+    REQUIRE(processor.isDirty());
+}
+
+TEST_CASE("Dirty: setPitchCurve marks dirty", "[state][dirty]")
+{
+    B33pProcessor processor;
+    REQUIRE_FALSE(processor.isDirty());
+
+    processor.setPitchCurve({ { 0.0f, 0.0f }, { 1.0f, 5.0f } });
+    REQUIRE(processor.isDirty());
+}
+
+TEST_CASE("Dirty: setLooping marks dirty only on actual change", "[state][dirty]")
+{
+    B33pProcessor processor;
+    const bool initial = processor.getLooping();
+
+    // Toggling from initial state must mark dirty.
+    processor.setLooping(! initial);
+    REQUIRE(processor.isDirty());
+
+    processor.markClean();
+    REQUIRE_FALSE(processor.isDirty());
+
+    // Setting to the same value is a no-op — no dirty flag.
+    processor.setLooping(! initial);
+    REQUIRE_FALSE(processor.isDirty());
+}
+
+TEST_CASE("Dirty: markClean clears the flag", "[state][dirty]")
+{
+    B33pProcessor processor;
+    processor.markDirty();
+    REQUIRE(processor.isDirty());
+
+    processor.markClean();
+    REQUIRE_FALSE(processor.isDirty());
+}
+
+TEST_CASE("Dirty: ProjectState::load leaves the processor clean", "[state][dirty]")
+{
+    B33pProcessor original;
+    mutateProcessor(original);
+    REQUIRE(original.isDirty());
+
+    const auto tree = B33p::ProjectState::save(original);
+
+    B33pProcessor target;
+    target.markDirty();   // simulate user having edits before opening
+    REQUIRE(target.isDirty());
+
+    REQUIRE(B33p::ProjectState::load(target, tree));
+    REQUIRE_FALSE(target.isDirty());
+}
+
+TEST_CASE("Dirty: writeToFile + markClean produces a clean processor",
+          "[state][dirty]")
+{
+    B33pProcessor processor;
+    mutateProcessor(processor);
+    REQUIRE(processor.isDirty());
+
+    const auto tmp = juce::File::createTempFile(".beep");
+    REQUIRE(B33p::ProjectState::writeToFile(processor, tmp));
+
+    // writeToFile alone does not flip dirty (it doesn't know about
+    // a "current file" concept). The caller — ProjectFileManager —
+    // marks clean after a successful write. Simulate that here.
+    processor.markClean();
+    REQUIRE_FALSE(processor.isDirty());
+
+    tmp.deleteFile();
+}

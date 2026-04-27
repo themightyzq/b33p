@@ -249,6 +249,7 @@ namespace B33p
 
             Event newEvent { snappedStart, duration, 0.0f };
             processor.getPattern().addEvent(lane, newEvent);
+            processor.markDirty();
 
             selection.lane  = lane;
             selection.index = processor.getPattern().getEvents(lane).size() - 1;
@@ -301,6 +302,7 @@ namespace B33p
         }
 
         pattern.updateEvent(selection.lane, selection.index, current);
+        processor.markDirty();
         repaint();
     }
 
@@ -316,6 +318,7 @@ namespace B33p
             if (selection.valid())
             {
                 processor.getPattern().removeEvent(selection.lane, selection.index);
+                processor.markDirty();
                 selection = {};
                 repaint();
                 return true;

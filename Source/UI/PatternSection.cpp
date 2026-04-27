@@ -133,6 +133,7 @@ namespace B33p
         const size_t idx = static_cast<size_t>(id - 1);
         if (idx >= kLengthPresets.size()) return;
         processor.getPattern().setLengthSeconds(kLengthPresets[idx].seconds);
+        processor.markDirty();
         grid.repaint();
     }
 
