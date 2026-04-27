@@ -105,6 +105,17 @@ namespace B33p
             readAndReport(file);
     }
 
+    void ProjectFileManager::newProject()
+    {
+        processor.resetToDefaults();
+        if (currentFile != juce::File())
+        {
+            currentFile = juce::File();
+            if (onStateChangedCallback)
+                onStateChangedCallback();
+        }
+    }
+
     void ProjectFileManager::writeAndReport(const juce::File& destination,
                                              OnSaveComplete onComplete)
     {

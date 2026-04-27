@@ -80,19 +80,7 @@ namespace B33p
 
         for (size_t i = 0; i < kLengthPresets.size(); ++i)
             lengthCombo.addItem(kLengthPresets[i].label, idForIndex(static_cast<int>(i)));
-        // Pick the preset closest to the current pattern length so the
-        // dropdown reflects reality at construction.
-        {
-            const double current = processor.getPattern().getLengthSeconds();
-            int bestId = idForIndex(0);
-            double bestDist = 1e30;
-            for (size_t i = 0; i < kLengthPresets.size(); ++i)
-            {
-                const double d = std::abs(kLengthPresets[i].seconds - current);
-                if (d < bestDist) { bestDist = d; bestId = idForIndex(static_cast<int>(i)); }
-            }
-            lengthCombo.setSelectedId(bestId, juce::dontSendNotification);
-        }
+        syncLengthComboToPattern();
         lengthCombo.onChange = [this] { onLengthChanged(); };
         addAndMakeVisible(lengthCombo);
 
@@ -135,6 +123,30 @@ namespace B33p
     PatternSection::~PatternSection()
     {
         stopTimer();
+    }
+
+    void PatternSection::syncLengthComboToPattern()
+    {
+        // Pick the preset closest to the current pattern length so the
+        // dropdown reflects reality. Used at construction and after a
+        // bulk state replacement (Open / New).
+        const double current = processor.getPattern().getLengthSeconds();
+        int    bestId   = idForIndex(0);
+        double bestDist = 1e30;
+        for (size_t i = 0; i < kLengthPresets.size(); ++i)
+        {
+            const double d = std::abs(kLengthPresets[i].seconds - current);
+            if (d < bestDist) { bestDist = d; bestId = idForIndex(static_cast<int>(i)); }
+        }
+        lengthCombo.setSelectedId(bestId, juce::dontSendNotification);
+    }
+
+    void PatternSection::refreshFromState()
+    {
+        syncLengthComboToPattern();
+        loopToggle.setToggleState(processor.getLooping(),
+                                   juce::dontSendNotification);
+        grid.repaint();
     }
 
     void PatternSection::onLengthChanged()

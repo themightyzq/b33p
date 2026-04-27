@@ -16,7 +16,8 @@ namespace B33p
         // treats 0 as "nothing selected".
         enum MenuId
         {
-            FileOpen = 1,
+            FileNew = 1,
+            FileOpen,
             FileSave,
             FileSaveAs,
             EditUndo,
@@ -47,6 +48,14 @@ namespace B33p
 
         fileManager.setOnStateChanged([this] { updateWindowTitle(); });
         processor.setOnDirtyChanged ([this] { updateWindowTitle(); });
+
+        // Resync the editors / pattern combos that don't auto-track
+        // APVTS attachments after a bulk reload (Open or New).
+        processor.setOnFullStateLoaded([this]
+        {
+            pitchEnvelopeSection.refreshFromState();
+            patternSection      .refreshFromState();
+        });
 
         setWantsKeyboardFocus(true);
 
@@ -146,7 +155,16 @@ namespace B33p
 
         if (cmd && shift && code == 'S')   { fileManager.saveAs(this); return true; }
         if (cmd && code == 'S')            { fileManager.save  (this); return true; }
-        if (cmd && code == 'O')            { fileManager.open  (this); return true; }
+        if (cmd && code == 'O')
+        {
+            confirmDiscardThen([this] { fileManager.open(this); });
+            return true;
+        }
+        if (cmd && code == 'N')
+        {
+            confirmDiscardThen([this] { fileManager.newProject(); });
+            return true;
+        }
 
         // Cmd+Z / Cmd+Shift+Z. Currently covers slider edits and
         // dice rolls (everything the APVTS owns). Pattern grid and
@@ -215,7 +233,9 @@ namespace B33p
         switch (topLevelIndex)
         {
             case 0: // File
+                m.addItem(withShortcut(MenuId::FileNew,    "New",        "Cmd+N"));
                 m.addItem(withShortcut(MenuId::FileOpen,   "Open...",    "Cmd+O"));
+                m.addSeparator();
                 m.addItem(withShortcut(MenuId::FileSave,   "Save",       "Cmd+S"));
                 m.addItem(withShortcut(MenuId::FileSaveAs, "Save As...", "Cmd+Shift+S"));
                 break;
@@ -238,7 +258,12 @@ namespace B33p
     {
         switch (menuItemId)
         {
-            case MenuId::FileOpen:   fileManager.open  (this);                  break;
+            case MenuId::FileNew:
+                confirmDiscardThen([this] { fileManager.newProject(); });
+                break;
+            case MenuId::FileOpen:
+                confirmDiscardThen([this] { fileManager.open(this); });
+                break;
             case MenuId::FileSave:   fileManager.save  (this);                  break;
             case MenuId::FileSaveAs: fileManager.saveAs(this);                  break;
             case MenuId::EditUndo:   processor.getUndoManager().undo();         break;

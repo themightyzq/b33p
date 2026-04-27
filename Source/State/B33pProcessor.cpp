@@ -156,10 +156,48 @@ namespace B33p
         onDirtyChangedCallback = std::move(callback);
     }
 
+    void B33pProcessor::setOnFullStateLoaded(OnFullStateLoaded callback)
+    {
+        onFullStateLoadedCallback = std::move(callback);
+    }
+
     void B33pProcessor::notifyDirtyChanged()
     {
         if (onDirtyChangedCallback)
             juce::MessageManager::callAsync(onDirtyChangedCallback);
+    }
+
+    void B33pProcessor::notifyFullStateLoaded()
+    {
+        if (onFullStateLoadedCallback)
+            juce::MessageManager::callAsync(onFullStateLoadedCallback);
+    }
+
+    void B33pProcessor::resetToDefaults()
+    {
+        // Reset every APVTS parameter to its registered default.
+        // setValueNotifyingHost takes a normalised value (0..1)
+        // which is exactly what getDefaultValue() returns.
+        for (const char* id : kAllParamIds)
+            if (auto* p = apvts.getParameter(id))
+                p->setValueNotifyingHost(p->getDefaultValue());
+
+        setPitchCurve({ { 0.0f, 0.0f }, { 1.0f, 0.0f } });
+
+        pattern.clearAll();
+        pattern.setLengthSeconds(Pattern::kDefaultLengthSeconds);
+        looping.store(true);
+
+        randomizer.clearAllLocks();
+
+        // History from the previous project no longer maps onto the
+        // fresh state — clear it so cmd+z can't reach into ghosts.
+        undoManager.clearUndoHistory();
+
+        // The bulk mutations marked us dirty along the way; the
+        // whole point of "new" is "nothing worth saving yet".
+        markClean();
+        notifyFullStateLoaded();
     }
 
     void B33pProcessor::pushParametersToVoice()
