@@ -86,6 +86,14 @@ namespace B33p
         bool isLaneMuted(int lane) const;
         void setLaneMuted(int lane, bool muted);
 
+        // Per-lane solo. While ANY lane is soloed, the snapshot only
+        // includes events from soloed lanes — non-soloed lanes are
+        // silent regardless of their own mute state. With no lanes
+        // soloed, mute alone gates lane output.
+        bool isLaneSoloed(int lane) const;
+        void setLaneSoloed(int lane, bool soloed);
+        bool anyLaneSoloed() const;
+
         // Snapshot equality — used by the undo system to skip
         // pushing no-op gestures (e.g. mouseDown + mouseUp without
         // any actual change to the pattern data).
@@ -94,7 +102,8 @@ namespace B33p
             return juce::exactlyEqual(a.lengthSeconds, b.lengthSeconds)
                 && a.lanes      == b.lanes
                 && a.laneNames  == b.laneNames
-                && a.laneMuted  == b.laneMuted;
+                && a.laneMuted  == b.laneMuted
+                && a.laneSoloed == b.laneSoloed;
         }
         friend bool operator!=(const Pattern& a, const Pattern& b) { return ! (a == b); }
 
@@ -102,6 +111,7 @@ namespace B33p
         double                                      lengthSeconds { kDefaultLengthSeconds };
         std::array<std::vector<Event>, kNumLanes>   lanes;
         std::array<juce::String, kNumLanes>         laneNames;
-        std::array<bool, kNumLanes>                 laneMuted { false, false, false, false };
+        std::array<bool, kNumLanes>                 laneMuted  { false, false, false, false };
+        std::array<bool, kNumLanes>                 laneSoloed { false, false, false, false };
     };
 }

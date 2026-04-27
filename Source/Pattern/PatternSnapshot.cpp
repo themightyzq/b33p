@@ -9,12 +9,18 @@ namespace B33p
         PatternSnapshot snap;
         snap.lengthSeconds = pattern.getLengthSeconds();
 
+        // While any lane is soloed, only soloed lanes contribute —
+        // mute is ignored on soloed lanes (solo wins). Otherwise
+        // mute alone gates output. Filtering happens at snapshot
+        // time so the audio thread doesn't need lane bookkeeping.
+        const bool anySoloed = pattern.anyLaneSoloed();
+
         for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
         {
-            // Muted lanes never reach the audio thread — events are
-            // dropped at snapshot time so the playback loop doesn't
-            // need to know about lane state at all.
-            if (pattern.isLaneMuted(lane))
+            const bool include = anySoloed
+                                     ? pattern.isLaneSoloed(lane)
+                                     : ! pattern.isLaneMuted(lane);
+            if (! include)
                 continue;
 
             for (const auto& e : pattern.getEvents(lane))

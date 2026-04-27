@@ -147,6 +147,7 @@ namespace B33p
 
         std::array<juce::Label,      Pattern::kNumLanes> laneNameLabels;
         std::array<juce::TextButton, Pattern::kNumLanes> muteButtons;
+        std::array<juce::TextButton, Pattern::kNumLanes> soloButtons;
 
         // While a drag is active, the snap target time in seconds.
         // -1 means "no preview". Drawn as a vertical guide line so

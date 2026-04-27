@@ -29,6 +29,7 @@ namespace B33p::ProjectState
         const juce::Identifier kLaneIndex             { "index" };
         const juce::Identifier kLaneName              { "name" };
         const juce::Identifier kLaneMuted             { "muted" };
+        const juce::Identifier kLaneSoloed            { "soloed" };
         const juce::Identifier kEvent                 { "EVENT" };
         const juce::Identifier kEventStart            { "start_seconds" };
         const juce::Identifier kEventDuration         { "duration_seconds" };
@@ -73,9 +74,10 @@ namespace B33p::ProjectState
         for (int laneIdx = 0; laneIdx < Pattern::kNumLanes; ++laneIdx)
         {
             juce::ValueTree laneNode { kLane };
-            laneNode.setProperty(kLaneIndex, laneIdx,                        nullptr);
-            laneNode.setProperty(kLaneName,  pattern.getLaneName(laneIdx),    nullptr);
-            laneNode.setProperty(kLaneMuted, pattern.isLaneMuted(laneIdx),    nullptr);
+            laneNode.setProperty(kLaneIndex,  laneIdx,                          nullptr);
+            laneNode.setProperty(kLaneName,   pattern.getLaneName(laneIdx),      nullptr);
+            laneNode.setProperty(kLaneMuted,  pattern.isLaneMuted(laneIdx),      nullptr);
+            laneNode.setProperty(kLaneSoloed, pattern.isLaneSoloed(laneIdx),     nullptr);
 
             for (const auto& e : pattern.getEvents(laneIdx))
             {
@@ -238,10 +240,12 @@ namespace B33p::ProjectState
             if (laneIdx < 0 || laneIdx >= Pattern::kNumLanes)
                 continue;
 
-            // Default-tolerant: pre-Phase-8 v1 files have neither
-            // attribute, so empty name + unmuted is the right default.
-            pattern.setLaneName (laneIdx, laneNode.getProperty(kLaneName, juce::String{}).toString());
-            pattern.setLaneMuted(laneIdx, static_cast<bool>(laneNode.getProperty(kLaneMuted, false)));
+            // Default-tolerant: older files may lack any of these
+            // attributes, so empty name / unmuted / unsoloed are the
+            // right defaults.
+            pattern.setLaneName  (laneIdx, laneNode.getProperty(kLaneName,  juce::String{}).toString());
+            pattern.setLaneMuted (laneIdx, static_cast<bool>(laneNode.getProperty(kLaneMuted,  false)));
+            pattern.setLaneSoloed(laneIdx, static_cast<bool>(laneNode.getProperty(kLaneSoloed, false)));
 
             for (auto eventNode : laneNode)
             {

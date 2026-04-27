@@ -52,6 +52,29 @@ TEST_CASE("PatternSnapshot: events from a muted lane are dropped",
         REQUIRE(e.event.startSeconds != Approx(1.5));
 }
 
+TEST_CASE("PatternSnapshot: solo overrides mute and silences non-soloed lanes",
+          "[pattern][snapshot]")
+{
+    Pattern p;
+    p.addEvent(0, { 0.5, 0.1, 0.0f });
+    p.addEvent(1, { 1.0, 0.1, 0.0f });
+    p.addEvent(2, { 1.5, 0.1, 0.0f });
+    p.addEvent(3, { 2.0, 0.1, 0.0f });
+
+    // Lane 1 muted but soloed: solo wins, lane 1 plays.
+    // Lane 3 muted, not soloed: stays silent regardless.
+    // Lanes 0 and 2: not soloed -> silent (because at least one
+    // other lane IS soloed).
+    p.setLaneMuted (1, true);
+    p.setLaneSoloed(1, true);
+    p.setLaneMuted (3, true);
+
+    const auto snap = makeSnapshot(p);
+    REQUIRE(snap.events.size() == 1);
+    REQUIRE(snap.events[0].lane                 == 1);
+    REQUIRE(snap.events[0].event.startSeconds   == Approx(1.0));
+}
+
 TEST_CASE("PatternSnapshot: events outside [0, length) are dropped", "[pattern][snapshot]")
 {
     Pattern p;
