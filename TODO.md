@@ -103,7 +103,7 @@ Goal: v0.1 is shippable.
 - [ ] App icon (placeholder OK if no final asset)
 - [ ] About box: version, author, license, JUCE credit
 - [ ] README screenshots captured into `docs/images/`
-- [ ] macOS `.dmg`, Windows installer, Linux AppImage or tarball
+- [ ] CI uploads the built b33p binary on every run as a workflow artifact (so non-developer testers can grab a build without setting up the toolchain)
 - [ ] Tag `v0.1.0`
 
 ---
@@ -157,6 +157,7 @@ Explicitly out of MVP scope — the standalone app is the priority and the "musi
 
 ### Distribution
 
+- [ ] **Release installers** — proper `.dmg` (macOS), Windows installer (NSIS / Inno Setup), Linux AppImage or tarball, auto-attached to a GitHub Release on tag push via CPack + a release workflow. Lives here rather than in the MVP because b33p is currently shared via "build from source" or "grab the CI workflow artifact"; installers come back when there's a public-facing release worth packaging.
 - [ ] **VST3 plugin build**
 - [ ] **AU plugin build** (macOS)
 - [ ] **AAX plugin build** (Pro Tools)
