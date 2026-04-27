@@ -13,4 +13,9 @@ namespace B33p
     {
         editor.setBounds(getContentBounds());
     }
+
+    void PitchEnvSection::refreshFromState()
+    {
+        editor.repaint();
+    }
 }

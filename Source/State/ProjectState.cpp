@@ -179,6 +179,10 @@ namespace B33p::ProjectState
         // markClean wins after all the bulk mutations are done.
         processor.markClean();
 
+        // Tell the UI to resync widgets that don't auto-track APVTS
+        // — pitch editor, pattern grid, length / grid combos.
+        processor.notifyFullStateLoaded();
+
         return true;
     }
 

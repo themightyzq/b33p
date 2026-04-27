@@ -18,12 +18,17 @@ namespace B33p
 
         void resized() override;
 
+        // Called after Open / New so the length combo, loop toggle,
+        // and grid all match the freshly-replaced pattern state.
+        void refreshFromState();
+
     private:
         void timerCallback() override;
         void onLengthChanged();
         void onGridChanged();
         void onExportClicked();
         void runExport(ExportDialog::Result settings);
+        void syncLengthComboToPattern();
 
         B33pProcessor&   processor;
         PatternGrid      grid;

@@ -42,6 +42,13 @@ namespace B33p
         void saveAs(juce::Component* parent, OnSaveComplete onComplete = {});
         void open  (juce::Component* parent);
 
+        // Wipes the project to a freshly-launched state and clears
+        // the current file so the next Save acts like a Save As.
+        // Caller is responsible for any "discard unsaved changes?"
+        // confirmation — newProject itself is non-destructive about
+        // dirty state and will happily blow it away.
+        void newProject();
+
         // Direct-open path for OS-driven file open events
         // (double-click on a .beep file in Finder, drag onto
         // the dock icon, etc.). Skips the chooser dialog and

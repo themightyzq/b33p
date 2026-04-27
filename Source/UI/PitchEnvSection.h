@@ -13,6 +13,10 @@ namespace B33p
 
         void resized() override;
 
+        // Called after Open / New to repaint the editor against
+        // the freshly-replaced curve state.
+        void refreshFromState();
+
     private:
         PitchEnvelopeEditor editor;
 

@@ -98,6 +98,21 @@ namespace B33p
         using OnDirtyChanged = std::function<void()>;
         void setOnDirtyChanged(OnDirtyChanged callback);
 
+        // Fires after a bulk state replacement (Open or New) so the
+        // UI can resync widgets that don't auto-track APVTS — pitch
+        // editor, pattern grid, pattern length / grid combos, etc.
+        // Marshalled to the message thread so it's safe to call from
+        // setStateInformation regardless of the calling thread.
+        using OnFullStateLoaded = std::function<void()>;
+        void setOnFullStateLoaded(OnFullStateLoaded callback);
+        void notifyFullStateLoaded();
+
+        // Resets every persisted piece of state (APVTS, pitch curve,
+        // pattern, locks, undo history) back to the same values a
+        // freshly-launched app would show, then markClean()s and
+        // fires OnFullStateLoaded for the UI to resync.
+        void resetToDefaults();
+
         // Audio thread writes once per block, UI reads from a Timer
         // callback. atomic<double> is lock-free on every 64-bit
         // platform we support.
@@ -172,7 +187,8 @@ namespace B33p
         double                                 currentSampleRate   { 44100.0 };
 
         // Unsaved-changes flag + listener.
-        std::atomic<bool> dirty                  { false };
-        OnDirtyChanged    onDirtyChangedCallback;
+        std::atomic<bool>  dirty                  { false };
+        OnDirtyChanged     onDirtyChangedCallback;
+        OnFullStateLoaded  onFullStateLoadedCallback;
     };
 }
