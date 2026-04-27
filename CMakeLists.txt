@@ -48,6 +48,8 @@ juce_add_gui_app(B33p
     BUNDLE_ID           "${B33P_BUNDLE_ID}"
     VERSION             "${PROJECT_VERSION}"
     DOCUMENT_EXTENSIONS "beep"
+    ICON_BIG            "${CMAKE_SOURCE_DIR}/Source/Resources/icon_big.png"
+    ICON_SMALL          "${CMAKE_SOURCE_DIR}/Source/Resources/icon_small.png"
 )
 
 target_sources(B33p PRIVATE
