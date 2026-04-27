@@ -232,7 +232,8 @@ namespace B33p
         }
 
         voice.trigger(static_cast<float>(event.durationSeconds),
-                      event.pitchOffsetSemitones);
+                      event.pitchOffsetSemitones,
+                      event.velocity);
         samplesUntilNoteOff = static_cast<int>(event.durationSeconds * currentSampleRate);
     }
 

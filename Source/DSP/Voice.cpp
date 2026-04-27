@@ -59,9 +59,10 @@ namespace B33p
         gain = std::clamp(linearGain, 0.0f, 10.0f);
     }
 
-    void Voice::trigger(float durationSeconds, float pitchOffsetSt)
+    void Voice::trigger(float durationSeconds, float pitchOffsetSt, float velocity)
     {
         pitchOffsetSemitones = pitchOffsetSt;
+        triggerVelocity      = std::clamp(velocity, 0.0f, 1.0f);
         pitchEnvelope.trigger(durationSeconds);
         ampEnvelope.noteOn();
     }
@@ -91,7 +92,7 @@ namespace B33p
         sample  = filter.processSample(sample);
         sample  = bitcrush.processSample(sample);
         sample  = distortion.processSample(sample);
-        sample *= gain;
+        sample *= gain * triggerVelocity;
 
         return sample;
     }

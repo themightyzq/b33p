@@ -58,7 +58,8 @@ namespace B33p
             {
                 const auto& e = snapshot.events[static_cast<size_t>(eventIndex)];
                 voice.trigger(static_cast<float>(e.durationSeconds),
-                              e.pitchOffsetSemitones);
+                              e.pitchOffsetSemitones,
+                              e.velocity);
                 samplesUntilNoteOff = static_cast<int>(
                     e.durationSeconds * config.sampleRate);
                 ++eventIndex;

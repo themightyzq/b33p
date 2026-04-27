@@ -12,12 +12,15 @@ namespace B33p
     // the absolute time from the start of the pattern (not relative to
     // anything else); durationSeconds is how long the note holds before
     // the voice's amp-envelope release kicks in; pitchOffsetSemitones
-    // is applied on top of the voice's base pitch at trigger time.
+    // is applied on top of the voice's base pitch at trigger time;
+    // velocity is a 0..1 scalar applied on top of the voice's gain
+    // (1.0 = unchanged, 0.5 = -6 dB, 0.0 = silent).
     struct Event
     {
         double startSeconds         { 0.0 };
         double durationSeconds      { 0.1 };
         float  pitchOffsetSemitones { 0.0f };
+        float  velocity             { 1.0f };
     };
 
     // Bit-exact comparison — used for snapshot equality in undo,
@@ -27,7 +30,8 @@ namespace B33p
     {
         return juce::exactlyEqual(a.startSeconds,         b.startSeconds)
             && juce::exactlyEqual(a.durationSeconds,      b.durationSeconds)
-            && juce::exactlyEqual(a.pitchOffsetSemitones, b.pitchOffsetSemitones);
+            && juce::exactlyEqual(a.pitchOffsetSemitones, b.pitchOffsetSemitones)
+            && juce::exactlyEqual(a.velocity,             b.velocity);
     }
     inline bool operator!=(const Event& a, const Event& b) { return ! (a == b); }
 
