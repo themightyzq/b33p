@@ -23,6 +23,10 @@ namespace B33p
         SliderFormatting::applyHz     (crushRateSlider.getSlider());
         SliderFormatting::applyDecimal(driveSlider    .getSlider(), 2);
 
+        SliderFormatting::applyDoubleClickReset(bitDepthSlider .getSlider(), processor.getApvts(), ParameterIDs::bitcrushBitDepth);
+        SliderFormatting::applyDoubleClickReset(crushRateSlider.getSlider(), processor.getApvts(), ParameterIDs::bitcrushSampleRateHz);
+        SliderFormatting::applyDoubleClickReset(driveSlider    .getSlider(), processor.getApvts(), ParameterIDs::distortionDrive);
+
         bitDepthSlider .setTooltip("Bitcrush — lower bit depth = grittier, more 8-bit");
         crushRateSlider.setTooltip("Sample rate reduction — lower = more aliased / lo-fi");
         driveSlider    .setTooltip("Distortion drive — pushes the signal into soft clipping");

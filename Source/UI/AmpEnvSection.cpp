@@ -29,6 +29,11 @@ namespace B33p
         SliderFormatting::applyPercent(sustainSlider.getSlider());
         SliderFormatting::applySeconds(releaseSlider.getSlider());
 
+        SliderFormatting::applyDoubleClickReset(attackSlider .getSlider(), processor.getApvts(), ParameterIDs::ampAttack);
+        SliderFormatting::applyDoubleClickReset(decaySlider  .getSlider(), processor.getApvts(), ParameterIDs::ampDecay);
+        SliderFormatting::applyDoubleClickReset(sustainSlider.getSlider(), processor.getApvts(), ParameterIDs::ampSustain);
+        SliderFormatting::applyDoubleClickReset(releaseSlider.getSlider(), processor.getApvts(), ParameterIDs::ampRelease);
+
         attackSlider .setTooltip("Time to reach full volume after a note starts");
         decaySlider  .setTooltip("Time to fall from peak down to the sustain level");
         sustainSlider.setTooltip("Held volume while the note is on");

@@ -34,6 +34,9 @@ namespace B33p
         basePitchSlider.attachRandomizer(processor, ParameterIDs::basePitchHz);
 
         SliderFormatting::applyHz(basePitchSlider.getSlider());
+        SliderFormatting::applyDoubleClickReset(basePitchSlider.getSlider(),
+                                                processor.getApvts(),
+                                                ParameterIDs::basePitchHz);
 
         waveformSelector.setTooltip("Oscillator waveform");
         basePitchSlider .setTooltip("Base pitch of the oscillator");
