@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current phase: Phase 7 — MVP polish & release**
+> **Current phase: Phase 8 — Pattern editor: per-event control + intuitive clip editing**
 
 ---
 
@@ -104,7 +104,7 @@ Goal: v0.1 is shippable.
 - [x] About box: version, author, license, JUCE credit
 - [x] README screenshots captured into `docs/images/`
 - [x] CI uploads the built b33p binary on every run as a workflow artifact (so non-developer testers can grab a build without setting up the toolchain)
-- [ ] Tag `v0.1.0`
+- [x] Tag `v0.1.0`
 
 ## Phase 8 — Pattern editor: per-event control + intuitive clip editing
 
