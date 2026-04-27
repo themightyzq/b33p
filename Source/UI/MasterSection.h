@@ -9,6 +9,7 @@
 namespace B33p
 {
     class MasterSection : public Section
+                        , private juce::Timer
     {
     public:
         explicit MasterSection(B33pProcessor& processor);
@@ -16,6 +17,9 @@ namespace B33p
         void resized() override;
 
     private:
+        void timerCallback() override;
+        void flashAuditionButton();
+
         LabeledSlider    gainSlider     { "Gain" };
         juce::TextButton auditionButton { "Audition" };
         juce::TextButton diceAllButton  { "Dice All" };

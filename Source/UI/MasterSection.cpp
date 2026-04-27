@@ -11,7 +11,11 @@ namespace B33p
     {
         addAndMakeVisible(gainSlider);
 
-        auditionButton.onClick = [&processor] { processor.triggerAudition(); };
+        auditionButton.onClick = [this, &processor]
+        {
+            processor.triggerAudition();
+            flashAuditionButton();
+        };
         addAndMakeVisible(auditionButton);
 
         diceAllButton.onClick = [&processor]
@@ -31,6 +35,22 @@ namespace B33p
         gainSlider    .setTooltip("Master output level");
         auditionButton.setTooltip("Play a single beep with the current settings (Space)");
         diceAllButton .setTooltip("Roll random values for every unlocked parameter");
+    }
+
+    void MasterSection::flashAuditionButton()
+    {
+        // Brief amber tint so the user gets a visual confirmation
+        // that the click registered — the audition is a fire-and-
+        // forget half-second beep with no other on-screen feedback.
+        auditionButton.setColour(juce::TextButton::buttonColourId,
+                                  juce::Colour::fromRGB(220, 140, 60));
+        startTimer(180);
+    }
+
+    void MasterSection::timerCallback()
+    {
+        auditionButton.removeColour(juce::TextButton::buttonColourId);
+        stopTimer();
     }
 
     void MasterSection::resized()
