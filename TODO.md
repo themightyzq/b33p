@@ -148,8 +148,8 @@ Framing: today the pattern editor is "place a beep here, drag it, drag its edge"
 - [ ] Move / delete operations apply to the whole selection
 
 ### Lane usability
-- [ ] Editable lane-name field in the lane label column (replaces "1/2/3/4"; persisted in `.beep`)
-- [ ] Per-lane Mute toggle in the lane label column
+- [x] Editable lane-name field in the lane label column (replaces "1/2/3/4"; persisted in `.beep`)
+- [x] Per-lane Mute toggle in the lane label column
 
 ### Empty-state hint
 - [x] Update the "click in a lane to add a beep" hint to match the new gestures (mention drag-to-size and double-click-to-create)
