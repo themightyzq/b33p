@@ -191,6 +191,7 @@ namespace B33p
         setPitchCurve({ { 0.0f, 0.0f }, { 1.0f, 0.0f } });
 
         pattern.clearAll();
+        pattern.resetAllLaneMeta();
         pattern.setLengthSeconds(Pattern::kDefaultLengthSeconds);
         looping.store(true);
 

@@ -36,6 +36,22 @@ TEST_CASE("PatternSnapshot: events from all lanes are flattened and sorted by st
     REQUIRE(snap.events[3].startSeconds == Approx(4.0));
 }
 
+TEST_CASE("PatternSnapshot: events from a muted lane are dropped",
+          "[pattern][snapshot]")
+{
+    Pattern p;
+    p.addEvent(0, { 0.5, 0.1, 0.0f });
+    p.addEvent(1, { 1.5, 0.1, 0.0f });
+    p.addEvent(2, { 2.5, 0.1, 0.0f });
+    p.setLaneMuted(1, true);
+
+    const auto snap = makeSnapshot(p);
+    REQUIRE(snap.events.size() == 2);
+    // Only lanes 0 and 2 contribute — neither sits at 1.5s.
+    for (const auto& e : snap.events)
+        REQUIRE(e.startSeconds != Approx(1.5));
+}
+
 TEST_CASE("PatternSnapshot: events outside [0, length) are dropped", "[pattern][snapshot]")
 {
     Pattern p;

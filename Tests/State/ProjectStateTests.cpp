@@ -37,6 +37,9 @@ namespace
         pattern.setLengthSeconds(3.0);
         pattern.addEvent(0, { 0.5, 0.25, 0.0f, 1.0f });
         pattern.addEvent(2, { 1.5, 0.10, 7.0f, 0.6f });   // non-default velocity
+        pattern.setLaneName(0, "Body");                    // non-default name
+        pattern.setLaneName(2, "Tail");
+        pattern.setLaneMuted(1, true);                     // non-default mute
         processor.setLooping(false);
 
         // Lock a couple of parameters.
@@ -128,6 +131,11 @@ TEST_CASE("ProjectState: round-trip preserves pattern length, loop and events",
             REQUIRE(a[i].pitchOffsetSemitones == Approx(b[i].pitchOffsetSemitones));
             REQUIRE(a[i].velocity             == Approx(b[i].velocity));
         }
+
+        REQUIRE(original.getPattern().getLaneName(lane)
+                == restored.getPattern().getLaneName(lane));
+        REQUIRE(original.getPattern().isLaneMuted(lane)
+                == restored.getPattern().isLaneMuted(lane));
     }
 }
 
