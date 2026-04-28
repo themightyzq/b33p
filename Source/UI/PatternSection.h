@@ -23,6 +23,10 @@ namespace B33p
         // and grid all match the freshly-replaced pattern state.
         void refreshFromState();
 
+        // Used by MainComponent's Edit menu to drive the grid's
+        // public copy / paste / select-all / deselect entry points.
+        PatternGrid& getGrid() { return grid; }
+
     private:
         void timerCallback() override;
         void onLengthChanged();

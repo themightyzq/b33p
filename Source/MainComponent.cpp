@@ -23,6 +23,10 @@ namespace B33p
             FileAudioSettings,
             EditUndo,
             EditRedo,
+            EditCopy,
+            EditPaste,
+            EditSelectAll,
+            EditDeselect,
             LaneCopyToAll,
             LaneResetVoice,
             LaneDiceAll,
@@ -317,6 +321,14 @@ namespace B33p
                                        processor.getUndoManager().canUndo()));
                 m.addItem(withShortcut(MenuId::EditRedo, "Redo", "Cmd+Shift+Z",
                                        processor.getUndoManager().canRedo()));
+                m.addSeparator();
+                {
+                    auto& grid = patternSection.getGrid();
+                    m.addItem(withShortcut(MenuId::EditCopy,      "Copy Selected Events",     "Cmd+C", grid.hasSelection()));
+                    m.addItem(withShortcut(MenuId::EditPaste,     "Paste at Playhead",        "Cmd+V", grid.hasClipboardData()));
+                    m.addItem(withShortcut(MenuId::EditSelectAll, "Select All Events",        "Cmd+A", grid.hasAnyEvents()));
+                    m.addItem(withShortcut(MenuId::EditDeselect,  "Deselect",                 "Esc",   grid.hasSelection()));
+                }
                 break;
             case 2: // Lane (the currently-selected one)
             {
@@ -350,7 +362,11 @@ namespace B33p
             case MenuId::FileSave:           fileManager.save  (this);          break;
             case MenuId::FileSaveAs:         fileManager.saveAs(this);          break;
             case MenuId::FileAudioSettings:  showAudioSettings();               break;
-            case MenuId::EditUndo:   processor.getUndoManager().undo();         break;
+            case MenuId::EditUndo:        processor.getUndoManager().undo(); break;
+            case MenuId::EditCopy:        patternSection.getGrid().copySelectedToClipboard();      break;
+            case MenuId::EditPaste:       patternSection.getGrid().pasteFromClipboardAtPlayhead(); break;
+            case MenuId::EditSelectAll:   patternSection.getGrid().selectAll();                    break;
+            case MenuId::EditDeselect:    patternSection.getGrid().clearSelection();               break;
             case MenuId::EditRedo:   processor.getUndoManager().redo();         break;
             case MenuId::LaneCopyToAll:
                 processor.copyLaneSettingsToAll(processor.getSelectedLane());   break;

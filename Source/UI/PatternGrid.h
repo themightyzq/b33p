@@ -57,6 +57,19 @@ namespace B33p
         void clearSelection();
         void selectAll();
 
+        // Public clipboard / delete entry points so the Edit menu
+        // can drive the same logic the keyboard shortcuts use.
+        // pasteAtPlayhead pulls the playhead time from the processor
+        // (the user parks it via the ruler click).
+        void copySelectedToClipboard();
+        void pasteFromClipboardAtPlayhead();
+        void deleteSelected();
+
+        // Edit-menu enable / disable inspection.
+        bool hasSelection()    const { return ! selection.empty(); }
+        bool hasClipboardData() const { return ! clipboard.empty(); }
+        bool hasAnyEvents()    const;
+
         // Pulls the per-lane name + mute state out of the pattern
         // and writes it into the label / button children. Called
         // after Open / New / undo so the UI tracks the model.
