@@ -36,6 +36,11 @@ namespace B33p
         basePitchHz = std::clamp(hz, 20.0f, 20000.0f);
     }
 
+    void Voice::setCustomWaveformTable(const std::vector<float>& samples)
+    {
+        oscillator.setCustomTable(samples);
+    }
+
     void Voice::setAmpAttack(float seconds)   { ampEnvelope.setAttack(seconds);   }
     void Voice::setAmpDecay(float seconds)    { ampEnvelope.setDecay(seconds);    }
     void Voice::setAmpSustain(float level)    { ampEnvelope.setSustain(level);    }

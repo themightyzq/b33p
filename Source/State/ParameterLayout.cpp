@@ -42,7 +42,7 @@ namespace B33p
             layout.add(std::make_unique<juce::AudioParameterChoice>(
                 juce::ParameterID { ParameterIDs::oscWaveform(lane), kParameterVersionHint },
                 prefix + "Waveform",
-                juce::StringArray { "Sine", "Square", "Triangle", "Saw", "Noise" },
+                juce::StringArray { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom" },
                 0));
 
             // Tightened to "musical beep" range so randomisation

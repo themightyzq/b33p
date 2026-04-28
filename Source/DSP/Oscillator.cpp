@@ -33,6 +33,20 @@ namespace B33p
                 return static_cast<float>(2.0 - 4.0 * phase);
             return static_cast<float>(4.0 * phase - 4.0);
         }
+
+        // Linear-interpolated lookup of a custom single-cycle table.
+        // Empty table = silence so an unconfigured Custom waveform
+        // doesn't blast random memory or click.
+        float customAt(double phase, const std::vector<float>& t) noexcept
+        {
+            if (t.empty())
+                return 0.0f;
+            const double scaled = phase * static_cast<double>(t.size());
+            const std::size_t i  = static_cast<std::size_t>(scaled) % t.size();
+            const std::size_t j  = (i + 1) % t.size();
+            const float frac     = static_cast<float>(scaled - std::floor(scaled));
+            return t[i] + frac * (t[j] - t[i]);
+        }
     }
 
     Oscillator::Oscillator()
@@ -63,6 +77,11 @@ namespace B33p
         updatePhaseIncrement();
     }
 
+    void Oscillator::setCustomTable(const std::vector<float>& samples)
+    {
+        customTable = samples;
+    }
+
     void Oscillator::updatePhaseIncrement()
     {
         phaseIncrement = sampleRate > 0.0
@@ -81,10 +100,11 @@ namespace B33p
         float output = 0.0f;
         switch (waveform)
         {
-            case Waveform::Sine:     output = sineAt(phase);     break;
-            case Waveform::Square:   output = squareAt(phase);   break;
-            case Waveform::Triangle: output = triangleAt(phase); break;
-            case Waveform::Saw:      output = sawAt(phase);      break;
+            case Waveform::Sine:     output = sineAt(phase);                  break;
+            case Waveform::Square:   output = squareAt(phase);                break;
+            case Waveform::Triangle: output = triangleAt(phase);              break;
+            case Waveform::Saw:      output = sawAt(phase);                   break;
+            case Waveform::Custom:   output = customAt(phase, customTable);   break;
             case Waveform::Noise:    break; // handled above
         }
 

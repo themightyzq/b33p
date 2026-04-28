@@ -282,7 +282,7 @@ namespace B33p
 
         const auto* wfParam = apvts.getRawParameterValue(ParameterIDs::oscWaveform(lane));
         v.setWaveform(static_cast<Oscillator::Waveform>(
-            juce::jlimit(0, 4, static_cast<int>(wfParam->load()))));
+            juce::jlimit(0, 5, static_cast<int>(wfParam->load()))));
 
         v.setBasePitchHz         (apvts.getRawParameterValue(ParameterIDs::basePitchHz(lane))->load());
         v.setAmpAttack           (apvts.getRawParameterValue(ParameterIDs::ampAttack(lane))->load());
