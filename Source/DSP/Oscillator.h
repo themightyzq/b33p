@@ -1,6 +1,7 @@
 #pragma once
 
 #include <random>
+#include <vector>
 
 namespace B33p
 {
@@ -20,8 +21,14 @@ namespace B33p
             Square,
             Triangle,
             Saw,
-            Noise
+            Noise,
+            Custom
         };
+
+        // Default custom-table size — small enough that the full
+        // table fits in CPU cache, large enough that a freely-drawn
+        // shape doesn't sound aliased at typical pitches.
+        static constexpr int kCustomTableSize = 256;
 
         Oscillator();
 
@@ -30,6 +37,11 @@ namespace B33p
 
         void setWaveform(Waveform waveform);
         void setFrequency(float hz);
+
+        // Replaces the per-cycle sample table used when waveform is
+        // Custom. Empty / wrong-size tables fall back to silence.
+        // Linear-interpolated lookup at the current phase position.
+        void setCustomTable(const std::vector<float>& samples);
 
         float processSample();
 
@@ -41,6 +53,8 @@ namespace B33p
         double   phase          { 0.0 };
         double   phaseIncrement { 0.0 };
         Waveform waveform       { Waveform::Sine };
+
+        std::vector<float>                    customTable;
 
         std::mt19937                          rng;
         std::uniform_real_distribution<float> noiseDist { -1.0f, 1.0f };

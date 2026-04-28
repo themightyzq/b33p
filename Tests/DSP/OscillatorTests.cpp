@@ -12,6 +12,48 @@ using B33p::Oscillator;
 using Waveform = B33p::Oscillator::Waveform;
 using Catch::Approx;
 
+TEST_CASE("Oscillator: Custom waveform with empty table is silent", "[dsp][oscillator]")
+{
+    Oscillator osc;
+    osc.prepare(48000.0);
+    osc.setWaveform(Waveform::Custom);
+    osc.setFrequency(440.0f);
+
+    for (int i = 0; i < 256; ++i)
+        REQUIRE(osc.processSample() == 0.0f);
+}
+
+TEST_CASE("Oscillator: Custom waveform plays back the supplied table",
+          "[dsp][oscillator]")
+{
+    // Manually build a known table — half +1, half -1 (square-like).
+    std::vector<float> table(256, 0.0f);
+    for (size_t i = 0; i < table.size(); ++i)
+        table[i] = (i < table.size() / 2) ? 1.0f : -1.0f;
+
+    Oscillator osc;
+    osc.prepare(48000.0);
+    osc.setWaveform(Waveform::Custom);
+    osc.setCustomTable(table);
+    osc.setFrequency(100.0f);
+
+    std::vector<float> out(static_cast<size_t>(48000));
+    for (auto& s : out) s = osc.processSample();
+
+    // 100 Hz square-like through the table = ~200 sign changes per
+    // second. Linear interpolation softens the edges so a wide
+    // tolerance is appropriate.
+    int crossings = 0;
+    for (size_t i = 1; i < out.size(); ++i)
+    {
+        const bool prevPos = out[i - 1] > 0.0f;
+        const bool currPos = out[i]     > 0.0f;
+        if (prevPos != currPos) ++crossings;
+    }
+    REQUIRE(crossings >= 180);
+    REQUIRE(crossings <= 220);
+}
+
 namespace
 {
     constexpr double kTwoPi      = 6.283185307179586;

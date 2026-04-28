@@ -48,6 +48,10 @@ namespace B33p
         void setWaveform(Oscillator::Waveform waveform);
         void setBasePitchHz(float hz);
 
+        // Replaces the custom-waveform table the oscillator reads
+        // when waveform is Custom. Empty table = silence.
+        void setCustomWaveformTable(const std::vector<float>& samples);
+
         void setAmpAttack(float seconds);
         void setAmpDecay(float seconds);
         void setAmpSustain(float level);

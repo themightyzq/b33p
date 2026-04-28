@@ -10,13 +10,14 @@ namespace B33p
         : Section("Oscillator"),
           processor(processorRef)
     {
-        // Item IDs (1..5) match B33p::Oscillator::Waveform enum order
+        // Item IDs (1..6) match B33p::Oscillator::Waveform enum order
         // so the APVTS choice index maps cleanly at wiring time.
         waveformSelector.addItem("Sine",     1);
         waveformSelector.addItem("Square",   2);
         waveformSelector.addItem("Triangle", 3);
         waveformSelector.addItem("Saw",      4);
         waveformSelector.addItem("Noise",    5);
+        waveformSelector.addItem("Custom",   6);
 
         addAndMakeVisible(waveformSelector);
         addAndMakeVisible(waveformDice);

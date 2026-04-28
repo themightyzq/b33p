@@ -95,7 +95,7 @@ TEST_CASE("ParameterLayout: waveform choice lists all five waveforms with Sine d
     auto* choice = asChoice(apvts.getParameter(B33p::ParameterIDs::oscWaveform(0)));
     REQUIRE(choice != nullptr);
 
-    const juce::StringArray expected { "Sine", "Square", "Triangle", "Saw", "Noise" };
+    const juce::StringArray expected { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom" };
     REQUIRE(choice->choices == expected);
     REQUIRE(choice->getIndex() == 0);  // Sine
 }
