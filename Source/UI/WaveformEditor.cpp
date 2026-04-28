@@ -62,7 +62,13 @@ namespace B33p
         g.setColour(juce::Colour::fromRGB(60, 60, 60));
         g.drawRoundedRectangle(bounds, kCorner, 1.0f);
 
-        const auto plot = bounds.reduced(kInset);
+        // Footer hint — reserves a small strip at the bottom for the
+        // "drawing replaces ..." note. Plot area stops above it so
+        // the wave doesn't overlap the text.
+        constexpr float kFooterH = 18.0f;
+        auto plot = bounds.reduced(kInset);
+        plot = plot.withTrimmedBottom(kFooterH);
+
         const float midY = plot.getCentreY();
 
         // Zero line.
@@ -89,11 +95,22 @@ namespace B33p
 
         g.setColour(juce::Colour::fromRGB(220, 140, 60));
         g.strokePath(wave, juce::PathStrokeType(kStroke));
+
+        // Footer note — a fresh user might not know the displayed
+        // sine is just a starting placeholder.
+        g.setColour(juce::Colour::fromRGB(120, 120, 120));
+        g.setFont(juce::FontOptions(11.0f));
+        g.drawText("Click + drag to draw. The sine is the default starting shape — drawing replaces it.",
+                   bounds.withTop(bounds.getBottom() - 16.0f),
+                   juce::Justification::centred);
     }
 
     int WaveformEditor::xToSampleIdx(float x) const
     {
-        const auto plot = getLocalBounds().toFloat().reduced(1.0f).reduced(kInset);
+        // Match paint()'s plot rect (with the footer trimmed off).
+        constexpr float kFooterH = 18.0f;
+        const auto plot = getLocalBounds().toFloat().reduced(1.0f)
+                              .reduced(kInset).withTrimmedBottom(kFooterH);
         if (table.empty() || plot.getWidth() <= 0.0f)
             return 0;
         const float t = (x - plot.getX()) / plot.getWidth();
@@ -103,7 +120,9 @@ namespace B33p
 
     float WaveformEditor::yToValue(float y) const
     {
-        const auto plot = getLocalBounds().toFloat().reduced(1.0f).reduced(kInset);
+        constexpr float kFooterH = 18.0f;
+        const auto plot = getLocalBounds().toFloat().reduced(1.0f)
+                              .reduced(kInset).withTrimmedBottom(kFooterH);
         if (plot.getHeight() <= 0.0f)
             return 0.0f;
         const float midY = plot.getCentreY();

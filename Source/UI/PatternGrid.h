@@ -70,6 +70,12 @@ namespace B33p
         bool hasClipboardData() const { return ! clipboard.empty(); }
         bool hasAnyEvents()    const;
 
+        // Lane menu actions — also driven by the per-lane right-
+        // click context menu. lane defaults to processor's current
+        // selected lane when called from the menu bar.
+        void generateRandomPatternInLane(int lane);
+        void clearAllEventsInLane(int lane);
+
         // Pulls the per-lane name + mute state out of the pattern
         // and writes it into the label / button children. Called
         // after Open / New / undo so the UI tracks the model.

@@ -314,6 +314,90 @@ namespace B33p
                                  pattern));
     }
 
+    void PatternGrid::generateRandomPatternInLane(int lane)
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return;
+
+        // Replace this lane's events with a generated handful — 4..8
+        // random positions snapped to the grid (or free if grid is
+        // "Off"), each with a 50..200 ms length and 0.5..1.0 velocity.
+        // Starts are sorted + deduped, and each event's duration is
+        // clipped against the next start so events can't overlap —
+        // overlapping events on a monophonic lane retrigger the voice
+        // mid-note, which sounds glitchy rather than rhythmic.
+        juce::Random rng;
+        const double length = processor.getPattern().getLengthSeconds();
+        const int    count  = 4 + rng.nextInt(5);
+
+        std::vector<double> starts;
+        starts.reserve(static_cast<size_t>(count));
+        for (int i = 0; i < count; ++i)
+            starts.push_back(snapSeconds(rng.nextDouble() * length));
+        std::sort(starts.begin(), starts.end());
+        starts.erase(std::unique(starts.begin(), starts.end(),
+            [](double a, double b) { return std::abs(a - b) < 1e-6; }),
+            starts.end());
+
+        Pattern before = processor.getPattern();
+        processor.getPattern().clearLane(lane);
+        for (size_t i = 0; i < starts.size(); ++i)
+        {
+            Event ev;
+            ev.startSeconds = starts[i];
+
+            const double maxDur =
+                (i + 1 < starts.size() ? starts[i + 1] - starts[i]
+                                        : length        - starts[i]);
+
+            double dur = 0.05 + rng.nextDouble() * 0.15;
+            if (gridSeconds > 0.0)
+            {
+                const int steps = 1 + rng.nextInt(3);
+                dur = static_cast<double>(steps) * gridSeconds;
+            }
+            dur = std::min(dur, maxDur);
+            ev.durationSeconds = std::max(0.02, dur);
+            ev.pitchOffsetSemitones = 0.0f;
+            ev.velocity = 0.5f + rng.nextFloat() * 0.5f;
+            processor.getPattern().addEvent(lane, ev);
+        }
+
+        if (processor.getPattern() == before)
+            return;
+
+        processor.markDirty();
+        clearSelection();
+        repaint();
+
+        processor.getUndoManager().beginNewTransaction("Generate lane pattern");
+        processor.getUndoManager().perform(
+            new SetPatternAction(processor, this,
+                                 std::move(before),
+                                 processor.getPattern()));
+    }
+
+    void PatternGrid::clearAllEventsInLane(int lane)
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return;
+
+        Pattern before = processor.getPattern();
+        processor.getPattern().clearLane(lane);
+        if (processor.getPattern() == before)
+            return;
+
+        processor.markDirty();
+        clearSelection();
+        repaint();
+
+        processor.getUndoManager().beginNewTransaction("Clear lane");
+        processor.getUndoManager().perform(
+            new SetPatternAction(processor, this,
+                                 std::move(before),
+                                 processor.getPattern()));
+    }
+
     void PatternGrid::deleteSelected()
     {
         if (selection.empty())
@@ -683,86 +767,8 @@ namespace B33p
                 laneMenu.showMenuAsync(juce::PopupMenu::Options{},
                     [this, lane](int result)
                     {
-                        if (result == 0) return;
-
-                        Pattern before = processor.getPattern();
-
-                        if (result == 1)
-                        {
-                            // Replace this lane's events with a
-                            // generated handful — 4..8 random
-                            // positions, snapped to the grid (or
-                            // free if grid is "Off"), each with a
-                            // 50..200 ms length and 0.5..1.0 velocity.
-                            //
-                            // Starts are sorted + deduped, and each
-                            // event's duration is clipped so it
-                            // can't overlap the next one — overlapping
-                            // events on a monophonic lane retrigger
-                            // the voice mid-note, which sounds
-                            // messy / glitchy rather than rhythmic.
-                            juce::Random rng;
-                            const double length = processor.getPattern().getLengthSeconds();
-                            const int    count  = 4 + rng.nextInt(5);
-
-                            std::vector<double> starts;
-                            starts.reserve(static_cast<size_t>(count));
-                            for (int i = 0; i < count; ++i)
-                                starts.push_back(snapSeconds(rng.nextDouble() * length));
-                            std::sort(starts.begin(), starts.end());
-                            starts.erase(std::unique(starts.begin(), starts.end(),
-                                [](double a, double b) { return std::abs(a - b) < 1e-6; }),
-                                starts.end());
-
-                            processor.getPattern().clearLane(lane);
-                            for (size_t i = 0; i < starts.size(); ++i)
-                            {
-                                Event ev;
-                                ev.startSeconds = starts[i];
-
-                                const double maxDur =
-                                    (i + 1 < starts.size() ? starts[i + 1] - starts[i]
-                                                            : length        - starts[i]);
-
-                                // When the grid is on, durations also
-                                // snap to grid steps so events START
-                                // and END on grid lines. When grid is
-                                // "Off", roll freely between 50..200 ms.
-                                double dur = 0.05 + rng.nextDouble() * 0.15;
-                                if (gridSeconds > 0.0)
-                                {
-                                    // Pick 1..3 grid steps (capped to
-                                    // 200 ms-ish so coarse grids don't
-                                    // produce 3-second events).
-                                    const int steps = 1 + rng.nextInt(3);
-                                    dur = static_cast<double>(steps) * gridSeconds;
-                                }
-                                dur = std::min(dur, maxDur);
-                                ev.durationSeconds = std::max(0.02, dur);
-
-                                ev.pitchOffsetSemitones = 0.0f;
-                                ev.velocity = 0.5f + rng.nextFloat() * 0.5f;
-                                processor.getPattern().addEvent(lane, ev);
-                            }
-                        }
-                        else if (result == 2)
-                        {
-                            processor.getPattern().clearLane(lane);
-                        }
-
-                        if (processor.getPattern() == before)
-                            return;
-
-                        processor.markDirty();
-                        clearSelection();
-                        repaint();
-
-                        processor.getUndoManager().beginNewTransaction(
-                            result == 1 ? "Generate lane pattern" : "Clear lane");
-                        processor.getUndoManager().perform(
-                            new SetPatternAction(processor, this,
-                                                 std::move(before),
-                                                 processor.getPattern()));
+                        if (result == 1)      generateRandomPatternInLane(lane);
+                        else if (result == 2) clearAllEventsInLane(lane);
                     });
                 return;
             }

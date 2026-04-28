@@ -189,14 +189,14 @@ End-user review surfaced a stack of items that all amount to "the README and the
 ### Missing user-facing features
 - [x] **Audio settings menu** — JUCE `AudioDeviceSelectorComponent` in an Options menu. Without it, a user whose default output isn't usable has no in-app recovery. [major]
 - [x] **Edit menu enrichment** — add Copy / Paste / Select All / Deselect entries that show their shortcuts (Cmd+C/V/A, Esc), plus an arrow-nudge note. Half the editing shortcuts are otherwise undiscoverable. [major]
-- [ ] **Generate / Clear lane in the Lane menu** — currently right-click only on empty lane area; both are otherwise invisible. [minor]
+- [x] **Generate / Clear lane in the Lane menu** — currently right-click only on empty lane area; both are otherwise invisible. [minor]
 - [ ] **Tiny output level meter in Master section** — user has no visual feedback that audio is happening. [minor]
 
 ### Confusing UX
-- [ ] **Explain "(Lane N)" in voice section titles** — fresh users have no in-app explanation that each lane has its own voice. Add a help blurb in About, or a one-line banner above the voice editor on first launch. [major]
-- [ ] **Pitch Envelope panel needs a "(shared across lanes)" suffix** — current asymmetry implies the curve is per-lane when it's actually shared. [minor]
+- [x] **Explain "(Lane N)" in voice section titles** — fresh users have no in-app explanation that each lane has its own voice. Add a help blurb in About, or a one-line banner above the voice editor on first launch. [major]
+- [x] **Pitch Envelope panel needs a "(shared across lanes)" suffix** — current asymmetry implies the curve is per-lane when it's actually shared. [minor]
 - [ ] **Visual cue when a Move drag hits the pattern wall** — currently silent clamp. [minor]
-- [ ] **Custom oscillator: explain the visual sine is a placeholder** — small footer note in the editor: "Drawing replaces the default sine cycle." [minor]
+- [x] **Custom oscillator: explain the visual sine is a placeholder** — small footer note in the editor: "Drawing replaces the default sine cycle." [minor]
 
 ### Nice-to-have polish
 - [ ] **Per-lane background tint** in the voice editor sections so the "(Lane N)" suffix matches a visual cue and lane switching is obviously different.

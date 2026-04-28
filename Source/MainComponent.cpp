@@ -30,6 +30,8 @@ namespace B33p
             LaneCopyToAll,
             LaneResetVoice,
             LaneDiceAll,
+            LaneGenerate,
+            LaneClear,
             HelpAbout,
         };
     }
@@ -337,6 +339,9 @@ namespace B33p
                 m.addItem(MenuId::LaneCopyToAll,  "Copy " + tag + " voice to all lanes");
                 m.addItem(MenuId::LaneResetVoice, "Reset " + tag + " voice to defaults");
                 m.addSeparator();
+                m.addItem(MenuId::LaneGenerate,   "Generate Random Pattern in " + tag);
+                m.addItem(MenuId::LaneClear,      "Clear All Events in " + tag);
+                m.addSeparator();
                 m.addItem(MenuId::LaneDiceAll,    "Randomize All Lanes (every unlocked param)");
                 break;
             }
@@ -378,6 +383,14 @@ namespace B33p
                 processor.getRandomizer().rollAllUnlocked(rng);
                 break;
             }
+            case MenuId::LaneGenerate:
+                patternSection.getGrid().generateRandomPatternInLane(
+                    processor.getSelectedLane());
+                break;
+            case MenuId::LaneClear:
+                patternSection.getGrid().clearAllEventsInLane(
+                    processor.getSelectedLane());
+                break;
             case MenuId::HelpAbout:  showAboutDialog();                         break;
             default:                                                            break;
         }
@@ -405,8 +418,31 @@ namespace B33p
           + "Version "      + version + "\n"
           + "Author "       + author  + "\n"
           + "License "      + license + "\n\n"
-          + "Built with " + juceVer + " and Catch2.\n\n"
-          + "Source: github.com/themightyzq/b33p";
+          + "Built with " + juceVer + " and Catch2.\n"
+          + "Source: github.com/themightyzq/b33p\n\n"
+          + "------ How it's organized ------\n"
+          + "Each of the 4 pattern lanes has its own voice. The voice\n"
+          + "editor sections (Oscillator, Amp Envelope, Filter, Effects,\n"
+          + "Master) say \"(Lane N)\" because they edit whichever lane is\n"
+          + "currently selected. Click a lane (or any of its events) in\n"
+          + "the pattern grid to switch which lane the editor targets.\n"
+          + "The Pitch Envelope is shared across all four lanes.\n\n"
+          + "------ Pattern editing ------\n"
+          + "  Drag in empty grid: draw an event of any length\n"
+          + "  Double-click empty grid: drop an event at default size\n"
+          + "  Drag a clip: move it; drag vertically to switch lanes\n"
+          + "  Drag a clip's left/right edge: resize\n"
+          + "  Drag a clip's top edge: set velocity (clip height)\n"
+          + "  Right-click a clip: Delete / Duplicate\n"
+          + "  Right-click empty lane: Generate / Clear\n"
+          + "  Click in the ruler row: park the playhead\n\n"
+          + "------ Keys ------\n"
+          + "  Space               play / stop\n"
+          + "  Shift+Space         audition the selected lane\n"
+          + "  Cmd+A / C / V       select all / copy / paste at playhead\n"
+          + "  Esc                 deselect\n"
+          + "  Arrow / Shift+Arrow nudge by 1 / 10 grid steps\n"
+          + "  Cmd+Z / Shift+Z     undo / redo";
 
         juce::AlertWindow::showAsync(
             juce::MessageBoxOptions()
