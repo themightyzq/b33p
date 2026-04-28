@@ -50,6 +50,13 @@ namespace B33p
         // land in a single UndoManager transaction labelled "Dice All".
         void rollAllUnlocked(juce::Random& rng);
 
+        // Rolls every unlocked parameter in `parameterIDs`. One
+        // undoable transaction. Used by the "Dice Lane" entry point
+        // to scope randomisation to a single lane's voice.
+        void rollMany(const std::vector<juce::String>& parameterIDs,
+                      juce::Random& rng,
+                      const juce::String& transactionName);
+
     private:
         // Shared core used by both public entry points so the batch
         // call doesn't fragment its transaction.

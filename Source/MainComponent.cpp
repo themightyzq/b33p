@@ -24,6 +24,7 @@ namespace B33p
             EditRedo,
             LaneCopyToAll,
             LaneResetVoice,
+            LaneDiceAll,
             HelpAbout,
         };
     }
@@ -318,6 +319,8 @@ namespace B33p
                 const juce::String tag = "Lane " + juce::String(lane + 1);
                 m.addItem(MenuId::LaneCopyToAll,  "Copy " + tag + " voice to all lanes");
                 m.addItem(MenuId::LaneResetVoice, "Reset " + tag + " voice to defaults");
+                m.addSeparator();
+                m.addItem(MenuId::LaneDiceAll,    "Dice All Lanes (every unlocked param)");
                 break;
             }
             case 3: // Help
@@ -347,6 +350,12 @@ namespace B33p
                 processor.copyLaneSettingsToAll(processor.getSelectedLane());   break;
             case MenuId::LaneResetVoice:
                 processor.resetLaneVoice(processor.getSelectedLane());          break;
+            case MenuId::LaneDiceAll:
+            {
+                juce::Random rng;
+                processor.getRandomizer().rollAllUnlocked(rng);
+                break;
+            }
             case MenuId::HelpAbout:  showAboutDialog();                         break;
             default:                                                            break;
         }

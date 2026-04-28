@@ -131,6 +131,12 @@ namespace B33p
         playing.store(false, std::memory_order_release);
     }
 
+    void B33pProcessor::setPlayheadSeconds(double seconds)
+    {
+        const double len = pattern.getLengthSeconds();
+        playheadSeconds.store(std::clamp(seconds, 0.0, std::max(0.0, len - 1e-6)));
+    }
+
     void B33pProcessor::refreshPatternSnapshot()
     {
         auto snap = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern));

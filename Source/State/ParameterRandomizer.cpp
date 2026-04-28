@@ -59,12 +59,23 @@ namespace B33p
     void ParameterRandomizer::rollAllUnlocked(juce::Random& rng)
     {
         if (apvts.undoManager != nullptr)
-            apvts.undoManager->beginNewTransaction("Dice All");
+            apvts.undoManager->beginNewTransaction("Dice All Lanes");
 
         for (juce::AudioProcessorParameter* p : apvts.processor.getParameters())
         {
             if (auto* withId = dynamic_cast<juce::AudioProcessorParameterWithID*>(p))
                 rollOneNoTransaction(withId->paramID, rng);
         }
+    }
+
+    void ParameterRandomizer::rollMany(const std::vector<juce::String>& parameterIDs,
+                                        juce::Random& rng,
+                                        const juce::String& transactionName)
+    {
+        if (apvts.undoManager != nullptr)
+            apvts.undoManager->beginNewTransaction(transactionName);
+
+        for (const auto& id : parameterIDs)
+            rollOneNoTransaction(id, rng);
     }
 }

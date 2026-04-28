@@ -149,6 +149,12 @@ namespace B33p
         // platform we support.
         double getPlayheadSeconds() const  { return playheadSeconds.load(); }
 
+        // Lets the UI park the playhead at a specific time (e.g. by
+        // clicking on the pattern grid ruler). Clamped to
+        // [0, pattern length). Used as the paste-target time for
+        // Cmd+V even when playback is stopped.
+        void   setPlayheadSeconds(double seconds);
+
         // juce::AudioProcessor interface ----------------------------
         const juce::String getName() const override                              { return "B33p"; }
         void  prepareToPlay(double sampleRate, int blockSize) override;

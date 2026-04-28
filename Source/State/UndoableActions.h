@@ -38,6 +38,12 @@ namespace B33p
         {
             processor.getPattern() = afterState;
             processor.markDirty();
+            // Rebuild the snapshot immediately so the audio thread
+            // sees the edit on its next block (within ~5 ms),
+            // instead of waiting up to 33 ms for the next timer
+            // tick — which is what made duplicated / dragged
+            // events sometimes go silent for one loop iteration.
+            processor.refreshPatternSnapshot();
             // notifyFullStateLoaded fires the message-thread callback
             // that re-syncs widgets that don't auto-track the pattern
             // — length combo, loop toggle, lane name labels, mute
@@ -52,6 +58,7 @@ namespace B33p
         {
             processor.getPattern() = beforeState;
             processor.markDirty();
+            processor.refreshPatternSnapshot();
             processor.notifyFullStateLoaded();
             if (auto* c = editor.getComponent())
                 c->repaint();
