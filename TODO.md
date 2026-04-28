@@ -190,7 +190,7 @@ End-user review surfaced a stack of items that all amount to "the README and the
 - [x] **Audio settings menu** — JUCE `AudioDeviceSelectorComponent` in an Options menu. Without it, a user whose default output isn't usable has no in-app recovery. [major]
 - [x] **Edit menu enrichment** — add Copy / Paste / Select All / Deselect entries that show their shortcuts (Cmd+C/V/A, Esc), plus an arrow-nudge note. Half the editing shortcuts are otherwise undiscoverable. [major]
 - [x] **Generate / Clear lane in the Lane menu** — currently right-click only on empty lane area; both are otherwise invisible. [minor]
-- [ ] **Tiny output level meter in Master section** — user has no visual feedback that audio is happening. [minor]
+- [x] **Tiny output level meter in Master section** — user has no visual feedback that audio is happening. [minor]
 
 ### Confusing UX
 - [x] **Explain "(Lane N)" in voice section titles** — fresh users have no in-app explanation that each lane has its own voice. Add a help blurb in About, or a one-line banner above the voice editor on first launch. [major]
