@@ -95,6 +95,8 @@ cmake --build build
 
 The app lands at `build/B33p_artefacts/Release/b33p`.
 
+For the long-form user guide — every gesture, every keyboard shortcut, the per-lane voice model in depth, generation + clipboard workflows, audio device setup — see **[docs/USAGE.md](docs/USAGE.md)**.
+
 ## Quick start — your first beep
 
 1. Open b33p. The voice editor is on the left + middle; the pattern grid is at the bottom.

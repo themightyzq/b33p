@@ -184,7 +184,7 @@ End-user review surfaced a stack of items that all amount to "the README and the
 ### Documentation
 - [x] **README sweep** — quickstart, shortcut table, features list, status badge, screenshot caption all reference UI that doesn't exist (Pre-alpha status, "big Dice at top", "Pattern tab", `Cmd+D` / `Cmd+E` shortcuts, musical-grid-snap promise, "Coming after v0.1" listing Custom Waveforms + Multi-voice). [major: turn-off-at-first-glance]
 - [x] **Refresh hero screenshot** — current one predates the Lane menu, "(Lane N)" section suffixes, Mute/Solo per-lane buttons, Randomize buttons, Custom waveform. Caption references "(D)" / "(L)" letter buttons; they're icons now. [minor]
-- [ ] **`docs/USAGE.md`** — per-lane mental model, every keyboard shortcut, custom-waveform workflow, generate / clear lane via right-click, click-ruler-to-park-playhead. [minor]
+- [x] **`docs/USAGE.md`** — per-lane mental model, every keyboard shortcut, custom-waveform workflow, generate / clear lane via right-click, click-ruler-to-park-playhead. [minor]
 
 ### Missing user-facing features
 - [x] **Audio settings menu** — JUCE `AudioDeviceSelectorComponent` in an Options menu. Without it, a user whose default output isn't usable has no in-app recovery. [major]
