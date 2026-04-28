@@ -494,20 +494,45 @@ namespace B33p
                        1.0f);
         }
 
-        // Playhead — only drawn while the processor is playing.
-        if (processor.isPlaying())
+        // Playhead — orange while playing, dimmer grey when parked
+        // (so the user can see where Cmd+V will paste). Hidden only
+        // when stopped at exactly 0, which is the no-op resting state.
         {
-            const float x = secondsToX(processor.getPlayheadSeconds());
-            g.setColour(juce::Colour::fromRGB(255, 165, 60));
-            g.drawLine(x, frame.getY() + kRulerHeight,
-                       x, frame.getBottom(),
-                       1.5f);
+            const double headSec = processor.getPlayheadSeconds();
+            if (processor.isPlaying() || headSec > 0.0)
+            {
+                const float x = secondsToX(headSec);
+                g.setColour(processor.isPlaying()
+                                ? juce::Colour::fromRGB(255, 165, 60)
+                                : juce::Colour::fromRGB(140, 140, 140));
+                g.drawLine(x, frame.getY() + kRulerHeight,
+                           x, frame.getBottom(),
+                           1.5f);
+            }
         }
     }
 
     void PatternGrid::mouseDown(const juce::MouseEvent& e)
     {
         grabKeyboardFocus();
+
+        // Click on the ruler row parks the playhead. Cmd+V then
+        // pastes the clipboard there. Pre-empts every other gesture
+        // because the ruler isn't a lane, so there's nothing else
+        // meaningful for it to do.
+        {
+            const auto frame = plotArea();
+            const float laneStripStartX = frame.getX() + kLaneLabelWidth;
+            const bool inRuler = (e.position.y >= frame.getY()
+                                && e.position.y <  frame.getY() + kRulerHeight
+                                && e.position.x >= laneStripStartX);
+            if (inRuler)
+            {
+                processor.setPlayheadSeconds(xToSeconds(e.position.x));
+                repaint();
+                return;
+            }
+        }
 
         // Right-click on an event opens a context menu (Delete /
         // Duplicate). Right-click on empty grid is a no-op.
@@ -773,6 +798,11 @@ namespace B33p
         }
 
         processor.markDirty();
+        // Push the live drag state into the audio thread immediately
+        // instead of waiting for the next 30 Hz snapshot tick — keeps
+        // the dragged event audible at its CURRENT position rather
+        // than its position 33 ms ago.
+        processor.refreshPatternSnapshot();
         repaint();
 
         // Inspector below tracks the live drag values, not just the

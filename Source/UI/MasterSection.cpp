@@ -18,16 +18,24 @@ namespace B33p
         };
         addAndMakeVisible(auditionButton);
 
+        // "Dice Lane" rolls every unlocked parameter for the
+        // currently-selected lane only. Rolling all four lanes
+        // at once lives in the Lane menu so the more frequent
+        // single-lane action stays in the master strip.
+        diceAllButton.setButtonText("Dice Lane");
         diceAllButton.onClick = [this]
         {
             juce::Random rng;
-            processor.getRandomizer().rollAllUnlocked(rng);
+            const int lane = processor.getSelectedLane();
+            processor.getRandomizer().rollMany(
+                ParameterIDs::allForLane(lane), rng,
+                "Dice Lane " + juce::String(lane + 1));
         };
         addAndMakeVisible(diceAllButton);
 
         gainSlider    .setTooltip("Master output level");
         auditionButton.setTooltip("Play a single beep with the current settings (Shift+Space)");
-        diceAllButton .setTooltip("Roll random values for every unlocked parameter");
+        diceAllButton .setTooltip("Roll random values for the currently-selected lane's unlocked parameters");
 
         retargetLane(processor.getSelectedLane());
     }
