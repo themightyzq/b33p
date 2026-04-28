@@ -77,6 +77,7 @@ target_sources(B33p PRIVATE
     Source/UI/RandomizerWiring.cpp
     Source/UI/PitchEnvelopeEditor.cpp
     Source/UI/Section.cpp
+    Source/UI/WaveformEditor.cpp
     Source/DSP/Oscillator.cpp
     Source/DSP/AmpEnvelope.cpp
     Source/DSP/PitchEnvelope.cpp

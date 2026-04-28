@@ -24,10 +24,40 @@ namespace B33p
         addAndMakeVisible(waveformLock);
         addAndMakeVisible(basePitchSlider);
 
+        // Edit button — only visible when waveform is "Custom".
+        customEditButton.setTooltip("Open the custom-waveform editor");
+        customEditButton.onClick = [this] { openCustomWaveformEditor(); };
+        addChildComponent(customEditButton);   // hidden until needed
+
         waveformSelector.setTooltip("Oscillator waveform");
         basePitchSlider .setTooltip("Base pitch of the oscillator");
 
         retargetLane(processor.getSelectedLane());
+    }
+
+    void OscillatorSection::onWaveformChanged()
+    {
+        const bool isCustom = waveformSelector.getSelectedId() == 6;
+        customEditButton.setVisible(isCustom);
+        // If we already had the editor open, swing it onto the
+        // currently-selected lane (the user may have flipped this
+        // lane to Custom mid-session).
+        if (isCustom && customEditorWindow != nullptr
+            && customEditorWindow->isVisible())
+        {
+            customEditorWindow->getEditor().setLane(processor.getSelectedLane());
+        }
+    }
+
+    void OscillatorSection::openCustomWaveformEditor()
+    {
+        if (customEditorWindow == nullptr)
+            customEditorWindow = std::make_unique<WaveformEditorWindow>(processor);
+        customEditorWindow->getEditor().setLane(processor.getSelectedLane());
+        customEditorWindow->setName("Custom Waveform"
+                                      + processor.laneTitleSuffix(processor.getSelectedLane()));
+        customEditorWindow->setVisible(true);
+        customEditorWindow->toFront(true);
     }
 
     void OscillatorSection::retargetLane(int lane)
@@ -63,6 +93,13 @@ namespace B33p
                                                 ParameterIDs::basePitchHz(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));
+
+        // Whenever the user switches lanes, the combo's selected ID
+        // is reset by the new ComboBoxAttachment. Hook the onChange
+        // here (after attachment construction) so we catch both
+        // user-driven combo edits and lane-switch syncs.
+        waveformSelector.onChange = [this] { onWaveformChanged(); };
+        onWaveformChanged();
     }
 
     void OscillatorSection::resized()
@@ -71,6 +108,7 @@ namespace B33p
 
         constexpr int kComboHeight  = 26;
         constexpr int kButtonWidth  = 32;
+        constexpr int kEditWidth    = 56;
         constexpr int kButtonGap    = 2;
         constexpr int kComboGap     = 4;
         constexpr int kRowGap       = 8;
@@ -80,6 +118,14 @@ namespace B33p
         topRow.removeFromRight(kButtonGap);
         waveformDice.setBounds(topRow.removeFromRight(kButtonWidth));
         topRow.removeFromRight(kComboGap);
+        // Edit button sits between the combo and the dice — only
+        // visible (per setVisible in onWaveformChanged) when the
+        // combo is on Custom.
+        if (customEditButton.isVisible())
+        {
+            customEditButton.setBounds(topRow.removeFromRight(kEditWidth));
+            topRow.removeFromRight(kButtonGap);
+        }
         waveformSelector.setBounds(topRow);
 
         bounds.removeFromTop(kRowGap);
