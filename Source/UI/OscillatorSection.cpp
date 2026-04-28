@@ -106,6 +106,18 @@ namespace B33p
         // user-driven combo edits and lane-switch syncs.
         waveformSelector.onChange = [this] { onWaveformChanged(); };
         onWaveformChanged();
+
+        // Keep the popup editor in sync when retargetLane fires
+        // (which happens for selected-lane changes AND for project
+        // Open / New via OnFullStateLoaded). Otherwise the editor
+        // would display the previous project's table for the same
+        // lane index.
+        if (customEditorWindow != nullptr && customEditorWindow->isVisible())
+        {
+            customEditorWindow->getEditor().setLane(lane);
+            customEditorWindow->setName("Custom Waveform"
+                                          + processor.laneTitleSuffix(lane));
+        }
     }
 
     void OscillatorSection::resized()
