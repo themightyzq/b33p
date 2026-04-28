@@ -59,6 +59,7 @@ namespace B33p
 
         visualizer.retargetLane(lane);
         setTitleSuffix(processor.laneTitleSuffix(lane));
+        setAccentColour(processor.laneAccentColour(lane));
     }
 
     void AmpEnvSection::resized()

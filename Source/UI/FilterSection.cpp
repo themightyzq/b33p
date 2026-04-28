@@ -38,6 +38,7 @@ namespace B33p
         SliderFormatting::applyDoubleClickReset(resonanceSlider.getSlider(), processor.getApvts(), ParameterIDs::filterResonanceQ(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));
+        setAccentColour(processor.laneAccentColour(lane));
     }
 
     void FilterSection::resized()

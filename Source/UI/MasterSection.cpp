@@ -61,6 +61,7 @@ namespace B33p
                                                 ParameterIDs::voiceGain(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));
+        setAccentColour(processor.laneAccentColour(lane));
     }
 
     void MasterSection::flashAuditionButton()

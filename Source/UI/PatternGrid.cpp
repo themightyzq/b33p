@@ -562,14 +562,18 @@ namespace B33p
             }
         }
 
-        // Selected-lane tint — subtle background so the user sees
-        // which lane the editor sections are currently targeting.
+        // Per-lane tint — every lane gets a subtle base wash in its
+        // accent colour; the selected lane gets a stronger version of
+        // the same colour. This matches the accent strip the voice
+        // editor sections paint, so a fresh user can tell which lane
+        // they're editing without reading the title suffix.
         {
             const int sel = processor.getSelectedLane();
-            if (sel >= 0 && sel < Pattern::kNumLanes)
+            for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
             {
-                auto sl = laneArea(sel);
-                g.setColour(juce::Colour::fromRGB(120, 200, 255).withAlpha(0.07f));
+                auto sl = laneArea(lane);
+                const float alpha = (lane == sel) ? 0.10f : 0.04f;
+                g.setColour(processor.laneAccentColour(lane).withAlpha(alpha));
                 g.fillRect(sl);
             }
         }

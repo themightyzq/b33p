@@ -228,6 +228,20 @@ namespace B33p
         onSelectedLaneChangedCallback = std::move(callback);
     }
 
+    juce::Colour B33pProcessor::laneAccentColour(int lane) const
+    {
+        // Four mid-saturation colours far apart on the wheel so the
+        // lanes read distinctly even at low alpha.
+        switch (lane)
+        {
+            case 0: return juce::Colour::fromRGB(120, 200, 255);  // blue
+            case 1: return juce::Colour::fromRGB(120, 220, 140);  // green
+            case 2: return juce::Colour::fromRGB(220, 180,  90);  // amber
+            case 3: return juce::Colour::fromRGB(220, 130, 200);  // pink
+            default: return juce::Colour::fromRGB(150, 150, 150);
+        }
+    }
+
     juce::String B33pProcessor::laneTitleSuffix(int lane) const
     {
         const auto& name = pattern.getLaneName(lane);
