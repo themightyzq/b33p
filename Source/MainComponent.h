@@ -3,6 +3,7 @@
 #include "State/B33pProcessor.h"
 #include "State/ProjectFileManager.h"
 #include "UI/AmpEnvSection.h"
+#include "UI/AudioSettingsWindow.h"
 #include "UI/EffectsSection.h"
 #include "UI/FilterSection.h"
 #include "UI/MasterSection.h"
@@ -10,6 +11,7 @@
 #include "UI/PatternSection.h"
 #include "UI/PitchEnvSection.h"
 
+#include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
 namespace B33p
@@ -19,7 +21,11 @@ namespace B33p
                         , public juce::KeyListener
     {
     public:
-        explicit MainComponent(B33pProcessor& processor);
+        // deviceManager is a non-owning reference held by the
+        // application. MainComponent uses it for the Audio Settings
+        // dialog only — it never adds/removes audio callbacks.
+        MainComponent(B33pProcessor& processor,
+                      juce::AudioDeviceManager& deviceManager);
         ~MainComponent() override;
 
         void paint(juce::Graphics& g) override;
@@ -58,14 +64,18 @@ namespace B33p
         void parentHierarchyChanged() override;
         void updateWindowTitle();
         void showAboutDialog();
+        void showAudioSettings();
 
         // The top-level component we registered the KeyListener on,
         // kept so the destructor can deregister cleanly even after
         // the window is mid-teardown.
         juce::Component::SafePointer<juce::Component> keyListenerHost;
 
-        B33pProcessor&      processor;
-        ProjectFileManager  fileManager;
+        B33pProcessor&             processor;
+        juce::AudioDeviceManager&  deviceManager;
+        ProjectFileManager         fileManager;
+
+        std::unique_ptr<AudioSettingsWindow> audioSettingsWindow;
 
         // Owns the hover-tooltip popup for the whole window. Just
         // declaring it is enough — every Component with a non-empty
