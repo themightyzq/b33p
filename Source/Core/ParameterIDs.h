@@ -62,6 +62,26 @@ namespace B33p::ParameterIDs
         };
     }
 
+    // Per-parameter randomization gate. voiceGain is excluded
+    // because a sudden +20 dB random jump is an excellent way to
+    // blow out the user's ears or speakers. Randomize-style
+    // entry points should consult this when picking targets.
+    inline bool isRandomizable(const juce::String& id)
+    {
+        return ! id.endsWith("_voice_gain");
+    }
+
+    // Subset of allForLane filtered by isRandomizable — convenient
+    // for the per-lane "Randomize Lane" button.
+    inline std::vector<juce::String> randomizableForLane(int lane)
+    {
+        std::vector<juce::String> out;
+        for (auto& id : allForLane(lane))
+            if (isRandomizable(id))
+                out.push_back(id);
+        return out;
+    }
+
     // The flat (lane-less) IDs that v0.1.0 .beep files used. ProjectState's
     // v1 → v2 migration looks for these and rewrites them into lane-prefixed
     // IDs across all four lanes.

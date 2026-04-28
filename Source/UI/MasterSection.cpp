@@ -46,6 +46,10 @@ namespace B33p
         gainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
             processor.getApvts(), ParameterIDs::voiceGain(lane), gainSlider.getSlider());
 
+        // gainSlider was constructed with showRandomizer=false so
+        // attachRandomizer is a no-op — we still call it here for
+        // symmetry with the other sections in case the policy ever
+        // changes per-lane.
         gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain(lane));
         SliderFormatting::applyDecimal(gainSlider.getSlider(), 2);
         SliderFormatting::applyDoubleClickReset(gainSlider.getSlider(),

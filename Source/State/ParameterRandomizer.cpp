@@ -1,5 +1,7 @@
 #include "ParameterRandomizer.h"
 
+#include "Core/ParameterIDs.h"
+
 namespace B33p
 {
     ParameterRandomizer::ParameterRandomizer(juce::AudioProcessorValueTreeState& apvtsRef)
@@ -59,12 +61,16 @@ namespace B33p
     void ParameterRandomizer::rollAllUnlocked(juce::Random& rng)
     {
         if (apvts.undoManager != nullptr)
-            apvts.undoManager->beginNewTransaction("Dice All Lanes");
+            apvts.undoManager->beginNewTransaction("Randomize All Lanes");
 
         for (juce::AudioProcessorParameter* p : apvts.processor.getParameters())
         {
             if (auto* withId = dynamic_cast<juce::AudioProcessorParameterWithID*>(p))
+            {
+                if (! ParameterIDs::isRandomizable(withId->paramID))
+                    continue;   // e.g. voiceGain — don't blast ears
                 rollOneNoTransaction(withId->paramID, rng);
+            }
         }
     }
 
@@ -76,6 +82,10 @@ namespace B33p
             apvts.undoManager->beginNewTransaction(transactionName);
 
         for (const auto& id : parameterIDs)
+        {
+            if (! ParameterIDs::isRandomizable(id))
+                continue;
             rollOneNoTransaction(id, rng);
+        }
     }
 }

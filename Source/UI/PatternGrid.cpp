@@ -557,13 +557,74 @@ namespace B33p
             }
         }
 
-        // Right-click on an event opens a context menu (Delete /
-        // Duplicate). Right-click on empty grid is a no-op.
+        // Right-click on an event opens an event context menu
+        // (Delete / Duplicate); right-click on empty lane area opens
+        // a lane context menu (Generate / Clear).
         if (e.mods.isPopupMenu())
         {
             const auto hit = hitTestEvent(e.position);
             if (hit.kind == HitResult::Kind::None)
+            {
+                const int lane = yToLane(e.position.y);
+                if (lane < 0)
+                    return;
+
+                processor.setSelectedLane(lane);
+
+                juce::PopupMenu laneMenu;
+                laneMenu.addItem(1, "Generate random pattern in this lane");
+                laneMenu.addItem(2, "Clear all events in this lane");
+                laneMenu.showMenuAsync(juce::PopupMenu::Options{},
+                    [this, lane](int result)
+                    {
+                        if (result == 0) return;
+
+                        Pattern before = processor.getPattern();
+
+                        if (result == 1)
+                        {
+                            // Replace this lane's events with a
+                            // generated handful — 4..8 random
+                            // positions, snapped to the grid (or
+                            // free if grid is "Off"), each with a
+                            // 50..200 ms length and 0.5..1.0 velocity.
+                            juce::Random rng;
+                            const double length = processor.getPattern().getLengthSeconds();
+                            const int    count  = 4 + rng.nextInt(5);
+                            processor.getPattern().clearLane(lane);
+                            for (int i = 0; i < count; ++i)
+                            {
+                                Event ev;
+                                ev.startSeconds = snapSeconds(rng.nextDouble() * length);
+                                ev.durationSeconds = 0.05 + rng.nextDouble() * 0.15;
+                                ev.startSeconds = std::min(ev.startSeconds,
+                                    std::max(0.0, length - ev.durationSeconds));
+                                ev.pitchOffsetSemitones = 0.0f;
+                                ev.velocity = 0.5f + rng.nextFloat() * 0.5f;
+                                processor.getPattern().addEvent(lane, ev);
+                            }
+                        }
+                        else if (result == 2)
+                        {
+                            processor.getPattern().clearLane(lane);
+                        }
+
+                        if (processor.getPattern() == before)
+                            return;
+
+                        processor.markDirty();
+                        clearSelection();
+                        repaint();
+
+                        processor.getUndoManager().beginNewTransaction(
+                            result == 1 ? "Generate lane pattern" : "Clear lane");
+                        processor.getUndoManager().perform(
+                            new SetPatternAction(processor, this,
+                                                 std::move(before),
+                                                 processor.getPattern()));
+                    });
                 return;
+            }
 
             // Single-select the right-clicked event so the menu has
             // an unambiguous target.
