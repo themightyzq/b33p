@@ -588,17 +588,37 @@ namespace B33p
                             // positions, snapped to the grid (or
                             // free if grid is "Off"), each with a
                             // 50..200 ms length and 0.5..1.0 velocity.
+                            //
+                            // Starts are sorted + deduped, and each
+                            // event's duration is clipped so it
+                            // can't overlap the next one — overlapping
+                            // events on a monophonic lane retrigger
+                            // the voice mid-note, which sounds
+                            // messy / glitchy rather than rhythmic.
                             juce::Random rng;
                             const double length = processor.getPattern().getLengthSeconds();
                             const int    count  = 4 + rng.nextInt(5);
-                            processor.getPattern().clearLane(lane);
+
+                            std::vector<double> starts;
+                            starts.reserve(static_cast<size_t>(count));
                             for (int i = 0; i < count; ++i)
+                                starts.push_back(snapSeconds(rng.nextDouble() * length));
+                            std::sort(starts.begin(), starts.end());
+                            starts.erase(std::unique(starts.begin(), starts.end(),
+                                [](double a, double b) { return std::abs(a - b) < 1e-6; }),
+                                starts.end());
+
+                            processor.getPattern().clearLane(lane);
+                            for (size_t i = 0; i < starts.size(); ++i)
                             {
                                 Event ev;
-                                ev.startSeconds = snapSeconds(rng.nextDouble() * length);
-                                ev.durationSeconds = 0.05 + rng.nextDouble() * 0.15;
-                                ev.startSeconds = std::min(ev.startSeconds,
-                                    std::max(0.0, length - ev.durationSeconds));
+                                ev.startSeconds = starts[i];
+                                const double rolledDur = 0.05 + rng.nextDouble() * 0.15;
+                                const double maxDur =
+                                    (i + 1 < starts.size() ? starts[i + 1] - starts[i]
+                                                            : length        - starts[i]);
+                                ev.durationSeconds = std::max(0.02,
+                                                              std::min(rolledDur, maxDur));
                                 ev.pitchOffsetSemitones = 0.0f;
                                 ev.velocity = 0.5f + rng.nextFloat() * 0.5f;
                                 processor.getPattern().addEvent(lane, ev);
