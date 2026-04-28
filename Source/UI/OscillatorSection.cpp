@@ -38,7 +38,13 @@ namespace B33p
     void OscillatorSection::onWaveformChanged()
     {
         const bool isCustom = waveformSelector.getSelectedId() == 6;
+        const bool wasVisible = customEditButton.isVisible();
         customEditButton.setVisible(isCustom);
+        // setVisible doesn't re-run resized() on its own, so the
+        // button would otherwise sit at (0,0,0,0). Re-layout when
+        // the visibility actually changed.
+        if (wasVisible != isCustom)
+            resized();
         // If we already had the editor open, swing it onto the
         // currently-selected lane (the user may have flipped this
         // lane to Custom mid-session).
