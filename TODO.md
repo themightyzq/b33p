@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current phase: Beyond MVP — pick from the post-MVP roadmap below**
+> **Current focus: v0.2 polish & doc sweep — close the gap between the README and the build, then resume the post-MVP roadmap below**
 
 ---
 
@@ -174,6 +174,34 @@ Goal: each of the 4 lanes owns its own synth voice, so the user can layer differ
 ### Workflow
 - [x] "Copy lane settings to all" — fan out one voice's settings to all 4 lanes (Lane menu)
 - [x] Per-lane "Reset voice to defaults" in a context menu (Lane menu)
+
+---
+
+## v0.2 polish & doc sweep
+
+End-user review surfaced a stack of items that all amount to "the README and the build no longer agree, and the build itself has a few discoverability gaps that a fresh user would hit". Ordered by user-visible impact within each group.
+
+### Documentation
+- [ ] **README sweep** — quickstart, shortcut table, features list, status badge, screenshot caption all reference UI that doesn't exist (Pre-alpha status, "big Dice at top", "Pattern tab", `Cmd+D` / `Cmd+E` shortcuts, musical-grid-snap promise, "Coming after v0.1" listing Custom Waveforms + Multi-voice). [major: turn-off-at-first-glance]
+- [ ] **Refresh hero screenshot** — current one predates the Lane menu, "(Lane N)" section suffixes, Mute/Solo per-lane buttons, Randomize buttons, Custom waveform. Caption references "(D)" / "(L)" letter buttons; they're icons now. [minor]
+- [ ] **`docs/USAGE.md`** — per-lane mental model, every keyboard shortcut, custom-waveform workflow, generate / clear lane via right-click, click-ruler-to-park-playhead. [minor]
+
+### Missing user-facing features
+- [ ] **Audio settings menu** — JUCE `AudioDeviceSelectorComponent` in an Options menu. Without it, a user whose default output isn't usable has no in-app recovery. [major]
+- [ ] **Edit menu enrichment** — add Copy / Paste / Select All / Deselect entries that show their shortcuts (Cmd+C/V/A, Esc), plus an arrow-nudge note. Half the editing shortcuts are otherwise undiscoverable. [major]
+- [ ] **Generate / Clear lane in the Lane menu** — currently right-click only on empty lane area; both are otherwise invisible. [minor]
+- [ ] **Tiny output level meter in Master section** — user has no visual feedback that audio is happening. [minor]
+
+### Confusing UX
+- [ ] **Explain "(Lane N)" in voice section titles** — fresh users have no in-app explanation that each lane has its own voice. Add a help blurb in About, or a one-line banner above the voice editor on first launch. [major]
+- [ ] **Pitch Envelope panel needs a "(shared across lanes)" suffix** — current asymmetry implies the curve is per-lane when it's actually shared. [minor]
+- [ ] **Visual cue when a Move drag hits the pattern wall** — currently silent clamp. [minor]
+- [ ] **Custom oscillator: explain the visual sine is a placeholder** — small footer note in the editor: "Drawing replaces the default sine cycle." [minor]
+
+### Nice-to-have polish
+- [ ] **Per-lane background tint** in the voice editor sections so the "(Lane N)" suffix matches a visual cue and lane switching is obviously different.
+- [ ] **Recent Files submenu** in File.
+- [ ] **About dialog hyperlink to the GitHub repo.**
 
 ---
 
