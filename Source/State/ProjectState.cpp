@@ -30,6 +30,7 @@ namespace B33p::ProjectState
         const juce::Identifier kLaneName              { "name" };
         const juce::Identifier kLaneMuted             { "muted" };
         const juce::Identifier kLaneSoloed            { "soloed" };
+        const juce::Identifier kLaneCustomWaveform    { "custom_waveform" };
         const juce::Identifier kEvent                 { "EVENT" };
         const juce::Identifier kEventStart            { "start_seconds" };
         const juce::Identifier kEventDuration         { "duration_seconds" };
@@ -78,6 +79,23 @@ namespace B33p::ProjectState
             laneNode.setProperty(kLaneName,   pattern.getLaneName(laneIdx),      nullptr);
             laneNode.setProperty(kLaneMuted,  pattern.isLaneMuted(laneIdx),      nullptr);
             laneNode.setProperty(kLaneSoloed, pattern.isLaneSoloed(laneIdx),     nullptr);
+
+            // Custom oscillator table — serialised as a comma-
+            // separated string so it round-trips through XML
+            // cleanly. Empty / unset = lanes that have never had
+            // their Custom waveform edited.
+            const auto table = processor.getCustomWaveformCopy(laneIdx);
+            if (! table.empty())
+            {
+                juce::String csv;
+                csv.preallocateBytes(table.size() * 8);
+                for (size_t i = 0; i < table.size(); ++i)
+                {
+                    if (i > 0) csv += ",";
+                    csv += juce::String(table[i], 4);
+                }
+                laneNode.setProperty(kLaneCustomWaveform, csv, nullptr);
+            }
 
             for (const auto& e : pattern.getEvents(laneIdx))
             {
@@ -246,6 +264,20 @@ namespace B33p::ProjectState
             pattern.setLaneName  (laneIdx, laneNode.getProperty(kLaneName,  juce::String{}).toString());
             pattern.setLaneMuted (laneIdx, static_cast<bool>(laneNode.getProperty(kLaneMuted,  false)));
             pattern.setLaneSoloed(laneIdx, static_cast<bool>(laneNode.getProperty(kLaneSoloed, false)));
+
+            // Custom waveform table (CSV of N float samples).
+            const auto csv = laneNode.getProperty(kLaneCustomWaveform,
+                                                   juce::String{}).toString();
+            if (csv.isNotEmpty())
+            {
+                juce::StringArray parts;
+                parts.addTokens(csv, ",", "");
+                std::vector<float> table;
+                table.reserve(static_cast<size_t>(parts.size()));
+                for (const auto& p : parts)
+                    table.push_back(p.getFloatValue());
+                processor.setCustomWaveform(laneIdx, std::move(table));
+            }
 
             for (auto eventNode : laneNode)
             {

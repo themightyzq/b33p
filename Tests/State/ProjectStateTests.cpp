@@ -40,6 +40,13 @@ namespace
         pattern.setLaneName(0, "Body");                    // non-default name
         pattern.setLaneName(2, "Tail");
         pattern.setLaneMuted(1, true);                     // non-default mute
+
+        // Non-default custom waveform on lane 0 — small ramp.
+        std::vector<float> ramp(8);
+        for (size_t i = 0; i < ramp.size(); ++i)
+            ramp[i] = -1.0f + 2.0f * static_cast<float>(i) / static_cast<float>(ramp.size() - 1);
+        processor.setCustomWaveform(0, std::move(ramp));
+
         processor.setLooping(false);
 
         // Lock a couple of parameters.
@@ -136,6 +143,14 @@ TEST_CASE("ProjectState: round-trip preserves pattern length, loop and events",
                 == restored.getPattern().getLaneName(lane));
         REQUIRE(original.getPattern().isLaneMuted(lane)
                 == restored.getPattern().isLaneMuted(lane));
+
+        // Custom waveform table (if any) round-trips sample-for-sample
+        // within float-CSV precision.
+        const auto wfA = original.getCustomWaveformCopy(lane);
+        const auto wfB = restored.getCustomWaveformCopy(lane);
+        REQUIRE(wfA.size() == wfB.size());
+        for (size_t i = 0; i < wfA.size(); ++i)
+            REQUIRE(wfA[i] == Approx(wfB[i]).margin(1e-3f));
     }
 }
 
