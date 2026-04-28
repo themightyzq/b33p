@@ -13,7 +13,8 @@ namespace B33p
         constexpr int kDiceLockGap      = 4;
     }
 
-    LabeledSlider::LabeledSlider(const juce::String& name)
+    LabeledSlider::LabeledSlider(const juce::String& name, bool showRandomizer)
+        : randomizerVisible(showRandomizer)
     {
         slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
@@ -29,13 +30,18 @@ namespace B33p
         label.setFont(juce::FontOptions(11.0f));
         addAndMakeVisible(label);
 
-        addAndMakeVisible(diceButton);
-        addAndMakeVisible(lockButton);
+        if (randomizerVisible)
+        {
+            addAndMakeVisible(diceButton);
+            addAndMakeVisible(lockButton);
+        }
     }
 
     void LabeledSlider::attachRandomizer(B33pProcessor& processor,
                                           const juce::String& parameterID)
     {
+        if (! randomizerVisible)
+            return;
         wireRandomizerButtons(processor, diceButton, lockButton, parameterID);
     }
 
@@ -50,12 +56,21 @@ namespace B33p
         auto bounds = getLocalBounds();
         label.setBounds(bounds.removeFromTop(kLabelHeight));
 
-        auto diceLockRow = bounds.removeFromBottom(kDiceLockHeight);
-        slider.setBounds(bounds);
+        if (randomizerVisible)
+        {
+            auto diceLockRow = bounds.removeFromBottom(kDiceLockHeight);
+            slider.setBounds(bounds);
 
-        const int cellWidth = (diceLockRow.getWidth() - kDiceLockGap) / 2;
-        diceButton.setBounds(diceLockRow.removeFromLeft(cellWidth));
-        diceLockRow.removeFromLeft(kDiceLockGap);
-        lockButton.setBounds(diceLockRow);
+            const int cellWidth = (diceLockRow.getWidth() - kDiceLockGap) / 2;
+            diceButton.setBounds(diceLockRow.removeFromLeft(cellWidth));
+            diceLockRow.removeFromLeft(kDiceLockGap);
+            lockButton.setBounds(diceLockRow);
+        }
+        else
+        {
+            // No randomizer row — slider gets the whole remaining
+            // height for its rotary visual.
+            slider.setBounds(bounds);
+        }
     }
 }

@@ -19,14 +19,18 @@ namespace B33p
     class LabeledSlider : public juce::Component
     {
     public:
-        explicit LabeledSlider(const juce::String& name);
+        // showRandomizer = false suppresses the dice + lock buttons
+        // (and their layout footprint). Used for parameters that
+        // shouldn't be randomized at all — currently the master
+        // gain, where a sudden +20 dB jump would blow ears out.
+        explicit LabeledSlider(const juce::String& name,
+                               bool showRandomizer = true);
 
         juce::Slider& getSlider() { return slider; }
 
         // Connects the dice + lock buttons to the processor's
-        // randomizer for the given parameter ID. Safe to call before
-        // any SliderAttachment is created — it only touches the
-        // button state and the Randomizer's lock set.
+        // randomizer for the given parameter ID. No-op when the
+        // slider was constructed with showRandomizer = false.
         void attachRandomizer(B33pProcessor& processor,
                               const juce::String& parameterID);
 
@@ -42,6 +46,7 @@ namespace B33p
         juce::Label  label;
         IconButton   diceButton { IconButton::Glyph::Die  };
         IconButton   lockButton { IconButton::Glyph::Lock };
+        bool         randomizerVisible { true };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LabeledSlider)
     };

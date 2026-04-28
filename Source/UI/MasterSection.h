@@ -26,7 +26,9 @@ namespace B33p
 
         B33pProcessor& processor;
 
-        LabeledSlider    gainSlider     { "Gain" };
+        // Gain explicitly opts out of the randomizer — too easy
+        // to blast the user with a random +20 dB jump otherwise.
+        LabeledSlider    gainSlider     { "Gain", /*showRandomizer=*/ false };
         juce::TextButton auditionButton { "Audition" };
         juce::TextButton diceAllButton  { "Dice All" };
 
