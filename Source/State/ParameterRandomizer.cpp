@@ -4,6 +4,26 @@
 
 namespace B33p
 {
+    namespace
+    {
+        // Per-parameter ceiling for "what fraction of the full
+        // normalised range can a roll touch?". 1.0 = no cap.
+        // Manual editing always has the full parameter range; only
+        // rolls are clamped.
+        //
+        // amp_release is capped at 100 ms because longer random
+        // releases bleed into following beeps and made the user's
+        // patterns sound smeared / unintentional.
+        float randomizationCeiling(const juce::String& id,
+                                    juce::AudioProcessorValueTreeState& apvts)
+        {
+            if (id.endsWith("_amp_release"))
+                if (auto* p = apvts.getParameter(id))
+                    return p->getNormalisableRange().convertTo0to1(0.1f);
+            return 1.0f;
+        }
+    }
+
     ParameterRandomizer::ParameterRandomizer(juce::AudioProcessorValueTreeState& apvtsRef)
         : apvts(apvtsRef)
     {
@@ -46,7 +66,8 @@ namespace B33p
         if (param == nullptr)
             return false;
 
-        param->setValueNotifyingHost(rng.nextFloat());
+        const float ceiling = randomizationCeiling(parameterID, apvts);
+        param->setValueNotifyingHost(rng.nextFloat() * ceiling);
         return true;
     }
 

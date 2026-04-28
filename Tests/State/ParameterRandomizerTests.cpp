@@ -42,6 +42,24 @@ TEST_CASE("ParameterRandomizer: rollOne on a locked parameter is a no-op", "[sta
     REQUIRE(apvts.getRawParameterValue(id)->load() == before);
 }
 
+TEST_CASE("ParameterRandomizer: rolled amp_release stays at or below 100 ms",
+          "[state][randomizer]")
+{
+    B33p::B33pProcessor processor;
+    auto& apvts = processor.getApvts();
+    B33p::ParameterRandomizer randomizer(apvts);
+    juce::Random rng(42);
+
+    const juce::String id = B33p::ParameterIDs::ampRelease(0);
+    for (int i = 0; i < 100; ++i)
+    {
+        randomizer.rollOne(id, rng);
+        const float v = apvts.getRawParameterValue(id)->load();
+        INFO("iteration " << i << " value " << v);
+        REQUIRE(v <= 0.1f + 1e-4f);
+    }
+}
+
 TEST_CASE("ParameterRandomizer: rollOne on an unknown parameter ID safely returns false", "[state][randomizer]")
 {
     B33p::B33pProcessor processor;
