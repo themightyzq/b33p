@@ -182,12 +182,12 @@ Goal: each of the 4 lanes owns its own synth voice, so the user can layer differ
 End-user review surfaced a stack of items that all amount to "the README and the build no longer agree, and the build itself has a few discoverability gaps that a fresh user would hit". Ordered by user-visible impact within each group.
 
 ### Documentation
-- [ ] **README sweep** — quickstart, shortcut table, features list, status badge, screenshot caption all reference UI that doesn't exist (Pre-alpha status, "big Dice at top", "Pattern tab", `Cmd+D` / `Cmd+E` shortcuts, musical-grid-snap promise, "Coming after v0.1" listing Custom Waveforms + Multi-voice). [major: turn-off-at-first-glance]
-- [ ] **Refresh hero screenshot** — current one predates the Lane menu, "(Lane N)" section suffixes, Mute/Solo per-lane buttons, Randomize buttons, Custom waveform. Caption references "(D)" / "(L)" letter buttons; they're icons now. [minor]
+- [x] **README sweep** — quickstart, shortcut table, features list, status badge, screenshot caption all reference UI that doesn't exist (Pre-alpha status, "big Dice at top", "Pattern tab", `Cmd+D` / `Cmd+E` shortcuts, musical-grid-snap promise, "Coming after v0.1" listing Custom Waveforms + Multi-voice). [major: turn-off-at-first-glance]
+- [x] **Refresh hero screenshot** — current one predates the Lane menu, "(Lane N)" section suffixes, Mute/Solo per-lane buttons, Randomize buttons, Custom waveform. Caption references "(D)" / "(L)" letter buttons; they're icons now. [minor]
 - [ ] **`docs/USAGE.md`** — per-lane mental model, every keyboard shortcut, custom-waveform workflow, generate / clear lane via right-click, click-ruler-to-park-playhead. [minor]
 
 ### Missing user-facing features
-- [ ] **Audio settings menu** — JUCE `AudioDeviceSelectorComponent` in an Options menu. Without it, a user whose default output isn't usable has no in-app recovery. [major]
+- [x] **Audio settings menu** — JUCE `AudioDeviceSelectorComponent` in an Options menu. Without it, a user whose default output isn't usable has no in-app recovery. [major]
 - [ ] **Edit menu enrichment** — add Copy / Paste / Select All / Deselect entries that show their shortcuts (Cmd+C/V/A, Esc), plus an arrow-nudge note. Half the editing shortcuts are otherwise undiscoverable. [major]
 - [ ] **Generate / Clear lane in the Lane menu** — currently right-click only on empty lane area; both are otherwise invisible. [minor]
 - [ ] **Tiny output level meter in Master section** — user has no visual feedback that audio is happening. [minor]

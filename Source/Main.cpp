@@ -34,7 +34,9 @@ namespace B33p
             processorPlayer->setProcessor(processor.get());
             deviceManager->addAudioCallback(processorPlayer.get());
 
-            mainWindow = std::make_unique<MainWindow>(getApplicationName(), *processor);
+            mainWindow = std::make_unique<MainWindow>(getApplicationName(),
+                                                       *processor,
+                                                       *deviceManager);
 
             handleCommandLineFile(commandLine);
         }
@@ -96,7 +98,9 @@ namespace B33p
         class MainWindow : public juce::DocumentWindow
         {
         public:
-            MainWindow(const juce::String& name, B33pProcessor& processorRef)
+            MainWindow(const juce::String& name,
+                       B33pProcessor& processorRef,
+                       juce::AudioDeviceManager& deviceManagerRef)
                 : DocumentWindow(name,
                                  juce::Desktop::getInstance()
                                      .getDefaultLookAndFeel()
@@ -104,7 +108,7 @@ namespace B33p
                                  DocumentWindow::allButtons)
             {
                 setUsingNativeTitleBar(true);
-                auto* component = new MainComponent(processorRef);
+                auto* component = new MainComponent(processorRef, deviceManagerRef);
                 mainComponent = component;
                 setContentOwned(component, true);
                 setResizable(true, false);

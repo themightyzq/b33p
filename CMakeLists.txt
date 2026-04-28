@@ -62,6 +62,7 @@ target_sources(B33p PRIVATE
     Source/State/ProjectState.cpp
     Source/UI/AmpEnvSection.cpp
     Source/UI/AmpEnvelopeVisualizer.cpp
+    Source/UI/AudioSettingsWindow.cpp
     Source/UI/EffectsSection.cpp
     Source/UI/ExportDialog.cpp
     Source/UI/ExportTask.cpp

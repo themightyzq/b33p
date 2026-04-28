@@ -20,6 +20,7 @@ namespace B33p
             FileOpen,
             FileSave,
             FileSaveAs,
+            FileAudioSettings,
             EditUndo,
             EditRedo,
             LaneCopyToAll,
@@ -29,8 +30,10 @@ namespace B33p
         };
     }
 
-    MainComponent::MainComponent(B33pProcessor& processorRef)
+    MainComponent::MainComponent(B33pProcessor& processorRef,
+                                  juce::AudioDeviceManager& deviceManagerRef)
         : processor(processorRef),
+          deviceManager(deviceManagerRef),
           fileManager(processorRef),
           oscillatorSection   (processor),
           ampEnvelopeSection  (processor),
@@ -306,6 +309,8 @@ namespace B33p
                 m.addSeparator();
                 m.addItem(withShortcut(MenuId::FileSave,   "Save",       "Cmd+S"));
                 m.addItem(withShortcut(MenuId::FileSaveAs, "Save As...", "Cmd+Shift+S"));
+                m.addSeparator();
+                m.addItem(withShortcut(MenuId::FileAudioSettings, "Audio Settings...", ""));
                 break;
             case 1: // Edit
                 m.addItem(withShortcut(MenuId::EditUndo, "Undo", "Cmd+Z",
@@ -342,8 +347,9 @@ namespace B33p
             case MenuId::FileOpen:
                 confirmDiscardThen([this] { fileManager.open(this); });
                 break;
-            case MenuId::FileSave:   fileManager.save  (this);                  break;
-            case MenuId::FileSaveAs: fileManager.saveAs(this);                  break;
+            case MenuId::FileSave:           fileManager.save  (this);          break;
+            case MenuId::FileSaveAs:         fileManager.saveAs(this);          break;
+            case MenuId::FileAudioSettings:  showAudioSettings();               break;
             case MenuId::EditUndo:   processor.getUndoManager().undo();         break;
             case MenuId::EditRedo:   processor.getUndoManager().redo();         break;
             case MenuId::LaneCopyToAll:
@@ -359,6 +365,14 @@ namespace B33p
             case MenuId::HelpAbout:  showAboutDialog();                         break;
             default:                                                            break;
         }
+    }
+
+    void MainComponent::showAudioSettings()
+    {
+        if (audioSettingsWindow == nullptr)
+            audioSettingsWindow = std::make_unique<AudioSettingsWindow>(deviceManager);
+        audioSettingsWindow->setVisible(true);
+        audioSettingsWindow->toFront(true);
     }
 
     void MainComponent::showAboutDialog()
