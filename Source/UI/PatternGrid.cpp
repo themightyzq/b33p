@@ -397,19 +397,42 @@ namespace B33p
                              frame.getX() + kLaneLabelWidth,
                              frame.getRight());
 
-        // Ruler second labels
-        g.setColour(juce::Colour::fromRGB(170, 170, 170));
-        g.setFont(juce::FontOptions(10.0f));
-        const int lastSec = static_cast<int>(std::floor(length));
-        for (int s = 0; s <= lastSec; ++s)
+        // Ruler row — slightly raised background + tick marks at
+        // every second so the user can SEE it as a clickable strip
+        // (clicking it parks the playhead).
         {
-            const float x = secondsToX(static_cast<double>(s));
-            g.drawText(juce::String(s) + "s",
-                       juce::Rectangle<float>(x + 2.0f,
-                                              frame.getY() + 2.0f,
-                                              30.0f,
-                                              kRulerHeight - 4.0f),
-                       juce::Justification::centredLeft);
+            auto rulerRow = juce::Rectangle<float>(
+                frame.getX() + kLaneLabelWidth,
+                frame.getY(),
+                frame.getWidth() - kLaneLabelWidth,
+                kRulerHeight);
+            g.setColour(juce::Colour::fromRGB(40, 40, 40));
+            g.fillRect(rulerRow);
+
+            // Tick marks across the bottom of the ruler.
+            g.setColour(juce::Colour::fromRGB(100, 100, 100));
+            const int lastSec = static_cast<int>(std::floor(length));
+            for (int s = 0; s <= lastSec; ++s)
+            {
+                const float x = secondsToX(static_cast<double>(s));
+                g.drawVerticalLine(static_cast<int>(std::round(x)),
+                                    rulerRow.getBottom() - 4.0f,
+                                    rulerRow.getBottom());
+            }
+
+            // Second labels.
+            g.setColour(juce::Colour::fromRGB(190, 190, 190));
+            g.setFont(juce::FontOptions(10.0f));
+            for (int s = 0; s <= lastSec; ++s)
+            {
+                const float x = secondsToX(static_cast<double>(s));
+                g.drawText(juce::String(s) + "s",
+                           juce::Rectangle<float>(x + 2.0f,
+                                                  rulerRow.getY() + 1.0f,
+                                                  30.0f,
+                                                  kRulerHeight - 6.0f),
+                           juce::Justification::centredLeft);
+            }
         }
 
         // Lane labels are juce::Label children — see resized() and the

@@ -13,6 +13,7 @@ namespace B33p
         constexpr int  kControlsGap     = 6;
         constexpr int  kButtonWidth     = 80;
         constexpr int  kExportWidth     = 90;
+        constexpr int  kRandomizeWidth  = 120;
         constexpr int  kComboWidth      = 110;
         constexpr int  kLabelWidth      = 50;
         constexpr int  kTimeWidth       = 90;
@@ -147,16 +148,24 @@ namespace B33p
         gridCombo.onChange = [this] { onGridChanged(); };
         addAndMakeVisible(gridCombo);
 
-        // Export button (right-aligned to separate the action from
-        // playback / editing controls).
+        // Randomize-all and Export buttons (right-aligned to separate
+        // the action group from playback / editing controls).
+        randomizeAllButton.onClick = [this]
+        {
+            juce::Random rng;
+            processor.getRandomizer().rollAllUnlocked(rng);
+        };
+        addAndMakeVisible(randomizeAllButton);
+
         exportButton.onClick = [this] { onExportClicked(); };
         addAndMakeVisible(exportButton);
 
-        playButton  .setTooltip("Play the pattern from the start (Space)");
-        loopToggle  .setTooltip("Loop playback when the end is reached");
-        lengthCombo .setTooltip("Total length of the pattern");
-        gridCombo   .setTooltip("Snap event positions to this grid (Off = free)");
-        exportButton.setTooltip("Render the pattern to a WAV file");
+        playButton        .setTooltip("Play the pattern from the start (Space)");
+        loopToggle        .setTooltip("Loop playback when the end is reached");
+        lengthCombo       .setTooltip("Total length of the pattern");
+        gridCombo         .setTooltip("Snap event positions to this grid (Off = free)");
+        randomizeAllButton.setTooltip("Randomize every unlocked parameter across all 4 lanes");
+        exportButton      .setTooltip("Render the pattern to a WAV file");
 
         startTimerHz(kRepaintHz);
     }
@@ -274,9 +283,11 @@ namespace B33p
         auto controlsRow = bounds.removeFromTop(kControlsHeight);
         bounds.removeFromTop(kControlsGap);
 
-        // Right-align Export to separate the action from the
-        // play/edit controls on the left.
-        exportButton.setBounds(controlsRow.removeFromRight(kExportWidth));
+        // Right-align Export + Randomize All to separate the action
+        // group from the play/edit controls on the left.
+        exportButton      .setBounds(controlsRow.removeFromRight(kExportWidth));
+        controlsRow.removeFromRight(kControlsGap);
+        randomizeAllButton.setBounds(controlsRow.removeFromRight(kRandomizeWidth));
         controlsRow.removeFromRight(kControlsGap);
 
         playButton.setBounds(controlsRow.removeFromLeft(kButtonWidth));

@@ -320,7 +320,7 @@ namespace B33p
                 m.addItem(MenuId::LaneCopyToAll,  "Copy " + tag + " voice to all lanes");
                 m.addItem(MenuId::LaneResetVoice, "Reset " + tag + " voice to defaults");
                 m.addSeparator();
-                m.addItem(MenuId::LaneDiceAll,    "Dice All Lanes (every unlocked param)");
+                m.addItem(MenuId::LaneDiceAll,    "Randomize All Lanes (every unlocked param)");
                 break;
             }
             case 3: // Help
