@@ -173,6 +173,11 @@ namespace B33p
         // the user sees where the event will land before releasing.
         double snapPreviewSeconds { -1.0 };
 
+        // Set during mouseDrag when the requested position was
+        // clamped against a pattern boundary — paints the snap
+        // preview line red as a "you hit the wall" cue.
+        bool   dragClampedAtWall  { false };
+
         // Internal app clipboard — what Cmd+C captured. Each entry
         // stores a lane and an Event whose startSeconds is RELATIVE
         // to the earliest copied event so paste can drop the group

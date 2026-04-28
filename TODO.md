@@ -195,7 +195,7 @@ End-user review surfaced a stack of items that all amount to "the README and the
 ### Confusing UX
 - [x] **Explain "(Lane N)" in voice section titles** — fresh users have no in-app explanation that each lane has its own voice. Add a help blurb in About, or a one-line banner above the voice editor on first launch. [major]
 - [x] **Pitch Envelope panel needs a "(shared across lanes)" suffix** — current asymmetry implies the curve is per-lane when it's actually shared. [minor]
-- [ ] **Visual cue when a Move drag hits the pattern wall** — currently silent clamp. [minor]
+- [x] **Visual cue when a Move drag hits the pattern wall** — currently silent clamp. [minor]
 - [x] **Custom oscillator: explain the visual sine is a placeholder** — small footer note in the editor: "Drawing replaces the default sine cycle." [minor]
 
 ### Nice-to-have polish
