@@ -45,9 +45,13 @@ namespace B33p
                 juce::StringArray { "Sine", "Square", "Triangle", "Saw", "Noise" },
                 0));
 
+            // Tightened to "musical beep" range so randomisation
+            // can't produce inaudible sub-20 Hz or above-4 kHz
+            // squeals. 80 Hz = E2-ish, 4 kHz = above the highest
+            // beep most projects need.
             layout.add(makeFloat(ParameterIDs::basePitchHz(lane),
                                  prefix + "Base Pitch",
-                                 skewedRange(20.0f, 20000.0f, 440.0f),
+                                 skewedRange(80.0f, 4000.0f, 440.0f),
                                  440.0f, "Hz"));
 
             layout.add(makeFloat(ParameterIDs::ampAttack(lane),
@@ -70,9 +74,12 @@ namespace B33p
                                  skewedRange(0.0f, 5.0f, 0.1f),
                                  0.1f, "s"));
 
+            // 200 Hz lower bound: a randomised cutoff can't drop
+            // below the fundamental of the lowest pitch and silence
+            // the voice.
             layout.add(makeFloat(ParameterIDs::filterCutoffHz(lane),
                                  prefix + "Filter Cutoff",
-                                 skewedRange(20.0f, 20000.0f, 1000.0f),
+                                 skewedRange(200.0f, 20000.0f, 1000.0f),
                                  20000.0f, "Hz"));
 
             layout.add(makeFloat(ParameterIDs::filterResonanceQ(lane),
@@ -85,9 +92,12 @@ namespace B33p
                                  juce::NormalisableRange<float> { 1.0f, 16.0f },
                                  16.0f, "bits"));
 
+            // 1 kHz lower bound: a randomised sample rate can't
+            // drop below ~Nyquist of the lowest pitch and silence
+            // / completely-alias the voice.
             layout.add(makeFloat(ParameterIDs::bitcrushSampleRateHz(lane),
                                  prefix + "Crush Sample Rate",
-                                 skewedRange(200.0f, 48000.0f, 8000.0f),
+                                 skewedRange(1000.0f, 48000.0f, 8000.0f),
                                  48000.0f, "Hz"));
 
             layout.add(makeFloat(ParameterIDs::distortionDrive(lane),

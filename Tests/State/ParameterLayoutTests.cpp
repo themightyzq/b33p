@@ -60,15 +60,15 @@ TEST_CASE("ParameterLayout: continuous parameters have correct ranges and defaul
     // Spot-check lane 0; the layout function uses a single shared
     // body for every lane so checking one lane confirms the recipe.
     const FloatExpectation expectations[] = {
-        { B33p::ParameterIDs::basePitchHz(0),          20.0f,    20000.0f, 440.0f  },
+        { B33p::ParameterIDs::basePitchHz(0),          80.0f,    4000.0f,  440.0f  },
         { B33p::ParameterIDs::ampAttack(0),            0.0f,     5.0f,     0.005f  },
         { B33p::ParameterIDs::ampDecay(0),             0.0f,     5.0f,     0.05f   },
         { B33p::ParameterIDs::ampSustain(0),           0.0f,     1.0f,     1.0f    },
         { B33p::ParameterIDs::ampRelease(0),           0.0f,     5.0f,     0.1f    },
-        { B33p::ParameterIDs::filterCutoffHz(0),       20.0f,    20000.0f, 20000.0f },
+        { B33p::ParameterIDs::filterCutoffHz(0),       200.0f,   20000.0f, 20000.0f },
         { B33p::ParameterIDs::filterResonanceQ(0),     0.1f,     20.0f,    0.707f  },
         { B33p::ParameterIDs::bitcrushBitDepth(0),     1.0f,     16.0f,    16.0f   },
-        { B33p::ParameterIDs::bitcrushSampleRateHz(0), 200.0f,   48000.0f, 48000.0f },
+        { B33p::ParameterIDs::bitcrushSampleRateHz(0), 1000.0f,  48000.0f, 48000.0f },
         { B33p::ParameterIDs::distortionDrive(0),      0.1f,     100.0f,   1.0f    },
         { B33p::ParameterIDs::voiceGain(0),            0.0f,     10.0f,    1.0f    },
     };
