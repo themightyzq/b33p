@@ -90,6 +90,23 @@ namespace B33p
         return pitchCurve;
     }
 
+    void B33pProcessor::setCustomWaveform(int lane, std::vector<float> samples)
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return;
+        auto next = std::make_shared<const std::vector<float>>(std::move(samples));
+        std::atomic_store(&customWaveformSlots[static_cast<size_t>(lane)], next);
+        markDirty();
+    }
+
+    std::vector<float> B33pProcessor::getCustomWaveformCopy(int lane) const
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return {};
+        auto current = std::atomic_load(&customWaveformSlots[static_cast<size_t>(lane)]);
+        return current ? *current : std::vector<float>{};
+    }
+
     void B33pProcessor::getStateInformation(juce::MemoryBlock& destData)
     {
         const auto xml = ProjectState::toXmlString(ProjectState::save(*this));
@@ -253,6 +270,9 @@ namespace B33p
 
         setPitchCurve({ { 0.0f, 0.0f }, { 1.0f, 0.0f } });
 
+        for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+            setCustomWaveform(lane, {});
+
         pattern.clearAll();
         pattern.resetAllLaneMeta();
         pattern.setLengthSeconds(Pattern::kDefaultLengthSeconds);
@@ -285,6 +305,22 @@ namespace B33p
             juce::jlimit(0, 5, static_cast<int>(wfParam->load()))));
 
         v.setBasePitchHz         (apvts.getRawParameterValue(ParameterIDs::basePitchHz(lane))->load());
+
+        // Push the lane's custom waveform table to the voice only
+        // when it has actually changed since last push — keeps the
+        // common no-edit path zero-cost (one atomic_load + pointer
+        // compare).
+        {
+            auto current = std::atomic_load(&customWaveformSlots[static_cast<size_t>(lane)]);
+            if (current != lastPushedCustomTables[static_cast<size_t>(lane)])
+            {
+                if (current != nullptr)
+                    v.setCustomWaveformTable(*current);
+                else
+                    v.setCustomWaveformTable({});
+                lastPushedCustomTables[static_cast<size_t>(lane)] = current;
+            }
+        }
         v.setAmpAttack           (apvts.getRawParameterValue(ParameterIDs::ampAttack(lane))->load());
         v.setAmpDecay            (apvts.getRawParameterValue(ParameterIDs::ampDecay(lane))->load());
         v.setAmpSustain          (apvts.getRawParameterValue(ParameterIDs::ampSustain(lane))->load());
