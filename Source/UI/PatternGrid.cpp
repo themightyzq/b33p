@@ -338,8 +338,11 @@ namespace B33p
             HitResult r;
             r.lane  = lane;
             r.index = i;
+            // L/R edges win over top edge in the corners — horizontal
+            // resize is the more common gesture.
             if      (p.x <= rect.getX()     + kResizeEdgeWidth) r.kind = HitResult::Kind::LeftEdge;
             else if (p.x >= rect.getRight() - kResizeEdgeWidth) r.kind = HitResult::Kind::RightEdge;
+            else if (p.y <= rect.getY()     + kResizeEdgeWidth) r.kind = HitResult::Kind::TopEdge;
             else                                                r.kind = HitResult::Kind::Body;
             return r;
         }
@@ -779,11 +782,12 @@ namespace B33p
 
         switch (hit.kind)
         {
-            case HitResult::Kind::LeftEdge:  dragMode = DragMode::ResizeLeft;  break;
-            case HitResult::Kind::RightEdge: dragMode = DragMode::ResizeRight; break;
+            case HitResult::Kind::LeftEdge:  dragMode = DragMode::ResizeLeft;   break;
+            case HitResult::Kind::RightEdge: dragMode = DragMode::ResizeRight;  break;
+            case HitResult::Kind::TopEdge:   dragMode = DragMode::DragVelocity; break;
             case HitResult::Kind::Body:
             case HitResult::Kind::None:
-            default:                         dragMode = DragMode::Move;        break;
+            default:                         dragMode = DragMode::Move;         break;
         }
         dragStartSeconds  = xToSeconds(e.position.x);
         dragOriginalEvent = processor.getPattern().getEvents(hit.lane)[hit.index];
@@ -915,6 +919,22 @@ namespace B33p
             snapPreviewSeconds      = newStart;
             pattern.updateEvent(primary.lane, primary.index, current);
         }
+        else if (dragMode == DragMode::DragVelocity)
+        {
+            // Clip is centred in its lane row; height = lane_h *
+            // velocity. Cursor y above the centre = velocity > 0,
+            // at centre = 0, below = clamped to 0. Distance from
+            // centre normalised to (lane_h / 2) gives the new
+            // velocity in [0, 1].
+            Event current  = dragOriginalEvent;
+            const auto laneRectF = laneArea(primary.lane).reduced(0.0f, kLaneInset);
+            const float halfH    = laneRectF.getHeight() * 0.5f;
+            const float centreY  = laneRectF.getCentreY();
+            const float v        = juce::jlimit(0.0f, 1.0f,
+                (centreY - e.position.y) / halfH);
+            current.velocity = v;
+            pattern.updateEvent(primary.lane, primary.index, current);
+        }
 
         processor.markDirty();
         // Push the live drag state into the audio thread immediately
@@ -942,11 +962,13 @@ namespace B33p
             repaint();
         }
 
-        // Cursor affordance: edge = resize, body = drag, lane row =
+        // Cursor affordance: L/R edge = horizontal resize, top edge
+        // = vertical (velocity) drag, body = move, lane row =
         // crosshair (will create / select), elsewhere = normal.
         juce::MouseCursor cur { juce::MouseCursor::NormalCursor };
         if      (hit.kind == HitResult::Kind::LeftEdge
               || hit.kind == HitResult::Kind::RightEdge) cur = juce::MouseCursor::LeftRightResizeCursor;
+        else if (hit.kind == HitResult::Kind::TopEdge)   cur = juce::MouseCursor::UpDownResizeCursor;
         else if (hit.kind == HitResult::Kind::Body)      cur = juce::MouseCursor::DraggingHandCursor;
         else if (yToLane(e.position.y) >= 0)             cur = juce::MouseCursor::CrosshairCursor;
         setMouseCursor(cur);

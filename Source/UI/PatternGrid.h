@@ -97,11 +97,11 @@ namespace B33p
             Event     original;
         };
 
-        enum class DragMode { None, Move, ResizeLeft, ResizeRight, PendingCreate };
+        enum class DragMode { None, Move, ResizeLeft, ResizeRight, DragVelocity, PendingCreate };
 
         struct HitResult
         {
-            enum class Kind { None, Body, LeftEdge, RightEdge } kind { Kind::None };
+            enum class Kind { None, Body, LeftEdge, RightEdge, TopEdge } kind { Kind::None };
             int         lane  { -1 };
             std::size_t index {  0 };
         };
