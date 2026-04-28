@@ -242,6 +242,109 @@ namespace B33p
         repaint();
     }
 
+    bool PatternGrid::hasAnyEvents() const
+    {
+        for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+            if (! processor.getPattern().getEvents(lane).empty())
+                return true;
+        return false;
+    }
+
+    void PatternGrid::copySelectedToClipboard()
+    {
+        if (selection.empty())
+            return;
+
+        // Find the earliest selected event's start so the clipboard
+        // stores RELATIVE timing — paste then drops the group at the
+        // playhead with their inter-event spacing preserved.
+        double minStart = std::numeric_limits<double>::infinity();
+        for (const auto& sel : selection)
+        {
+            const auto& evs = processor.getPattern().getEvents(sel.lane);
+            if (sel.index < evs.size())
+                minStart = std::min(minStart, evs[sel.index].startSeconds);
+        }
+        if (! std::isfinite(minStart))
+            return;
+
+        clipboard.clear();
+        for (const auto& sel : selection)
+        {
+            const auto& evs = processor.getPattern().getEvents(sel.lane);
+            if (sel.index >= evs.size()) continue;
+            Event copy = evs[sel.index];
+            copy.startSeconds -= minStart;
+            clipboard.push_back({ sel.lane, copy });
+        }
+    }
+
+    void PatternGrid::pasteFromClipboardAtPlayhead()
+    {
+        if (clipboard.empty())
+            return;
+
+        auto& pattern = processor.getPattern();
+        const double base = processor.getPlayheadSeconds();
+        const double len  = pattern.getLengthSeconds();
+
+        Pattern before = pattern;
+        std::vector<Selection> newSelection;
+        for (const auto& clip : clipboard)
+        {
+            Event ev = clip.event;
+            ev.startSeconds += base;
+            if (ev.startSeconds < 0.0 || ev.startSeconds >= len)
+                continue;
+            pattern.addEvent(clip.lane, ev);
+            newSelection.push_back({ clip.lane,
+                                      pattern.getEvents(clip.lane).size() - 1 });
+        }
+        if (pattern == before)
+            return;
+        processor.markDirty();
+        selection = std::move(newSelection);
+        notifySelectionChanged();
+        repaint();
+
+        processor.getUndoManager().beginNewTransaction("Paste events");
+        processor.getUndoManager().perform(
+            new SetPatternAction(processor, this,
+                                 std::move(before),
+                                 pattern));
+    }
+
+    void PatternGrid::deleteSelected()
+    {
+        if (selection.empty())
+            return;
+
+        Pattern before = processor.getPattern();
+
+        // Delete from highest (lane, index) downwards so removing an
+        // earlier index in the same lane doesn't shift the later
+        // indices we still hold in `selection`.
+        auto sorted = selection;
+        std::sort(sorted.begin(), sorted.end(),
+            [](const Selection& a, const Selection& b)
+            {
+                if (a.lane != b.lane) return a.lane > b.lane;
+                return a.index > b.index;
+            });
+        for (const auto& sel : sorted)
+            processor.getPattern().removeEvent(sel.lane, sel.index);
+
+        processor.markDirty();
+        clearSelection();
+        repaint();
+
+        processor.getUndoManager().beginNewTransaction("Delete events");
+        processor.getUndoManager().perform(
+            new SetPatternAction(processor, this,
+                                 std::move(before),
+                                 processor.getPattern()));
+    }
+
     juce::Rectangle<float> PatternGrid::plotArea() const
     {
         return getLocalBounds().toFloat().reduced(kOuterInset);
@@ -1060,109 +1163,14 @@ namespace B33p
         const auto& mods = key.getModifiers();
         const bool  cmd  = mods.isCommandDown();
 
-        // Cmd+A — select all events.
-        if (cmd && key.getKeyCode() == 'A')
-        {
-            selectAll();
-            return true;
-        }
-
-        // Cmd+C — copy the selected events into the internal
-        // clipboard with their startSeconds rebased to the earliest
-        // selected event's start (so paste preserves their relative
-        // timing wherever it's pasted).
-        if (cmd && key.getKeyCode() == 'C')
-        {
-            if (selection.empty()) return true;
-
-            double minStart = std::numeric_limits<double>::infinity();
-            for (const auto& sel : selection)
-            {
-                const auto& evs = processor.getPattern().getEvents(sel.lane);
-                if (sel.index < evs.size())
-                    minStart = std::min(minStart, evs[sel.index].startSeconds);
-            }
-            if (! std::isfinite(minStart))
-                return true;
-
-            clipboard.clear();
-            for (const auto& sel : selection)
-            {
-                const auto& evs = processor.getPattern().getEvents(sel.lane);
-                if (sel.index >= evs.size()) continue;
-                Event copy = evs[sel.index];
-                copy.startSeconds -= minStart;
-                clipboard.push_back({ sel.lane, copy });
-            }
-            return true;
-        }
-
-        // Cmd+V — paste the clipboard at the playhead. Each clipboard
-        // item is a (lane, event-with-relative-start); rebase to the
-        // playhead's absolute time and add to the corresponding lane.
-        if (cmd && key.getKeyCode() == 'V')
-        {
-            if (clipboard.empty()) return true;
-
-            auto& pattern  = processor.getPattern();
-            const double base = processor.getPlayheadSeconds();
-            const double len  = pattern.getLengthSeconds();
-
-            Pattern before = pattern;
-            std::vector<Selection> newSelection;
-            for (const auto& clip : clipboard)
-            {
-                Event ev = clip.event;
-                ev.startSeconds += base;
-                if (ev.startSeconds < 0.0 || ev.startSeconds >= len)
-                    continue;
-                pattern.addEvent(clip.lane, ev);
-                newSelection.push_back({ clip.lane,
-                                          pattern.getEvents(clip.lane).size() - 1 });
-            }
-            if (pattern == before)
-                return true;
-            processor.markDirty();
-            selection = std::move(newSelection);
-            notifySelectionChanged();
-            repaint();
-
-            processor.getUndoManager().beginNewTransaction("Paste events");
-            processor.getUndoManager().perform(
-                new SetPatternAction(processor, this,
-                                     std::move(before),
-                                     pattern));
-            return true;
-        }
+        if (cmd && key.getKeyCode() == 'A') { selectAll(); return true; }
+        if (cmd && key.getKeyCode() == 'C') { copySelectedToClipboard(); return true; }
+        if (cmd && key.getKeyCode() == 'V') { pasteFromClipboardAtPlayhead(); return true; }
 
         if (key == juce::KeyPress::deleteKey || key == juce::KeyPress::backspaceKey)
         {
             if (selection.empty()) return false;
-
-            Pattern before = processor.getPattern();
-
-            // Delete from highest (lane, index) downwards so removing
-            // an earlier index in the same lane doesn't shift the
-            // later indices we still hold in `selection`.
-            auto sorted = selection;
-            std::sort(sorted.begin(), sorted.end(),
-                [](const Selection& a, const Selection& b)
-                {
-                    if (a.lane != b.lane) return a.lane > b.lane;
-                    return a.index > b.index;
-                });
-            for (const auto& sel : sorted)
-                processor.getPattern().removeEvent(sel.lane, sel.index);
-
-            processor.markDirty();
-            clearSelection();
-            repaint();
-
-            processor.getUndoManager().beginNewTransaction("Delete events");
-            processor.getUndoManager().perform(
-                new SetPatternAction(processor, this,
-                                     std::move(before),
-                                     processor.getPattern()));
+            deleteSelected();
             return true;
         }
 
