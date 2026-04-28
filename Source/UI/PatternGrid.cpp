@@ -613,12 +613,27 @@ namespace B33p
                             {
                                 Event ev;
                                 ev.startSeconds = starts[i];
-                                const double rolledDur = 0.05 + rng.nextDouble() * 0.15;
+
                                 const double maxDur =
                                     (i + 1 < starts.size() ? starts[i + 1] - starts[i]
                                                             : length        - starts[i]);
-                                ev.durationSeconds = std::max(0.02,
-                                                              std::min(rolledDur, maxDur));
+
+                                // When the grid is on, durations also
+                                // snap to grid steps so events START
+                                // and END on grid lines. When grid is
+                                // "Off", roll freely between 50..200 ms.
+                                double dur = 0.05 + rng.nextDouble() * 0.15;
+                                if (gridSeconds > 0.0)
+                                {
+                                    // Pick 1..3 grid steps (capped to
+                                    // 200 ms-ish so coarse grids don't
+                                    // produce 3-second events).
+                                    const int steps = 1 + rng.nextInt(3);
+                                    dur = static_cast<double>(steps) * gridSeconds;
+                                }
+                                dur = std::min(dur, maxDur);
+                                ev.durationSeconds = std::max(0.02, dur);
+
                                 ev.pitchOffsetSemitones = 0.0f;
                                 ev.velocity = 0.5f + rng.nextFloat() * 0.5f;
                                 processor.getPattern().addEvent(lane, ev);
