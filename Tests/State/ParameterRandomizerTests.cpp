@@ -42,7 +42,7 @@ TEST_CASE("ParameterRandomizer: rollOne on a locked parameter is a no-op", "[sta
     REQUIRE(apvts.getRawParameterValue(id)->load() == before);
 }
 
-TEST_CASE("ParameterRandomizer: rolled amp_release stays at or below 100 ms",
+TEST_CASE("ParameterRandomizer: capped parameters never roll above their ceilings",
           "[state][randomizer]")
 {
     B33p::B33pProcessor processor;
@@ -50,13 +50,23 @@ TEST_CASE("ParameterRandomizer: rolled amp_release stays at or below 100 ms",
     B33p::ParameterRandomizer randomizer(apvts);
     juce::Random rng(42);
 
-    const juce::String id = B33p::ParameterIDs::ampRelease(0);
-    for (int i = 0; i < 100; ++i)
+    struct Cap { juce::String id; float maxValue; };
+    const Cap caps[] = {
+        { B33p::ParameterIDs::ampRelease(0),       0.1f  },
+        { B33p::ParameterIDs::ampAttack(0),        0.5f  },
+        { B33p::ParameterIDs::filterResonanceQ(0), 5.0f  },
+        { B33p::ParameterIDs::distortionDrive(0),  20.0f },
+    };
+
+    for (const auto& c : caps)
     {
-        randomizer.rollOne(id, rng);
-        const float v = apvts.getRawParameterValue(id)->load();
-        INFO("iteration " << i << " value " << v);
-        REQUIRE(v <= 0.1f + 1e-4f);
+        for (int i = 0; i < 100; ++i)
+        {
+            randomizer.rollOne(c.id, rng);
+            const float v = apvts.getRawParameterValue(c.id)->load();
+            INFO("id " << c.id << " iteration " << i << " value " << v);
+            REQUIRE(v <= c.maxValue + 1e-3f);
+        }
     }
 }
 

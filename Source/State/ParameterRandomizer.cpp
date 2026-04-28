@@ -9,17 +9,35 @@ namespace B33p
         // Per-parameter ceiling for "what fraction of the full
         // normalised range can a roll touch?". 1.0 = no cap.
         // Manual editing always has the full parameter range; only
-        // rolls are clamped.
-        //
-        // amp_release is capped at 100 ms because longer random
-        // releases bleed into following beeps and made the user's
-        // patterns sound smeared / unintentional.
+        // rolls are clamped. Caps:
+        //   amp_release       -> 100 ms (longer tails bleed into
+        //                        the next beep)
+        //   amp_attack        -> 500 ms (longer attacks make short
+        //                        events nearly inaudible)
+        //   filter_resonance  -> Q 5     (above ~10 the filter
+        //                        self-oscillates into painful
+        //                        whistles)
+        //   distortion_drive  -> 20      (drive > 50 produces
+        //                        ear-shredding hard-clip fuzz)
+        struct Cap { const char* suffix; float maxRealValue; };
+        constexpr Cap kCaps[] = {
+            { "_amp_release",       0.1f  },
+            { "_amp_attack",        0.5f  },
+            { "_filter_resonance_q", 5.0f },
+            { "_distortion_drive",  20.0f },
+        };
+
         float randomizationCeiling(const juce::String& id,
                                     juce::AudioProcessorValueTreeState& apvts)
         {
-            if (id.endsWith("_amp_release"))
+            for (const auto& cap : kCaps)
+            {
+                if (! id.endsWith(cap.suffix))
+                    continue;
                 if (auto* p = apvts.getParameter(id))
-                    return p->getNormalisableRange().convertTo0to1(0.1f);
+                    return p->getNormalisableRange().convertTo0to1(cap.maxRealValue);
+                break;
+            }
             return 1.0f;
         }
     }
