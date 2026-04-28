@@ -520,6 +520,19 @@ namespace B33p
         if (audioThreadPlaying)
             playheadSeconds.store(playhead);
 
+        // Output peak for the level meter — scan the L channel,
+        // decay the previous value slightly so the meter falls when
+        // the buffer goes quiet. The factor (~0.95 per block) gives
+        // a roughly 200 ms fall time at typical block sizes.
+        {
+            float blockPeak = 0.0f;
+            if (left != nullptr)
+                for (int i = 0; i < numSamples; ++i)
+                    blockPeak = std::max(blockPeak, std::fabs(left[i]));
+            const float prev = outputPeak.load() * 0.95f;
+            outputPeak.store(std::max(blockPeak, prev));
+        }
+
         // Zero any additional output channels (defensive — stereo
         // standalones typically have at most 2 output channels).
         for (int ch = 2; ch < numChannels; ++ch)

@@ -17,6 +17,7 @@ namespace B33p
         explicit MasterSection(B33pProcessor& processor);
 
         void resized() override;
+        void paint(juce::Graphics& g) override;
 
         void retargetLane(int lane);
 
@@ -33,6 +34,18 @@ namespace B33p
         juce::TextButton diceAllButton  { "Dice All" };
 
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAttachment;
+
+        // Output level meter — 30 Hz timer-driven update of
+        // meterLevel from processor.getOutputPeak(); meterBounds is
+        // computed in resized() so paint() knows where to draw.
+        float                meterLevel { 0.0f };
+        juce::Rectangle<int> meterBounds;
+
+        // Audition flash deadline. The timer is now continuous (so
+        // it can drive the meter); the flash uses a deadline rather
+        // than start/stop so both purposes share one timer.
+        juce::int64 auditionFlashUntilMs { 0 };
+        bool        auditionFlashActive  { false };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MasterSection)
     };

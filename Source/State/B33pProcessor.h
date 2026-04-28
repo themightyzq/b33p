@@ -158,6 +158,11 @@ namespace B33p
         // platform we support.
         double getPlayheadSeconds() const  { return playheadSeconds.load(); }
 
+        // Most recent output-buffer peak (0..1). Audio thread writes
+        // once per block with a small per-block decay so the meter
+        // falls when the signal stops; UI reads via Timer.
+        float  getOutputPeak() const  { return outputPeak.load(); }
+
         // Lets the UI park the playhead at a specific time (e.g. by
         // clicking on the pattern grid ruler). Clamped to
         // [0, pattern length). Used as the paste-target time for
@@ -224,6 +229,7 @@ namespace B33p
         std::atomic<bool>   playing          { false };
         std::atomic<bool>   looping          { true  };
         std::atomic<double> playheadSeconds  { 0.0   };
+        std::atomic<float>  outputPeak       { 0.0f  };
 
         // Pattern snapshot lives behind atomic_load/store — see
         // class-level comment for the threading model.
