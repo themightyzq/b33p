@@ -5,6 +5,8 @@
 #include "ParameterLayout.h"
 #include "ProjectState.h"
 
+#include <cmath>
+
 namespace B33p
 {
     namespace
@@ -54,9 +56,33 @@ namespace B33p
             apvts.removeParameterListener(id, this);
     }
 
-    void B33pProcessor::parameterChanged(const juce::String&, float)
+    void B33pProcessor::parameterChanged(const juce::String& parameterID, float newValue)
     {
         markDirty();
+
+        // When a lane's waveform parameter flips to Custom, seed
+        // the lane's table with one cycle of sine if it doesn't
+        // have one yet — so audition / playback produces sound
+        // immediately instead of silence until the user opens
+        // the editor and draws something.
+        for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+        {
+            if (parameterID != ParameterIDs::oscWaveform(lane))
+                continue;
+            const int newIndex = static_cast<int>(newValue);
+            if (newIndex != static_cast<int>(Oscillator::Waveform::Custom))
+                break;
+            auto current = std::atomic_load(&customWaveformSlots[static_cast<size_t>(lane)]);
+            if (current != nullptr && ! current->empty())
+                break;   // user already has a table for this lane
+            std::vector<float> sine(static_cast<size_t>(Oscillator::kCustomTableSize));
+            for (size_t i = 0; i < sine.size(); ++i)
+                sine[i] = static_cast<float>(std::sin(
+                    2.0 * 3.14159265358979323846
+                    * static_cast<double>(i) / static_cast<double>(sine.size())));
+            setCustomWaveform(lane, std::move(sine));
+            break;
+        }
     }
 
     void B33pProcessor::prepareToPlay(double sampleRate, int /*blockSize*/)
@@ -217,7 +243,8 @@ namespace B33p
         if (sourceLane < 0 || sourceLane >= Pattern::kNumLanes)
             return;
 
-        const auto srcIds = ParameterIDs::allForLane(sourceLane);
+        const auto srcIds   = ParameterIDs::allForLane(sourceLane);
+        const auto srcTable = getCustomWaveformCopy(sourceLane);
 
         undoManager.beginNewTransaction("Copy lane to all lanes");
 
@@ -232,6 +259,11 @@ namespace B33p
                 if (src != nullptr && dst != nullptr)
                     dst->setValueNotifyingHost(src->getValue());
             }
+            // Copy the custom waveform table too — otherwise the
+            // destination lanes keep their old shapes and "Copy
+            // voice to all" silently produces non-uniform timbre
+            // for any lane that was on Custom.
+            setCustomWaveform(dest, srcTable);
         }
     }
 
@@ -245,6 +277,11 @@ namespace B33p
         for (const auto& id : ParameterIDs::allForLane(lane))
             if (auto* p = apvts.getParameter(id))
                 p->setValueNotifyingHost(p->getDefaultValue());
+
+        // Drop the custom waveform table too — "Reset voice to
+        // defaults" should put the lane back to a fresh state, not
+        // leave a custom shape lurking on the Custom waveform mode.
+        setCustomWaveform(lane, {});
     }
 
     void B33pProcessor::notifyDirtyChanged()

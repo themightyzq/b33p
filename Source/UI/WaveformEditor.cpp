@@ -40,11 +40,13 @@ namespace B33p
         table = processor.getCustomWaveformCopy(lane);
         if (table.empty())
         {
-            // Seed with one cycle of sine so the user always sees
-            // SOMETHING — drawing into a flat zero is much harder
-            // than modifying an existing curve.
+            // Show a sine cycle locally so the user has something to
+            // modify — but don't publish it back to the processor.
+            // The processor seeds its own table when the waveform
+            // parameter flips to Custom, which means: visiting the
+            // editor on a non-Custom lane no longer permanently
+            // marks that lane as having a custom waveform.
             table = makeSineTable(Oscillator::kCustomTableSize);
-            publish();
         }
         repaint();
     }
