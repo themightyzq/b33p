@@ -38,12 +38,32 @@ namespace B33p
                              .withTrimmedLeft(kTitleIndent)
                              .withTrimmedRight(kTitleIndent);
         g.drawText(title + suffix, titleArea, juce::Justification::centredLeft);
+
+        // Per-section accent strip just under the title bar — visual
+        // cue for which lane this section currently edits.
+        if (accentColour.getAlpha() > 0)
+        {
+            const auto strip = juce::Rectangle<int>(
+                getLocalBounds().getX() + kCornerRadius,
+                kTitleStripHeight,
+                getLocalBounds().getWidth() - 2 * kCornerRadius,
+                2);
+            g.setColour(accentColour.withAlpha(0.85f));
+            g.fillRect(strip);
+        }
     }
 
     void Section::setTitleSuffix(const juce::String& s)
     {
         if (suffix == s) return;
         suffix = s;
+        repaint();
+    }
+
+    void Section::setAccentColour(juce::Colour c)
+    {
+        if (accentColour == c) return;
+        accentColour = c;
         repaint();
     }
 

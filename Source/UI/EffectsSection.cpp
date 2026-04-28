@@ -46,6 +46,7 @@ namespace B33p
         SliderFormatting::applyDoubleClickReset(driveSlider    .getSlider(), processor.getApvts(), ParameterIDs::distortionDrive(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));
+        setAccentColour(processor.laneAccentColour(lane));
     }
 
     void EffectsSection::resized()

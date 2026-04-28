@@ -144,6 +144,12 @@ namespace B33p
         // to telegraph which lane they're currently editing.
         juce::String laneTitleSuffix(int lane) const;
 
+        // Per-lane base accent colour. Used by the voice editor
+        // sections (title accent bar) and the pattern grid (lane
+        // row tint) so a fresh user can see which lane is which
+        // without reading the suffix every time.
+        juce::Colour laneAccentColour(int lane) const;
+
         // Copies every voice parameter from sourceLane onto all the
         // other lanes (or just one destLane if specified). One
         // undoable transaction per call.

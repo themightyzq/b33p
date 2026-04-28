@@ -99,6 +99,7 @@ namespace B33p
                                                 ParameterIDs::basePitchHz(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));
+        setAccentColour(processor.laneAccentColour(lane));
 
         // Whenever the user switches lanes, the combo's selected ID
         // is reset by the new ComboBoxAttachment. Hook the onChange

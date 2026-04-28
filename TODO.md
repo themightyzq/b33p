@@ -199,7 +199,7 @@ End-user review surfaced a stack of items that all amount to "the README and the
 - [x] **Custom oscillator: explain the visual sine is a placeholder** — small footer note in the editor: "Drawing replaces the default sine cycle." [minor]
 
 ### Nice-to-have polish
-- [ ] **Per-lane background tint** in the voice editor sections so the "(Lane N)" suffix matches a visual cue and lane switching is obviously different.
+- [x] **Per-lane background tint** in the voice editor sections so the "(Lane N)" suffix matches a visual cue and lane switching is obviously different.
 - [ ] **Recent Files submenu** in File.
 - [ ] **About dialog hyperlink to the GitHub repo.**
 
