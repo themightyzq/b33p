@@ -697,14 +697,18 @@ namespace B33p
         }
 
         // Snap-target preview — drawn during an active drag to show
-        // where the manipulated edge will land on release.
+        // where the manipulated edge will land on release. Goes red
+        // when the drag is being clamped against a pattern wall so
+        // the user can see they've hit the boundary.
         if (snapPreviewSeconds >= 0.0)
         {
             const float x = secondsToX(snapPreviewSeconds);
-            g.setColour(juce::Colour::fromRGB(230, 240, 255).withAlpha(0.55f));
+            g.setColour(dragClampedAtWall
+                            ? juce::Colour::fromRGB(255, 100,  90).withAlpha(0.85f)
+                            : juce::Colour::fromRGB(230, 240, 255).withAlpha(0.55f));
             g.drawLine(x, frame.getY() + kRulerHeight,
                        x, frame.getBottom(),
-                       1.0f);
+                       dragClampedAtWall ? 1.6f : 1.0f);
         }
 
         // Playhead — orange while playing, dimmer grey when parked
@@ -966,13 +970,17 @@ namespace B33p
             // Apply the same horizontal delta to every selected
             // event from its original position, snapping each
             // independently and clamping into the pattern.
+            // Track whether ANY subject got clamped so paint() can
+            // colour the snap preview line red as "you hit the wall".
+            dragClampedAtWall = false;
             for (const auto& subj : dragSubjects)
             {
                 Event ev = subj.original;
-                ev.startSeconds = snapSeconds(subj.original.startSeconds + deltaSec);
-                ev.startSeconds = std::clamp(ev.startSeconds,
-                                              0.0,
-                                              std::max(0.0, length - ev.durationSeconds));
+                const double requested = snapSeconds(subj.original.startSeconds + deltaSec);
+                const double maxStart  = std::max(0.0, length - ev.durationSeconds);
+                ev.startSeconds = std::clamp(requested, 0.0, maxStart);
+                if (! juce::exactlyEqual(ev.startSeconds, requested))
+                    dragClampedAtWall = true;
                 if (subj.ref.index < pattern.getEvents(subj.ref.lane).size())
                     pattern.updateEvent(subj.ref.lane, subj.ref.index, ev);
             }
@@ -1143,6 +1151,7 @@ namespace B33p
 
         dragMode = DragMode::None;
         dragSubjects.clear();
+        dragClampedAtWall = false;
 
         if (snapPreviewSeconds >= 0.0)
         {
