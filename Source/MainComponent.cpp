@@ -26,6 +26,8 @@ namespace B33p
             FileOpen,
             FileSave,
             FileSaveAs,
+            FileSavePreset,
+            FileBrowsePresets,
             FileAudioSettings,
             FileClearRecent,
             EditUndo,
@@ -51,6 +53,7 @@ namespace B33p
         : processor(processorRef),
           deviceManager(deviceManagerRef),
           fileManager(processorRef),
+          presetManager(processorRef),
           oscillatorSection   (processor),
           ampEnvelopeSection  (processor),
           filterSection       (processor),
@@ -359,6 +362,9 @@ namespace B33p
                 m.addItem(withShortcut(MenuId::FileSave,   "Save",       "Cmd+S"));
                 m.addItem(withShortcut(MenuId::FileSaveAs, "Save As...", "Cmd+Shift+S"));
                 m.addSeparator();
+                m.addItem(withShortcut(MenuId::FileSavePreset,    "Save Preset...",   ""));
+                m.addItem(withShortcut(MenuId::FileBrowsePresets, "Browse Presets...", ""));
+                m.addSeparator();
                 m.addItem(withShortcut(MenuId::FileAudioSettings, "Audio Settings...", ""));
                 break;
             case 1: // Edit
@@ -420,6 +426,8 @@ namespace B33p
                 break;
             case MenuId::FileSave:           fileManager.save  (this);          break;
             case MenuId::FileSaveAs:         fileManager.saveAs(this);          break;
+            case MenuId::FileSavePreset:     promptSavePreset();                break;
+            case MenuId::FileBrowsePresets:  showPresetBrowser();               break;
             case MenuId::FileAudioSettings:  showAudioSettings();               break;
             case MenuId::FileClearRecent:    fileManager.clearRecentFiles();    break;
             case MenuId::EditUndo:        processor.getUndoManager().undo(); break;
@@ -457,6 +465,92 @@ namespace B33p
             audioSettingsWindow = std::make_unique<AudioSettingsWindow>(deviceManager);
         audioSettingsWindow->setVisible(true);
         audioSettingsWindow->toFront(true);
+    }
+
+    void MainComponent::showPresetBrowser()
+    {
+        // Lazy-construct so the dialog only allocates when first
+        // requested. Once built, we keep it around and toggle
+        // visibility — preserves window position between visits.
+        if (presetBrowserWindow == nullptr)
+        {
+            presetBrowserWindow = std::make_unique<PresetBrowserDialogWindow>(
+                presetManager,
+                // Load: route through the same dirty-prompt the
+                // File ▸ Open path uses so the user can't lose
+                // unsaved changes by clicking a preset.
+                [this](const juce::File& presetFile)
+                {
+                    confirmDiscardThen([this, presetFile]
+                    {
+                        if (! presetManager.loadPreset(presetFile))
+                            return;
+                        // Loaded preset becomes the new "current
+                        // file" for the recent-files list, but is
+                        // NOT promoted to the project save target
+                        // — presets and projects are separate
+                        // concepts, and saving over a preset by
+                        // accident would surprise the user.
+                    });
+                },
+                [this](const juce::File& presetFile)
+                {
+                    if (presetManager.deletePreset(presetFile))
+                        if (presetBrowserWindow != nullptr)
+                            presetBrowserWindow->refresh();
+                },
+                [this] { presetBrowserWindow.reset(); });
+        }
+        presetBrowserWindow->setVisible(true);
+        presetBrowserWindow->toFront(true);
+    }
+
+    void MainComponent::promptSavePreset()
+    {
+        // AlertWindow with a single text field is the lightest
+        // standard JUCE pattern for "name this thing". Modal so the
+        // user can't keep clicking File ▸ Save Preset before the
+        // first save resolves.
+        auto* aw = new juce::AlertWindow("Save Preset",
+                                          "Enter a name for the new preset:",
+                                          juce::MessageBoxIconType::QuestionIcon);
+        aw->addTextEditor("name", "", "Preset name");
+        aw->addButton("Save",   1, juce::KeyPress(juce::KeyPress::returnKey));
+        aw->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+
+        savePresetWindow.reset(aw);
+        aw->enterModalState(true,
+            juce::ModalCallbackFunction::create(
+                [this, aw](int result)
+                {
+                    const juce::String name = aw->getTextEditorContents("name");
+                    savePresetWindow.reset();   // also deletes aw
+
+                    if (result != 1 || name.trim().isEmpty())
+                        return;
+
+                    const auto saved = presetManager.savePreset(name);
+                    if (saved == juce::File())
+                    {
+                        juce::AlertWindow::showAsync(
+                            juce::MessageBoxOptions()
+                                .withIconType(juce::MessageBoxIconType::WarningIcon)
+                                .withTitle("Save Preset failed")
+                                .withMessage("Could not save preset \""
+                                              + name + "\". The name may be invalid "
+                                              + "or the preset directory is unwriteable.")
+                                .withButton("OK"),
+                            nullptr);
+                        return;
+                    }
+
+                    // If the browser is open, repopulate so the new
+                    // preset shows up.
+                    if (presetBrowserWindow != nullptr)
+                        presetBrowserWindow->refresh();
+                }),
+            false);   // we own the AlertWindow, don't let the modal
+                       // helper delete it
     }
 
     void MainComponent::showAboutDialog()
