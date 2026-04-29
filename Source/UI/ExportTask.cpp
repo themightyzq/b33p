@@ -3,7 +3,7 @@
 #include "Core/ParameterIDs.h"
 #include "DSP/Oscillator.h"
 #include "Pattern/PatternRenderer.h"
-#include "Pattern/WavWriter.h"
+#include "Pattern/AudioFileWriter.h"
 
 namespace B33p
 {
@@ -139,11 +139,12 @@ namespace B33p
                 break;
 
             const auto destination = destinationForVariation(i);
-            const bool ok = writeWav(buffer,
-                                      settings.sampleRate,
-                                      settings.bitDepth,
-                                      settings.channelMode,
-                                      destination);
+            const bool ok = writeAudioFile(settings.format,
+                                            buffer,
+                                            settings.sampleRate,
+                                            settings.bitDepth,
+                                            settings.channelMode,
+                                            destination);
             if (! ok)
             {
                 errorMessage = "Could not write \""

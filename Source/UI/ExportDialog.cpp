@@ -7,13 +7,23 @@ namespace B33p
     namespace
     {
         struct SampleRatePreset { const char* label; double rate; };
-        constexpr std::array<SampleRatePreset, 6> kSampleRates {{
+        constexpr std::array<SampleRatePreset, 8> kSampleRates {{
             { "8 kHz",      8000.0  },
             { "11.025 kHz", 11025.0 },
             { "16 kHz",     16000.0 },
             { "22.05 kHz",  22050.0 },
             { "44.1 kHz",   44100.0 },
             { "48 kHz",     48000.0 },
+            { "88.2 kHz",   88200.0 },
+            { "96 kHz",     96000.0 },
+        }};
+
+        struct FormatPreset { const char* label; AudioFileFormat value; };
+        constexpr std::array<FormatPreset, 4> kFormats {{
+            { "WAV",        AudioFileFormat::Wav       },
+            { "AIFF",       AudioFileFormat::Aiff      },
+            { "FLAC",       AudioFileFormat::Flac      },
+            { "OGG Vorbis", AudioFileFormat::OggVorbis },
         }};
 
         struct BitDepthPreset { const char* label; BitDepth value; };
@@ -45,7 +55,7 @@ namespace B33p
     void ExportDialog::showAsync(juce::Component* parent, OnClose onClose)
     {
         auto* dialog = new ExportDialog(std::move(onClose));
-        dialog->setSize(420, 260);
+        dialog->setSize(420, 296);
 
         juce::DialogWindow::LaunchOptions options;
         options.content.setOwned(dialog);
@@ -73,13 +83,21 @@ namespace B33p
         browseButton.onClick = [this] { browseClicked(); };
         addAndMakeVisible(browseButton);
 
+        styleLabel(formatLabel, "Format:");
+        addAndMakeVisible(formatLabel);
+        for (size_t i = 0; i < kFormats.size(); ++i)
+            formatCombo.addItem(kFormats[i].label,
+                                idForIndex(static_cast<int>(i)));
+        formatCombo.setSelectedId(idForIndex(0), juce::dontSendNotification); // WAV
+        addAndMakeVisible(formatCombo);
+
         styleLabel(sampleRateLabel, "Sample Rate:");
         addAndMakeVisible(sampleRateLabel);
         for (size_t i = 0; i < kSampleRates.size(); ++i)
             sampleRateCombo.addItem(kSampleRates[i].label,
                                     idForIndex(static_cast<int>(i)));
-        // Default to 48 kHz (last preset).
-        sampleRateCombo.setSelectedId(idForIndex(static_cast<int>(kSampleRates.size() - 1)),
+        // Default to 48 kHz (sixth preset).
+        sampleRateCombo.setSelectedId(idForIndex(5),
                                       juce::dontSendNotification);
         addAndMakeVisible(sampleRateCombo);
 
@@ -151,6 +169,7 @@ namespace B33p
         };
 
         layoutRow(destinationLabel, destinationField, &browseButton);
+        layoutRow(formatLabel,      formatCombo);
         layoutRow(sampleRateLabel,  sampleRateCombo);
         layoutRow(bitDepthLabel,    bitDepthCombo);
         layoutRow(channelLabel,     channelCombo);
@@ -217,6 +236,16 @@ namespace B33p
         const int chIdx = indexForId(channelCombo.getSelectedId());
         if (chIdx >= 0 && chIdx < static_cast<int>(kChannels.size()))
             r.channelMode = kChannels[static_cast<size_t>(chIdx)].value;
+
+        const int fmtIdx = indexForId(formatCombo.getSelectedId());
+        if (fmtIdx >= 0 && fmtIdx < static_cast<int>(kFormats.size()))
+            r.format = kFormats[static_cast<size_t>(fmtIdx)].value;
+
+        // Force the destination's extension to match the chosen
+        // format so the user can pick FLAC and forget the .wav
+        // extension they typed earlier.
+        if (r.destination != juce::File())
+            r.destination = r.destination.withFileExtension(extensionFor(r.format));
 
         r.variationCount = juce::jlimit(1, 100,
             static_cast<int>(variationsSlider.getValue()));
