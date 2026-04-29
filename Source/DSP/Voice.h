@@ -49,8 +49,18 @@ namespace B33p
         void setBasePitchHz(float hz);
 
         // Replaces the custom-waveform table the oscillator reads
-        // when waveform is Custom. Empty table = silence.
+        // when waveform is Custom. Empty table = silence. Convenience
+        // alias for setWavetableSlot(0, samples).
         void setCustomWaveformTable(const std::vector<float>& samples);
+
+        // Per-slot replacement for the wavetable storage. slot is
+        // clamped to [0, Oscillator::kNumWavetableSlots). Used by
+        // Wavetable mode; Custom mode reads slot 0 only.
+        void setWavetableSlot(int slot, const std::vector<float>& samples);
+
+        // 0..1 morph position used by Wavetable mode to blend between
+        // the four slots. Ignored in Custom / built-in waveform modes.
+        void setWavetableMorph(float morph01);
 
         void setAmpAttack(float seconds);
         void setAmpDecay(float seconds);

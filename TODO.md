@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: post-MVP roadmap — Filter response visualizer is the next item being worked on**
+> **Current focus: post-MVP roadmap — working through Sound-design power list top-to-bottom; FM oscillator is next**
 
 ---
 
@@ -220,7 +220,7 @@ Ordered roughly by priority, not commitment. Each item becomes its own phase whe
 ### Sound-design power
 
 - [x] **Custom drawn waveforms** — user draws a single-cycle oscillator shape (high-priority post-MVP) — shipped in v0.1.x
-- [ ] **Wavetable oscillator** — morph between waveforms
+- [x] **Wavetable oscillator** — morph between waveforms (4 fixed slots per lane, single morph param 0..1; v3 .beep schema lifts v2 custom_waveform into slot 0)
 - [ ] **FM oscillator** — two-operator FM with ratio + depth
 - [ ] **Ring modulation** — second oscillator + ring-mod mix
 - [ ] **Additional filters** — formant, comb, bandpass, highpass

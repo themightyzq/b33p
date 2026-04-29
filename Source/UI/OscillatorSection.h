@@ -34,10 +34,12 @@ namespace B33p
         juce::TextButton customEditButton { "Edit..." };
 
         LabeledSlider    basePitchSlider { "Pitch" };
+        LabeledSlider    morphSlider     { "Morph" };
 
         // unique_ptr so retargetLane can swap them out.
         std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> waveformAttachment;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   basePitchAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   morphAttachment;
 
         // Lazily-created popup for editing the lane's custom
         // single-cycle waveform. Visibility is toggled by the

@@ -2,6 +2,7 @@
 
 #include "B33pProcessor.h"
 #include "Core/ParameterIDs.h"
+#include "DSP/Oscillator.h"
 #include "Pattern/Pattern.h"
 
 #include <vector>
@@ -31,6 +32,10 @@ namespace B33p::ProjectState
         const juce::Identifier kLaneMuted             { "muted" };
         const juce::Identifier kLaneSoloed            { "soloed" };
         const juce::Identifier kLaneCustomWaveform    { "custom_waveform" };
+        const juce::Identifier kWavetable             { "WAVETABLE" };
+        const juce::Identifier kSlot                  { "SLOT" };
+        const juce::Identifier kSlotIndex             { "index" };
+        const juce::Identifier kSlotSamples           { "samples" };
         const juce::Identifier kEvent                 { "EVENT" };
         const juce::Identifier kEventStart            { "start_seconds" };
         const juce::Identifier kEventDuration         { "duration_seconds" };
@@ -80,13 +85,18 @@ namespace B33p::ProjectState
             laneNode.setProperty(kLaneMuted,  pattern.isLaneMuted(laneIdx),      nullptr);
             laneNode.setProperty(kLaneSoloed, pattern.isLaneSoloed(laneIdx),     nullptr);
 
-            // Custom oscillator table — serialised as a comma-
-            // separated string so it round-trips through XML
-            // cleanly. Empty / unset = lanes that have never had
-            // their Custom waveform edited.
-            const auto table = processor.getCustomWaveformCopy(laneIdx);
-            if (! table.empty())
+            // Wavetable storage — each non-empty slot gets its own
+            // SLOT child holding a comma-separated CSV of samples.
+            // Custom mode reads slot 0 (so a Custom-only lane saves
+            // exactly one SLOT child); Wavetable mode reads all
+            // four. Slots that have never been edited are simply
+            // omitted to keep the file compact.
+            juce::ValueTree wavetableNode { kWavetable };
+            for (int slot = 0; slot < Oscillator::kNumWavetableSlots; ++slot)
             {
+                const auto table = processor.getWavetableSlotCopy(laneIdx, slot);
+                if (table.empty())
+                    continue;
                 juce::String csv;
                 csv.preallocateBytes(table.size() * 8);
                 for (size_t i = 0; i < table.size(); ++i)
@@ -94,8 +104,13 @@ namespace B33p::ProjectState
                     if (i > 0) csv += ",";
                     csv += juce::String(table[i], 4);
                 }
-                laneNode.setProperty(kLaneCustomWaveform, csv, nullptr);
+                juce::ValueTree slotNode { kSlot };
+                slotNode.setProperty(kSlotIndex,   slot, nullptr);
+                slotNode.setProperty(kSlotSamples, csv,  nullptr);
+                wavetableNode.appendChild(slotNode, nullptr);
             }
+            if (wavetableNode.getNumChildren() > 0)
+                laneNode.appendChild(wavetableNode, nullptr);
 
             for (const auto& e : pattern.getEvents(laneIdx))
             {
@@ -191,9 +206,40 @@ namespace B33p::ProjectState
         }
     }
 
+    namespace
+    {
+        // v2 → v3: lift each LANE's `custom_waveform` attribute (a
+        // CSV of float samples) into a WAVETABLE child holding a
+        // single SLOT[index=0] entry. The attribute is dropped from
+        // the LANE node so that v3 readers find the new structure
+        // canonically. Empty / missing attributes are no-ops; the
+        // pattern, parameters, locks, and pitch curve round-trip
+        // unchanged.
+        void migratePatternV2ToV3(juce::ValueTree patternNode)
+        {
+            for (auto laneNode : patternNode)
+            {
+                if (! laneNode.hasType(kLane))
+                    continue;
+                const auto csv = laneNode.getProperty(kLaneCustomWaveform,
+                                                      juce::String{}).toString();
+                if (csv.isEmpty())
+                    continue;
+
+                juce::ValueTree wavetableNode { kWavetable };
+                juce::ValueTree slotNode      { kSlot };
+                slotNode.setProperty(kSlotIndex,   0,   nullptr);
+                slotNode.setProperty(kSlotSamples, csv, nullptr);
+                wavetableNode.appendChild(slotNode, nullptr);
+                laneNode.appendChild(wavetableNode, nullptr);
+                laneNode.removeProperty(kLaneCustomWaveform, nullptr);
+            }
+        }
+    }
+
     juce::ValueTree migrate(juce::ValueTree tree)
     {
-        const int version = tree.getProperty(kVersion, 0);
+        int version = tree.getProperty(kVersion, 0);
 
         if (version == 1)
         {
@@ -205,6 +251,22 @@ namespace B33p::ProjectState
                 migrateApvtsV1ToV2(paramsNode.getChild(0));
 
             tree.setProperty(kVersion, 2, nullptr);
+            version = 2;
+        }
+
+        if (version == 2)
+        {
+            // v2 → v3: existing per-lane custom_waveform attributes
+            // become WAVETABLE/SLOT[index=0] children. The new
+            // wavetable_morph parameter wasn't in v2 — APVTS will
+            // fall back to its registered default (0.0) for any ID
+            // missing from the loaded state.
+            const auto patternNode = tree.getChildWithName(kPattern);
+            if (patternNode.isValid())
+                migratePatternV2ToV3(patternNode);
+
+            tree.setProperty(kVersion, 3, nullptr);
+            version = 3;
         }
 
         return tree;
@@ -265,18 +327,28 @@ namespace B33p::ProjectState
             pattern.setLaneMuted (laneIdx, static_cast<bool>(laneNode.getProperty(kLaneMuted,  false)));
             pattern.setLaneSoloed(laneIdx, static_cast<bool>(laneNode.getProperty(kLaneSoloed, false)));
 
-            // Custom waveform table (CSV of N float samples).
-            const auto csv = laneNode.getProperty(kLaneCustomWaveform,
-                                                   juce::String{}).toString();
-            if (csv.isNotEmpty())
+            // Wavetable storage. Each SLOT child carries an index
+            // (0..N-1) and a CSV of float samples; missing slots
+            // stay empty (= silent for that morph position).
+            const auto wavetableNode = laneNode.getChildWithName(kWavetable);
+            for (auto slotNode : wavetableNode)
             {
+                if (! slotNode.hasType(kSlot))
+                    continue;
+                const int slotIdx = slotNode.getProperty(kSlotIndex, -1);
+                if (slotIdx < 0 || slotIdx >= Oscillator::kNumWavetableSlots)
+                    continue;
+                const auto csv = slotNode.getProperty(kSlotSamples,
+                                                       juce::String{}).toString();
+                if (csv.isEmpty())
+                    continue;
                 juce::StringArray parts;
                 parts.addTokens(csv, ",", "");
                 std::vector<float> table;
                 table.reserve(static_cast<size_t>(parts.size()));
                 for (const auto& p : parts)
                     table.push_back(p.getFloatValue());
-                processor.setCustomWaveform(laneIdx, std::move(table));
+                processor.setWavetableSlot(laneIdx, slotIdx, std::move(table));
             }
 
             for (auto eventNode : laneNode)

@@ -7,9 +7,12 @@ namespace B33p
 {
     namespace
     {
-        constexpr float kInset    = 8.0f;
-        constexpr float kStroke   = 2.0f;
-        constexpr float kCorner   = 3.0f;
+        constexpr float kInset       = 8.0f;
+        constexpr float kStroke      = 2.0f;
+        constexpr float kCorner      = 3.0f;
+        constexpr float kFooterH     = 18.0f;
+        constexpr float kSlotBarH    = 26.0f;
+        constexpr float kSlotBarGap  = 4.0f;
 
         // Two pi as a double — kept local rather than pulling
         // M_PI which isn't standard.
@@ -31,27 +34,84 @@ namespace B33p
     WaveformEditor::WaveformEditor(B33pProcessor& processorRef)
         : processor(processorRef)
     {
+        for (int i = 0; i < Oscillator::kNumWavetableSlots; ++i)
+        {
+            auto& b = slotButtons[static_cast<size_t>(i)];
+            b.setButtonText("Slot " + juce::String(i + 1));
+            b.setClickingTogglesState(true);
+            b.setRadioGroupId(1);
+            b.setTooltip(i == 0
+                ? "Slot 1 — also the table the Custom waveform plays"
+                : "Slot " + juce::String(i + 1)
+                  + " — only audible in Wavetable mode at non-zero morph");
+            b.onClick = [this, i] { setSlot(i); };
+            addAndMakeVisible(b);
+        }
+        slotButtons[0].setToggleState(true, juce::dontSendNotification);
+
         setLane(processor.getSelectedLane());
     }
 
     void WaveformEditor::setLane(int lane)
     {
         currentLane = lane;
-        table = processor.getCustomWaveformCopy(lane);
+        reloadFromProcessor();
+    }
+
+    void WaveformEditor::setSlot(int slot)
+    {
+        slot = juce::jlimit(0, Oscillator::kNumWavetableSlots - 1, slot);
+        if (slot == currentSlot)
+            return;
+        currentSlot = slot;
+        slotButtons[static_cast<size_t>(currentSlot)]
+            .setToggleState(true, juce::dontSendNotification);
+        reloadFromProcessor();
+    }
+
+    void WaveformEditor::reloadFromProcessor()
+    {
+        table = processor.getWavetableSlotCopy(currentLane, currentSlot);
         if (table.empty())
         {
             // Show a sine cycle locally so the user has something to
             // modify — but don't publish it back to the processor.
-            // The processor seeds its own table when the waveform
-            // parameter flips to Custom, which means: visiting the
-            // editor on a non-Custom lane no longer permanently
-            // marks that lane as having a custom waveform.
+            // The processor seeds its own slots when the waveform
+            // parameter flips to Custom or Wavetable, which means:
+            // visiting the editor on a non-Custom/Wavetable lane no
+            // longer permanently marks that slot as edited.
             table = makeSineTable(Oscillator::kCustomTableSize);
         }
         repaint();
     }
 
-    void WaveformEditor::resized() {}
+    void WaveformEditor::resized()
+    {
+        // Slot tab row at the top — one button per slot, evenly
+        // spaced. The plot rect (computed in plotRect()) leaves
+        // space for the row.
+        auto bounds = getLocalBounds().toFloat().reduced(1.0f);
+        auto slotRow = bounds.removeFromTop(kSlotBarH);
+        const float gap   = 4.0f;
+        const float total = slotRow.getWidth();
+        const float each  = (total - gap * (Oscillator::kNumWavetableSlots - 1))
+                              / static_cast<float>(Oscillator::kNumWavetableSlots);
+        for (int i = 0; i < Oscillator::kNumWavetableSlots; ++i)
+        {
+            slotButtons[static_cast<size_t>(i)].setBounds(
+                slotRow.removeFromLeft(each).toNearestInt());
+            slotRow.removeFromLeft(gap);
+        }
+    }
+
+    juce::Rectangle<float> WaveformEditor::plotRect() const
+    {
+        auto bounds = getLocalBounds().toFloat().reduced(1.0f);
+        bounds.removeFromTop(kSlotBarH + kSlotBarGap);
+        auto plot = bounds.reduced(kInset);
+        plot = plot.withTrimmedBottom(kFooterH);
+        return plot;
+    }
 
     void WaveformEditor::paint(juce::Graphics& g)
     {
@@ -62,13 +122,7 @@ namespace B33p
         g.setColour(juce::Colour::fromRGB(60, 60, 60));
         g.drawRoundedRectangle(bounds, kCorner, 1.0f);
 
-        // Footer hint — reserves a small strip at the bottom for the
-        // "drawing replaces ..." note. Plot area stops above it so
-        // the wave doesn't overlap the text.
-        constexpr float kFooterH = 18.0f;
-        auto plot = bounds.reduced(kInset);
-        plot = plot.withTrimmedBottom(kFooterH);
-
+        const auto plot = plotRect();
         const float midY = plot.getCentreY();
 
         // Zero line.
@@ -96,21 +150,18 @@ namespace B33p
         g.setColour(juce::Colour::fromRGB(220, 140, 60));
         g.strokePath(wave, juce::PathStrokeType(kStroke));
 
-        // Footer note — a fresh user might not know the displayed
-        // sine is just a starting placeholder.
+        // Footer note — explains slot mechanics so a fresh user
+        // doesn't spend time wondering what the slot tabs do.
         g.setColour(juce::Colour::fromRGB(120, 120, 120));
         g.setFont(juce::FontOptions(11.0f));
-        g.drawText("Click + drag to draw. The sine is the default starting shape — drawing replaces it.",
+        g.drawText("Click + drag to draw. Custom mode plays Slot 1; Wavetable mode blends all four via the Morph slider.",
                    bounds.withTop(bounds.getBottom() - 16.0f),
                    juce::Justification::centred);
     }
 
     int WaveformEditor::xToSampleIdx(float x) const
     {
-        // Match paint()'s plot rect (with the footer trimmed off).
-        constexpr float kFooterH = 18.0f;
-        const auto plot = getLocalBounds().toFloat().reduced(1.0f)
-                              .reduced(kInset).withTrimmedBottom(kFooterH);
+        const auto plot = plotRect();
         if (table.empty() || plot.getWidth() <= 0.0f)
             return 0;
         const float t = (x - plot.getX()) / plot.getWidth();
@@ -120,9 +171,7 @@ namespace B33p
 
     float WaveformEditor::yToValue(float y) const
     {
-        constexpr float kFooterH = 18.0f;
-        const auto plot = getLocalBounds().toFloat().reduced(1.0f)
-                              .reduced(kInset).withTrimmedBottom(kFooterH);
+        const auto plot = plotRect();
         if (plot.getHeight() <= 0.0f)
             return 0.0f;
         const float midY = plot.getCentreY();
@@ -160,11 +209,16 @@ namespace B33p
 
     void WaveformEditor::publish()
     {
-        processor.setCustomWaveform(currentLane, table);
+        processor.setWavetableSlot(currentLane, currentSlot, table);
     }
 
     void WaveformEditor::mouseDown(const juce::MouseEvent& e)
     {
+        // Ignore clicks landing on the slot bar area — those go to
+        // the slot buttons, not to the drawing canvas.
+        if (! plotRect().contains(e.position))
+            return;
+
         const int   idx = xToSampleIdx(e.position.x);
         const float val = yToValue(e.position.y);
         editAt(idx, val);
@@ -176,6 +230,9 @@ namespace B33p
 
     void WaveformEditor::mouseDrag(const juce::MouseEvent& e)
     {
+        if (! plotRect().contains(e.position) && lastDragSample < 0)
+            return;
+
         const int   idx = xToSampleIdx(e.position.x);
         const float val = yToValue(e.position.y);
         if (lastDragSample < 0)
@@ -204,7 +261,7 @@ namespace B33p
         setContentOwned(ed, true);
         setUsingNativeTitleBar(true);
         setResizable(true, false);
-        centreWithSize(640, 280);
+        centreWithSize(640, 320);
     }
 
     void WaveformEditorWindow::closeButtonPressed()

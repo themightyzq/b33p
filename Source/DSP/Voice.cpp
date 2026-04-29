@@ -41,6 +41,16 @@ namespace B33p
         oscillator.setCustomTable(samples);
     }
 
+    void Voice::setWavetableSlot(int slot, const std::vector<float>& samples)
+    {
+        oscillator.setWavetableSlot(slot, samples);
+    }
+
+    void Voice::setWavetableMorph(float morph01)
+    {
+        oscillator.setWavetableMorph(morph01);
+    }
+
     void Voice::setAmpAttack(float seconds)   { ampEnvelope.setAttack(seconds);   }
     void Voice::setAmpDecay(float seconds)    { ampEnvelope.setDecay(seconds);    }
     void Voice::setAmpSustain(float level)    { ampEnvelope.setSustain(level);    }

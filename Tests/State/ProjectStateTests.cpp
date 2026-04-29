@@ -195,6 +195,73 @@ TEST_CASE("ProjectState: v1 file fans the single voice's APVTS params out to all
     }
 }
 
+TEST_CASE("ProjectState: v2 file's per-lane custom_waveform attribute migrates into WAVETABLE/SLOT[index=0]",
+          "[state][project]")
+{
+    // Hand-rolled v2 tree with the legacy custom_waveform attribute
+    // on a lane. After migrate(), the attribute should be gone and
+    // slot 0 of the new WAVETABLE child should hold the same samples
+    // (which getCustomWaveformCopy reads back).
+    juce::ValueTree root { "B33P" };
+    root.setProperty("version", 2, nullptr);
+
+    juce::ValueTree params { "PARAMETERS" };
+    root.appendChild(params, nullptr);
+
+    juce::ValueTree pattern { "PATTERN" };
+    pattern.setProperty("length_seconds", 2.0, nullptr);
+
+    juce::ValueTree lane { "LANE" };
+    lane.setProperty("index", 1, nullptr);
+    lane.setProperty("custom_waveform", juce::String("0.0,0.5,-0.5,1.0"), nullptr);
+    pattern.appendChild(lane, nullptr);
+    root.appendChild(pattern, nullptr);
+
+    B33pProcessor restored;
+    REQUIRE(B33p::ProjectState::load(restored, root));
+
+    const auto slot0 = restored.getWavetableSlotCopy(1, 0);
+    REQUIRE(slot0.size() == 4);
+    REQUIRE(slot0[0] == Approx(0.0f).margin(1e-3f));
+    REQUIRE(slot0[1] == Approx(0.5f).margin(1e-3f));
+    REQUIRE(slot0[2] == Approx(-0.5f).margin(1e-3f));
+    REQUIRE(slot0[3] == Approx(1.0f).margin(1e-3f));
+
+    // Other slots stay empty — v2 had no concept of multi-slot wavetables.
+    for (int slot = 1; slot < 4; ++slot)
+        REQUIRE(restored.getWavetableSlotCopy(1, slot).empty());
+}
+
+TEST_CASE("ProjectState: round-trip preserves every wavetable slot",
+          "[state][project]")
+{
+    B33pProcessor original;
+
+    // Distinct content per slot so the test catches a slot-index
+    // mix-up (e.g. all four slots reading from / writing to slot 0).
+    for (int slot = 0; slot < 4; ++slot)
+    {
+        std::vector<float> table(static_cast<size_t>(8));
+        for (size_t i = 0; i < table.size(); ++i)
+            table[i] = static_cast<float>(slot) + 0.1f * static_cast<float>(i);
+        original.setWavetableSlot(2, slot, std::move(table));
+    }
+
+    const auto tree = B33p::ProjectState::save(original);
+
+    B33pProcessor restored;
+    REQUIRE(B33p::ProjectState::load(restored, tree));
+
+    for (int slot = 0; slot < 4; ++slot)
+    {
+        const auto a = original.getWavetableSlotCopy(2, slot);
+        const auto b = restored.getWavetableSlotCopy(2, slot);
+        REQUIRE(a.size() == b.size());
+        for (size_t i = 0; i < a.size(); ++i)
+            REQUIRE(a[i] == Approx(b[i]).margin(1e-3f));
+    }
+}
+
 TEST_CASE("ProjectState: events from a v1 file (no velocity property) load with velocity 1.0",
           "[state][project]")
 {
