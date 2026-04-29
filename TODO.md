@@ -245,7 +245,7 @@ Explicitly out of MVP scope — the standalone app is the priority and the "musi
 ### Workflow
 
 - [x] **Preset browser** with tags, favorites, search — basic browser ships now (Save Preset / Browse Presets in File menu, ListBox with Load/Delete, per-user Presets directory under app-data); tags, favorites, and full-text search are post-MVP polish on top of this base.
-- [ ] **Generator presets** — one-click starting points (droid chatter, alarms, weapon charge, UI beeps)
+- [x] **Generator presets** — one-click starting points (droid chatter, alarms, weapon charge, UI beeps) — 4 factory presets ship with the app and seed into the user's presets directory on first launch (FM Bell, Resonant Stab, Delay Pad, Ring Mod Robot). Seed is non-destructive — existing files are never overwritten.
 - [ ] **User-configurable randomization ranges and distributions**
 - [ ] **MIDI input** for auditioning
 - [ ] **Polyphony** for voices that benefit from it
