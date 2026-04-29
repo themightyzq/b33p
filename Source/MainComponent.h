@@ -1,9 +1,11 @@
 #pragma once
 
 #include "State/B33pProcessor.h"
+#include "State/PresetManager.h"
 #include "State/ProjectFileManager.h"
 #include "UI/AmpEnvSection.h"
 #include "UI/AudioSettingsWindow.h"
+#include "UI/PresetBrowserDialog.h"
 #include "UI/EffectsSection.h"
 #include "UI/FilterSection.h"
 #include "UI/MasterSection.h"
@@ -67,6 +69,8 @@ namespace B33p
         void updateWindowTitle();
         void showAboutDialog();
         void showAudioSettings();
+        void showPresetBrowser();
+        void promptSavePreset();
 
         // The top-level component we registered the KeyListener on,
         // kept so the destructor can deregister cleanly even after
@@ -76,8 +80,11 @@ namespace B33p
         B33pProcessor&             processor;
         juce::AudioDeviceManager&  deviceManager;
         ProjectFileManager         fileManager;
+        PresetManager              presetManager;
 
-        std::unique_ptr<AudioSettingsWindow> audioSettingsWindow;
+        std::unique_ptr<AudioSettingsWindow>          audioSettingsWindow;
+        std::unique_ptr<PresetBrowserDialogWindow>    presetBrowserWindow;
+        std::unique_ptr<juce::AlertWindow>            savePresetWindow;
 
         // Owns the hover-tooltip popup for the whole window. Just
         // declaring it is enough — every Component with a non-empty

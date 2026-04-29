@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: post-MVP roadmap — Musical timing landed; DAW transport sync stays parked behind plugin builds; moving to Workflow next**
+> **Current focus: post-MVP roadmap — preset browser shipped; next item in Workflow is Generator presets / Configurable randomization ranges / MIDI input / Polyphony / Batch export**
 
 ---
 
@@ -244,7 +244,7 @@ Explicitly out of MVP scope — the standalone app is the priority and the "musi
 
 ### Workflow
 
-- [ ] **Preset browser** with tags, favorites, search
+- [x] **Preset browser** with tags, favorites, search — basic browser ships now (Save Preset / Browse Presets in File menu, ListBox with Load/Delete, per-user Presets directory under app-data); tags, favorites, and full-text search are post-MVP polish on top of this base.
 - [ ] **Generator presets** — one-click starting points (droid chatter, alarms, weapon charge, UI beeps)
 - [ ] **User-configurable randomization ranges and distributions**
 - [ ] **MIDI input** for auditioning

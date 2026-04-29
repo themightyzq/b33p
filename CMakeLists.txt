@@ -58,6 +58,7 @@ target_sources(B33p PRIVATE
     Source/State/B33pProcessor.cpp
     Source/State/ParameterLayout.cpp
     Source/State/ParameterRandomizer.cpp
+    Source/State/PresetManager.cpp
     Source/State/ProjectFileManager.cpp
     Source/State/ProjectState.cpp
     Source/UI/AmpEnvSection.cpp
@@ -79,6 +80,7 @@ target_sources(B33p PRIVATE
     Source/UI/PatternGrid.cpp
     Source/UI/PatternSection.cpp
     Source/UI/PitchEnvSection.cpp
+    Source/UI/PresetBrowserDialog.cpp
     Source/UI/RandomizerWiring.cpp
     Source/UI/PitchEnvelopeEditor.cpp
     Source/UI/Section.cpp
