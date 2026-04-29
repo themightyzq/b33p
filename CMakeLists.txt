@@ -85,6 +85,7 @@ target_sources(B33p PRIVATE
     Source/DSP/AmpEnvelope.cpp
     Source/DSP/PitchEnvelope.cpp
     Source/DSP/Filter.cpp
+    Source/DSP/LFO.cpp
     Source/DSP/ModulationEffect.cpp
     Source/DSP/Bitcrush.cpp
     Source/DSP/Distortion.cpp

@@ -314,6 +314,17 @@ namespace B33p::ProjectState
             version = 7;
         }
 
+        if (version == 7)
+        {
+            // v7 → v8: LFO + modulation matrix params were added.
+            // Every matrix slot defaults to source = dest = None
+            // and the LFO rates default to 1 Hz / Sine — none of
+            // which contribute modulation, so a v7 file's audio
+            // is unchanged when reloaded.
+            tree.setProperty(kVersion, 8, nullptr);
+            version = 8;
+        }
+
         return tree;
     }
 

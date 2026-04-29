@@ -6,6 +6,7 @@ set(B33P_DSP_SOURCES
     ${CMAKE_SOURCE_DIR}/Source/DSP/AmpEnvelope.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/PitchEnvelope.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Filter.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/LFO.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/ModulationEffect.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Bitcrush.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Distortion.cpp
@@ -18,6 +19,7 @@ add_executable(B33pTests
     DSP/AmpEnvelopeTests.cpp
     DSP/PitchEnvelopeTests.cpp
     DSP/FilterTests.cpp
+    DSP/LFOTests.cpp
     DSP/ModulationEffectTests.cpp
     DSP/BitcrushTests.cpp
     DSP/DistortionTests.cpp

@@ -1,6 +1,7 @@
 #include "ParameterLayout.h"
 
 #include "Core/ParameterIDs.h"
+#include "DSP/ModulationMatrix.h"
 #include "Pattern/Pattern.h"
 
 namespace B33p
@@ -191,6 +192,66 @@ namespace B33p
                                  prefix + "Voice Gain",
                                  juce::NormalisableRange<float> { 0.0f, 10.0f },
                                  1.0f));
+
+            // LFOs — two per lane. Default rate of 1 Hz puts them
+            // squarely in "audible motion" territory; default shape
+            // is Sine because it's the smoothest modulator and the
+            // least surprising starting point.
+            for (int i = 0; i < kNumLfosPerLane; ++i)
+            {
+                const juce::String lfoPrefix = prefix + "LFO " + juce::String(i + 1) + " ";
+
+                layout.add(std::make_unique<juce::AudioParameterChoice>(
+                    juce::ParameterID { ParameterIDs::lfoShape(lane, i), kParameterVersionHint },
+                    lfoPrefix + "Shape",
+                    juce::StringArray { "Sine", "Triangle", "Saw", "Square" },
+                    0));
+
+                layout.add(makeFloat(ParameterIDs::lfoRateHz(lane, i),
+                                     lfoPrefix + "Rate",
+                                     skewedRange(0.0f, 30.0f, 1.0f),
+                                     1.0f, "Hz"));
+            }
+
+            // Modulation matrix slots. Source / dest both default
+            // to None so a fresh project's matrix is inert until
+            // the user wires something. Amount centres on 0 with
+            // a [-1, +1] range — a slot with non-zero amount but
+            // None source contributes nothing.
+            for (int i = 0; i < kNumModSlots; ++i)
+            {
+                const juce::String slotPrefix = prefix + "Mod " + juce::String(i + 1) + " ";
+
+                layout.add(std::make_unique<juce::AudioParameterChoice>(
+                    juce::ParameterID { ParameterIDs::modSlotSource(lane, i), kParameterVersionHint },
+                    slotPrefix + "Source",
+                    juce::StringArray { "None", "LFO 1", "LFO 2" },
+                    0));
+
+                layout.add(std::make_unique<juce::AudioParameterChoice>(
+                    juce::ParameterID { ParameterIDs::modSlotDest(lane, i), kParameterVersionHint },
+                    slotPrefix + "Destination",
+                    juce::StringArray {
+                        "None",
+                        "Osc Pitch",
+                        "Wavetable Morph",
+                        "FM Depth",
+                        "Ring Mix",
+                        "Filter Cutoff",
+                        "Filter Resonance",
+                        "Distortion Drive",
+                        "Mod FX P1",
+                        "Mod FX P2",
+                        "Mod FX Mix",
+                        "Voice Gain"
+                    },
+                    0));
+
+                layout.add(makeFloat(ParameterIDs::modSlotAmount(lane, i),
+                                     slotPrefix + "Amount",
+                                     juce::NormalisableRange<float> { -1.0f, 1.0f },
+                                     0.0f));
+            }
         }
     }
 

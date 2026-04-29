@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DSP/LFO.h"
+#include "DSP/ModulationMatrix.h"
 #include "DSP/Voice.h"
 #include "Pattern/Pattern.h"
 #include "Pattern/PatternSnapshot.h"
@@ -213,6 +215,23 @@ namespace B33p
         void pushParametersToLane(int lane);
         void triggerVoiceFromEvent(int lane, const Event& event);
 
+        // Reads APVTS LFO params + modulation-matrix slots for the
+        // lane and updates each LFO's runtime config; computes the
+        // total modulation contribution per destination so
+        // pushParametersToLane can apply it on top of the base
+        // APVTS values before pushing to the Voice.
+        // Returns an array indexed by ModDestination (cast to int).
+        std::array<float, kNumModDestinations>
+            evaluateModulationContributions(int lane);
+
+        // Returns the APVTS-base value for a destination param,
+        // shifted by the given modulation amount in the parameter's
+        // normalised [0..1] space (or by +/- 12 semitones for the
+        // pitch destination). Used by pushParametersToLane.
+        float effectiveParamValue(int lane,
+                                  ModDestination destination,
+                                  float modAmount) const;
+
         // juce::AudioProcessorValueTreeState::Listener
         void parameterChanged(const juce::String& parameterID, float newValue) override;
 
@@ -228,6 +247,12 @@ namespace B33p
         // its own voice; the pattern engine sums all four voices
         // each sample.
         std::array<Voice, Pattern::kNumLanes> voices;
+
+        // Two free-running LFOs per lane. Phase advances once per
+        // audio block (block-rate modulation) — pushParametersToLane
+        // reads currentValue() before deciding which Voice setters
+        // to call with modulated values.
+        std::array<std::array<LFO, kNumLfosPerLane>, Pattern::kNumLanes> lfos;
 
         // Curve writes lock on the message thread; audio-thread reads
         // use a ScopedTryLock and fall back to whatever curve each

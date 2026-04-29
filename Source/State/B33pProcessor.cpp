@@ -112,6 +112,12 @@ namespace B33p
             v.prepare(sampleRate);
             v.reset();
         }
+        for (auto& laneLfos : lfos)
+            for (auto& lfo : laneLfos)
+            {
+                lfo.prepare(sampleRate);
+                lfo.reset();
+            }
     }
 
     void B33pProcessor::releaseResources()
@@ -393,9 +399,110 @@ namespace B33p
             pushParametersToLane(lane);
     }
 
+    std::array<float, kNumModDestinations>
+    B33pProcessor::evaluateModulationContributions(int lane)
+    {
+        // Re-sync each LFO's runtime config from APVTS. Cheap to do
+        // every block; the LFO's setShape / setRate are no-ops when
+        // values haven't actually changed.
+        for (int i = 0; i < kNumLfosPerLane; ++i)
+        {
+            auto& l = lfos[static_cast<size_t>(lane)][static_cast<size_t>(i)];
+            const auto* shapeParam = apvts.getRawParameterValue(ParameterIDs::lfoShape (lane, i));
+            const auto* rateParam  = apvts.getRawParameterValue(ParameterIDs::lfoRateHz(lane, i));
+            l.setShape(static_cast<LFO::Shape>(
+                juce::jlimit(0, 3, static_cast<int>(shapeParam->load()))));
+            l.setRate(rateParam->load());
+        }
+
+        std::array<float, kNumModDestinations> contributions {};
+        contributions.fill(0.0f);
+
+        for (int slot = 0; slot < kNumModSlots; ++slot)
+        {
+            const int srcIdx = juce::jlimit(0, kNumModSources - 1,
+                static_cast<int>(apvts.getRawParameterValue(ParameterIDs::modSlotSource(lane, slot))->load()));
+            const int dstIdx = juce::jlimit(0, kNumModDestinations - 1,
+                static_cast<int>(apvts.getRawParameterValue(ParameterIDs::modSlotDest(lane, slot))->load()));
+            const float amount = apvts.getRawParameterValue(ParameterIDs::modSlotAmount(lane, slot))->load();
+
+            const auto src = static_cast<ModSource>(srcIdx);
+            if (src == ModSource::None || dstIdx == 0)
+                continue;
+
+            const int lfoIdx = (src == ModSource::LFO1) ? 0 : 1;
+            const float lfoOut = lfos[static_cast<size_t>(lane)][static_cast<size_t>(lfoIdx)]
+                                     .currentValue();
+
+            // 0.5 scale puts a full-amplitude LFO with amount=1 at
+            // ±half the parameter's normalised range — strong but
+            // not destination-saturating. Users who want full sweep
+            // can stack two slots on the same destination.
+            contributions[static_cast<size_t>(dstIdx)] += lfoOut * amount * 0.5f;
+        }
+
+        return contributions;
+    }
+
+    namespace
+    {
+        // Maps each modulation destination back to the lane's
+        // corresponding APVTS parameter ID. None returns an empty
+        // string; the caller is expected to never call this with
+        // ModDestination::None.
+        juce::String paramIdForDest(int lane, ModDestination dest)
+        {
+            switch (dest)
+            {
+                case ModDestination::OscBasePitch:    return ParameterIDs::basePitchHz(lane);
+                case ModDestination::WavetableMorph:  return ParameterIDs::wavetableMorph(lane);
+                case ModDestination::FmDepth:         return ParameterIDs::fmDepth(lane);
+                case ModDestination::RingMix:         return ParameterIDs::ringMix(lane);
+                case ModDestination::FilterCutoff:    return ParameterIDs::filterCutoffHz(lane);
+                case ModDestination::FilterResonance: return ParameterIDs::filterResonanceQ(lane);
+                case ModDestination::DistortionDrive: return ParameterIDs::distortionDrive(lane);
+                case ModDestination::ModEffectParam1: return ParameterIDs::modEffectParam1(lane);
+                case ModDestination::ModEffectParam2: return ParameterIDs::modEffectParam2(lane);
+                case ModDestination::ModEffectMix:    return ParameterIDs::modEffectMix(lane);
+                case ModDestination::VoiceGain:       return ParameterIDs::voiceGain(lane);
+                case ModDestination::None:            break;
+            }
+            return {};
+        }
+    }
+
+    float B33pProcessor::effectiveParamValue(int lane,
+                                              ModDestination destination,
+                                              float modAmount) const
+    {
+        const auto id = paramIdForDest(lane, destination);
+        if (id.isEmpty())
+            return 0.0f;
+        auto* param = apvts.getParameter(id);
+        if (param == nullptr)
+            return 0.0f;
+        const float baseNorm = param->getValue();
+        const float effNorm  = juce::jlimit(0.0f, 1.0f, baseNorm + modAmount);
+        return param->convertFrom0to1(effNorm);
+    }
+
     void B33pProcessor::pushParametersToLane(int lane)
     {
         auto& v = voices[static_cast<size_t>(lane)];
+
+        const auto modContribs = evaluateModulationContributions(lane);
+
+        // Picks the modulated value if any matrix slot routes to
+        // this destination, otherwise falls back to the raw APVTS
+        // value. Avoids the parameter-by-id hashmap lookup on the
+        // common no-modulation path.
+        auto modulated = [&](ModDestination d, const juce::String& fallbackId)
+        {
+            const float c = modContribs[static_cast<size_t>(d)];
+            if (c != 0.0f)
+                return effectiveParamValue(lane, d, c);
+            return apvts.getRawParameterValue(fallbackId)->load();
+        };
 
         const auto* wfParam = apvts.getRawParameterValue(ParameterIDs::oscWaveform(lane));
         v.setWaveform(static_cast<Oscillator::Waveform>(
@@ -403,12 +510,12 @@ namespace B33p
                          static_cast<int>(Oscillator::Waveform::Ring),
                          static_cast<int>(wfParam->load()))));
 
-        v.setBasePitchHz         (apvts.getRawParameterValue(ParameterIDs::basePitchHz(lane))->load());
-        v.setWavetableMorph      (apvts.getRawParameterValue(ParameterIDs::wavetableMorph(lane))->load());
+        v.setBasePitchHz         (modulated(ModDestination::OscBasePitch,    ParameterIDs::basePitchHz(lane)));
+        v.setWavetableMorph      (modulated(ModDestination::WavetableMorph,  ParameterIDs::wavetableMorph(lane)));
         v.setFmRatio             (apvts.getRawParameterValue(ParameterIDs::fmRatio(lane))->load());
-        v.setFmDepth             (apvts.getRawParameterValue(ParameterIDs::fmDepth(lane))->load());
+        v.setFmDepth             (modulated(ModDestination::FmDepth,         ParameterIDs::fmDepth(lane)));
         v.setRingRatio           (apvts.getRawParameterValue(ParameterIDs::ringRatio(lane))->load());
-        v.setRingMix             (apvts.getRawParameterValue(ParameterIDs::ringMix(lane))->load());
+        v.setRingMix             (modulated(ModDestination::RingMix,         ParameterIDs::ringMix(lane)));
 
         // Push every slot only when its shared_ptr has changed since
         // last push — keeps the common no-edit path zero-cost (one
@@ -436,23 +543,23 @@ namespace B33p
             juce::jlimit(0,
                          static_cast<int>(Filter::Type::Formant),
                          static_cast<int>(ftParam->load()))));
-        v.setFilterCutoff        (apvts.getRawParameterValue(ParameterIDs::filterCutoffHz(lane))->load());
-        v.setFilterResonance     (apvts.getRawParameterValue(ParameterIDs::filterResonanceQ(lane))->load());
+        v.setFilterCutoff        (modulated(ModDestination::FilterCutoff,    ParameterIDs::filterCutoffHz(lane)));
+        v.setFilterResonance     (modulated(ModDestination::FilterResonance, ParameterIDs::filterResonanceQ(lane)));
         v.setFilterVowel         (apvts.getRawParameterValue(ParameterIDs::filterVowel(lane))->load());
         v.setBitcrushBitDepth    (apvts.getRawParameterValue(ParameterIDs::bitcrushBitDepth(lane))->load());
         v.setBitcrushSampleRate  (apvts.getRawParameterValue(ParameterIDs::bitcrushSampleRateHz(lane))->load());
-        v.setDistortionDrive     (apvts.getRawParameterValue(ParameterIDs::distortionDrive(lane))->load());
+        v.setDistortionDrive     (modulated(ModDestination::DistortionDrive, ParameterIDs::distortionDrive(lane)));
 
         const auto* mxParam = apvts.getRawParameterValue(ParameterIDs::modEffectType(lane));
         v.setModEffectType(static_cast<ModulationEffect::Type>(
             juce::jlimit(0,
                          static_cast<int>(ModulationEffect::Type::Phaser),
                          static_cast<int>(mxParam->load()))));
-        v.setModEffectParam1     (apvts.getRawParameterValue(ParameterIDs::modEffectParam1(lane))->load());
-        v.setModEffectParam2     (apvts.getRawParameterValue(ParameterIDs::modEffectParam2(lane))->load());
-        v.setModEffectMix        (apvts.getRawParameterValue(ParameterIDs::modEffectMix(lane))->load());
+        v.setModEffectParam1     (modulated(ModDestination::ModEffectParam1, ParameterIDs::modEffectParam1(lane)));
+        v.setModEffectParam2     (modulated(ModDestination::ModEffectParam2, ParameterIDs::modEffectParam2(lane)));
+        v.setModEffectMix        (modulated(ModDestination::ModEffectMix,    ParameterIDs::modEffectMix(lane)));
 
-        v.setGain                (apvts.getRawParameterValue(ParameterIDs::voiceGain(lane))->load());
+        v.setGain                (modulated(ModDestination::VoiceGain,       ParameterIDs::voiceGain(lane)));
     }
 
     void B33pProcessor::triggerVoiceFromEvent(int lane, const Event& event)
@@ -622,5 +729,13 @@ namespace B33p
         // standalones typically have at most 2 output channels).
         for (int ch = 2; ch < numChannels; ++ch)
             buffer.clear(ch, 0, numSamples);
+
+        // Advance every lane's LFOs by one block's worth of phase
+        // so the next block's pushParametersToVoices reads the
+        // updated phase position. LFOs run free regardless of
+        // playback state — modulation persists between events.
+        for (auto& laneLfos : lfos)
+            for (auto& lfo : laneLfos)
+                lfo.advance(numSamples);
     }
 }
