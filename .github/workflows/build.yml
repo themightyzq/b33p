@@ -5,11 +5,12 @@ on:
     branches: [main]
   pull_request:
 
-# Release build + ctest across all three target OSes. The built binary
-# is uploaded as a per-OS artifact so non-developer testers can grab
-# it from the Actions run page (and it can be promoted to a GitHub
-# Release manually). Catch2 is fetched via CPM inside CMakeLists.txt
-# when BUILD_TESTING is ON.
+# Release build + ctest across all three target OSes. The built bundles
+# (Standalone + VST3 on every OS, plus AU on macOS) are uploaded as a
+# per-OS artifact so non-developer testers can grab them from the
+# Actions run page. The artifact contains the whole Release/ tree so
+# every shipping format is in one download. Catch2 is fetched via CPM
+# inside CMakeLists.txt when BUILD_TESTING is ON.
 
 jobs:
   build:
@@ -19,13 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            binary_path: build/B33p_artefacts/Release/b33p
-          - os: macos-latest
-            binary_path: build/B33p_artefacts/Release/b33p.app
-          - os: windows-latest
-            binary_path: build/B33p_artefacts/Release/b33p.exe
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     env:
       CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm_cache
@@ -79,9 +74,16 @@ jobs:
         working-directory: build
         run: ctest --output-on-failure --build-config ${{ env.CMAKE_BUILD_TYPE }}
 
-      - name: Upload binary
+      - name: Upload bundles
         uses: actions/upload-artifact@v4
         with:
           name: b33p-${{ matrix.os }}
-          path: ${{ matrix.binary_path }}
+          # Whole Release/ tree captures Standalone + VST3 (every OS)
+          # plus AU (macOS only). The juce_add_plugin output layout
+          # places each format under its own subdirectory; the
+          # uploaded artifact mirrors that layout.
+          path: |
+            build/B33p_artefacts/Release/Standalone
+            build/B33p_artefacts/Release/VST3
+            build/B33p_artefacts/Release/AU
           if-no-files-found: error
