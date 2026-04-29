@@ -283,4 +283,3 @@ See the post-MVP roadmap in [TODO.md](../TODO.md) for the canonical list. Briefl
 - **No per-lane pitch envelopes** — one pitch envelope is shared across all four voices.
 - **No release installers / signed binaries** — currently shipped via raw build artifacts. CPack + a release workflow is on the roadmap.
 - **No AAX plugin** — gated behind the (non-free) Avid SDK.
-- **No IMA-ADPCM WAV export** — JUCE doesn't ship a writer for it; would need a from-scratch encoder against the ADPCM spec.
