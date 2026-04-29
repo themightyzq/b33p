@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Pattern/WavWriter.h"
+#include "Pattern/AudioFileWriter.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -25,11 +25,12 @@ namespace B33p
     public:
         struct Result
         {
-            bool         accepted    { false };
-            juce::File   destination;
-            double       sampleRate  { 48000.0 };
-            BitDepth     bitDepth    { BitDepth::Sixteen };
-            ChannelMode  channelMode { ChannelMode::Mono };
+            bool             accepted    { false };
+            juce::File       destination;
+            AudioFileFormat  format      { AudioFileFormat::Wav };
+            double           sampleRate  { 48000.0 };
+            BitDepth         bitDepth    { BitDepth::Sixteen };
+            ChannelMode      channelMode { ChannelMode::Mono };
             // 1 = single render (legacy behaviour). 2+ = render
             // that many dice-rolled variations into numbered
             // siblings (Filename_001.wav, Filename_002.wav, ...);
@@ -66,6 +67,9 @@ namespace B33p
         juce::Label      destinationLabel;
         juce::TextEditor destinationField;
         juce::TextButton browseButton { "Browse..." };
+
+        juce::Label      formatLabel;
+        juce::ComboBox   formatCombo;
 
         juce::Label      sampleRateLabel;
         juce::ComboBox   sampleRateCombo;

@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 
-#include "Pattern/WavWriter.h"
+#include "Pattern/AudioFileWriter.h"
 
 #include <juce_audio_formats/juce_audio_formats.h>
 

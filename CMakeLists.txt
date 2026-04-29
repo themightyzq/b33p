@@ -115,7 +115,7 @@ target_sources(B33p PRIVATE
     Source/Pattern/Pattern.cpp
     Source/Pattern/PatternRenderer.cpp
     Source/Pattern/PatternSnapshot.cpp
-    Source/Pattern/WavWriter.cpp
+    Source/Pattern/AudioFileWriter.cpp
 )
 
 target_include_directories(B33p PRIVATE Source)
