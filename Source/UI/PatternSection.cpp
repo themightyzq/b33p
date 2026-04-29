@@ -16,7 +16,7 @@ namespace B33p
         constexpr int  kRandomizeWidth  = 120;
         constexpr int  kComboWidth      = 110;
         constexpr int  kLabelWidth      = 50;
-        constexpr int  kTimeWidth       = 90;
+        constexpr int  kTimeWidth       = 180;
         constexpr int  kInspectorHeight = 32;
         constexpr int  kRepaintHz       = 30;
 
@@ -30,16 +30,61 @@ namespace B33p
             { "10.0 s", 10.0 },
         }};
 
-        struct GridPreset { const char* label; double seconds; };
-        constexpr std::array<GridPreset, 8> kGridPresets {{
-            { "10 ms",   0.010 },
-            { "25 ms",   0.025 },
-            { "50 ms",   0.050 },
-            { "100 ms",  0.100 },
-            { "250 ms",  0.250 },
-            { "500 ms",  0.500 },
-            { "1000 ms", 1.000 },
-            { "Off",     0.000 },
+        // Each preset is either a fixed-seconds value (positive
+        // seconds, beatFraction = 0) or a beat-fraction value
+        // (seconds = 0, positive beatFraction). computeSeconds()
+        // collapses the two into a single number using the current
+        // pattern BPM. seconds = 0 AND beatFraction = 0 means
+        // "snap is off".
+        struct GridPreset
+        {
+            const char* label;
+            double      seconds;
+            double      beatFraction;
+
+            double computeSeconds(double bpm) const noexcept
+            {
+                if (beatFraction > 0.0)
+                    return beatFraction * 60.0 / bpm;
+                return seconds;
+            }
+        };
+
+        // beatFraction is the duration in beats. A "1/4 note" lasts
+        // exactly one beat in 4/4; a "1/16 note" lasts a quarter of
+        // a beat; etc. Time-based and musical entries coexist so
+        // users can stay in either domain.
+        constexpr std::array<GridPreset, 14> kGridPresets {{
+            { "10 ms",     0.010, 0.0    },
+            { "25 ms",     0.025, 0.0    },
+            { "50 ms",     0.050, 0.0    },
+            { "100 ms",    0.100, 0.0    },
+            { "250 ms",    0.250, 0.0    },
+            { "500 ms",    0.500, 0.0    },
+            { "1000 ms",   1.000, 0.0    },
+            { "1/32 note", 0.0,   0.125  },
+            { "1/16 note", 0.0,   0.25   },
+            { "1/8 note",  0.0,   0.5    },
+            { "1/4 note",  0.0,   1.0    },
+            { "1/2 note",  0.0,   2.0    },
+            { "Whole",     0.0,   4.0    },
+            { "Off",       0.0,   0.0    },
+        }};
+
+        // 12 common time signatures. Each entry is {numerator,
+        // denominator, label} — denominators are powers of two so
+        // they map cleanly onto a beat-fraction snap grid.
+        struct TimeSigPreset { int numerator; int denominator; const char* label; };
+        constexpr std::array<TimeSigPreset, 9> kTimeSigPresets {{
+            {  4, 4, "4/4" },
+            {  3, 4, "3/4" },
+            {  2, 4, "2/4" },
+            {  6, 8, "6/8" },
+            {  7, 8, "7/8" },
+            {  9, 8, "9/8" },
+            { 12, 8, "12/8"},
+            {  5, 4, "5/4" },
+            {  6, 4, "6/4" },
         }};
 
         // Item IDs are 1-based for juce::ComboBox so 0 means
@@ -135,18 +180,49 @@ namespace B33p
         for (size_t i = 0; i < kGridPresets.size(); ++i)
             gridCombo.addItem(kGridPresets[i].label, idForIndex(static_cast<int>(i)));
         {
+            // Pick the preset whose computed seconds best matches
+            // the grid's current seconds at the pattern's BPM.
             const double current = grid.getGridSeconds();
+            const double bpm     = processor.getPattern().getBpm();
             int bestId = idForIndex(0);
             double bestDist = 1e30;
             for (size_t i = 0; i < kGridPresets.size(); ++i)
             {
-                const double d = std::abs(kGridPresets[i].seconds - current);
+                const double d = std::abs(kGridPresets[i].computeSeconds(bpm) - current);
                 if (d < bestDist) { bestDist = d; bestId = idForIndex(static_cast<int>(i)); }
             }
             gridCombo.setSelectedId(bestId, juce::dontSendNotification);
         }
         gridCombo.onChange = [this] { onGridChanged(); };
         addAndMakeVisible(gridCombo);
+
+        // BPM input (numeric slider with inc/dec arrows).
+        bpmLabel.setText("BPM:", juce::dontSendNotification);
+        bpmLabel.setJustificationType(juce::Justification::centredRight);
+        bpmLabel.setFont(juce::FontOptions(11.0f));
+        addAndMakeVisible(bpmLabel);
+
+        bpmSlider.setSliderStyle(juce::Slider::IncDecButtons);
+        bpmSlider.setRange(Pattern::kMinBpm, Pattern::kMaxBpm, 1.0);
+        bpmSlider.setIncDecButtonsMode(juce::Slider::incDecButtonsDraggable_AutoDirection);
+        bpmSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 60, 22);
+        bpmSlider.setValue(processor.getPattern().getBpm(),
+                            juce::dontSendNotification);
+        bpmSlider.onValueChange = [this] { onBpmChanged(); };
+        addAndMakeVisible(bpmSlider);
+
+        // Time-signature combo
+        timeSigLabel.setText("Sig:", juce::dontSendNotification);
+        timeSigLabel.setJustificationType(juce::Justification::centredRight);
+        timeSigLabel.setFont(juce::FontOptions(11.0f));
+        addAndMakeVisible(timeSigLabel);
+
+        for (size_t i = 0; i < kTimeSigPresets.size(); ++i)
+            timeSigCombo.addItem(kTimeSigPresets[i].label,
+                                  idForIndex(static_cast<int>(i)));
+        timeSigCombo.onChange = [this] { onTimeSigChanged(); };
+        addAndMakeVisible(timeSigCombo);
+        syncBpmAndTimeSigFromPattern();
 
         // Randomize-all and Export buttons (right-aligned to separate
         // the action group from playback / editing controls).
@@ -163,7 +239,9 @@ namespace B33p
         playButton        .setTooltip("Play the pattern from the start (Space)");
         loopToggle        .setTooltip("Loop playback when the end is reached");
         lengthCombo       .setTooltip("Total length of the pattern");
-        gridCombo         .setTooltip("Snap event positions to this grid (Off = free)");
+        gridCombo         .setTooltip("Snap event positions to this grid (Off = free). Musical entries follow the pattern's BPM.");
+        bpmSlider         .setTooltip("Pattern tempo in beats per minute. Drives the musical grid + the bars/beats time display.");
+        timeSigCombo      .setTooltip("Time signature. Sets how many beats sit in a bar for the time display.");
         randomizeAllButton.setTooltip("Randomize every unlocked parameter across all 4 lanes");
         exportButton      .setTooltip("Render the pattern to a WAV file");
 
@@ -194,6 +272,8 @@ namespace B33p
     void PatternSection::refreshFromState()
     {
         syncLengthComboToPattern();
+        syncBpmAndTimeSigFromPattern();
+        applyGridPreset();
         loopToggle.setToggleState(processor.getLooping(),
                                    juce::dontSendNotification);
         grid.refreshLaneMetaFromPattern();
@@ -213,11 +293,63 @@ namespace B33p
 
     void PatternSection::onGridChanged()
     {
+        applyGridPreset();
+    }
+
+    void PatternSection::applyGridPreset()
+    {
         const int id = gridCombo.getSelectedId();
         if (id <= 0) return;
         const size_t idx = static_cast<size_t>(id - 1);
         if (idx >= kGridPresets.size()) return;
-        grid.setGridSeconds(kGridPresets[idx].seconds);
+        const double bpm = processor.getPattern().getBpm();
+        grid.setGridSeconds(kGridPresets[idx].computeSeconds(bpm));
+    }
+
+    void PatternSection::onBpmChanged()
+    {
+        const double newBpm = bpmSlider.getValue();
+        processor.getPattern().setBpm(newBpm);
+        processor.markDirty();
+        // Re-evaluate the grid in case the user has a musical
+        // preset selected — it follows BPM by definition.
+        applyGridPreset();
+        // Repaint the grid so the dual-time ruler reflects the
+        // new BPM immediately.
+        grid.repaint();
+    }
+
+    void PatternSection::onTimeSigChanged()
+    {
+        const int id = timeSigCombo.getSelectedId();
+        if (id <= 0) return;
+        const size_t idx = static_cast<size_t>(id - 1);
+        if (idx >= kTimeSigPresets.size()) return;
+        const auto& ts = kTimeSigPresets[idx];
+        processor.getPattern().setTimeSignature(ts.numerator, ts.denominator);
+        processor.markDirty();
+        grid.repaint();
+    }
+
+    void PatternSection::syncBpmAndTimeSigFromPattern()
+    {
+        const auto& p = processor.getPattern();
+        bpmSlider.setValue(p.getBpm(), juce::dontSendNotification);
+
+        const int num = p.getTimeSigNumerator();
+        const int den = p.getTimeSigDenominator();
+        for (size_t i = 0; i < kTimeSigPresets.size(); ++i)
+        {
+            if (kTimeSigPresets[i].numerator == num
+                && kTimeSigPresets[i].denominator == den)
+            {
+                timeSigCombo.setSelectedId(idForIndex(static_cast<int>(i)),
+                                            juce::dontSendNotification);
+                return;
+            }
+        }
+        // Unknown time sig in file — fall back to first entry.
+        timeSigCombo.setSelectedId(idForIndex(0), juce::dontSendNotification);
     }
 
     void PatternSection::onExportClicked()
@@ -259,10 +391,26 @@ namespace B33p
         playButton.setColour(juce::TextButton::buttonColourId,
                              playing ? stopRed : playGreen);
 
+        const auto& pattern = processor.getPattern();
         const double headSec   = playing ? processor.getPlayheadSeconds() : 0.0;
-        const double lengthSec = processor.getPattern().getLengthSeconds();
-        timeLabel.setText(juce::String(headSec,   2) + " / "
-                        + juce::String(lengthSec, 2) + "s",
+        const double lengthSec = pattern.getLengthSeconds();
+        const double bpm       = pattern.getBpm();
+        const int    numer     = pattern.getTimeSigNumerator();
+        const double secPerBeat = 60.0 / bpm;
+
+        // Bar/beat readout. beatsTotal = total elapsed beats; from
+        // there it's straight integer division to bar (1-indexed)
+        // and beat (also 1-indexed).
+        const double beatsTotal = headSec / secPerBeat;
+        const int    barIdx     = static_cast<int>(std::floor(beatsTotal
+                                                       / static_cast<double>(numer)));
+        const int    beatInBar  = static_cast<int>(std::floor(beatsTotal))
+                                       - barIdx * numer;
+
+        timeLabel.setText("Bar " + juce::String(barIdx + 1)
+                            + "." + juce::String(beatInBar + 1)
+                            + " — " + juce::String(headSec,   2)
+                            + " / " + juce::String(lengthSec, 2) + "s",
                           juce::dontSendNotification);
 
         if (playing)
@@ -304,6 +452,15 @@ namespace B33p
 
         gridLabel.setBounds(controlsRow.removeFromLeft(kLabelWidth));
         gridCombo.setBounds(controlsRow.removeFromLeft(kComboWidth));
+        controlsRow.removeFromLeft(kControlsGap);
+
+        constexpr int kBpmWidth  = 100;
+        constexpr int kSigWidth  = 70;
+        bpmLabel.setBounds(controlsRow.removeFromLeft(kLabelWidth));
+        bpmSlider.setBounds(controlsRow.removeFromLeft(kBpmWidth));
+        controlsRow.removeFromLeft(kControlsGap);
+        timeSigLabel.setBounds(controlsRow.removeFromLeft(kLabelWidth));
+        timeSigCombo.setBounds(controlsRow.removeFromLeft(kSigWidth));
 
         // Inspector strip docks at the bottom; grid takes the rest.
         inspector.setBounds(bounds.removeFromBottom(kInspectorHeight));

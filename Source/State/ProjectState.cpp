@@ -26,6 +26,9 @@ namespace B33p::ProjectState
         const juce::Identifier kPattern               { "PATTERN" };
         const juce::Identifier kPatternLength         { "length_seconds" };
         const juce::Identifier kPatternLooping        { "looping" };
+        const juce::Identifier kPatternBpm            { "bpm" };
+        const juce::Identifier kPatternTimeSigNum     { "time_sig_num" };
+        const juce::Identifier kPatternTimeSigDen     { "time_sig_den" };
         const juce::Identifier kLane                  { "LANE" };
         const juce::Identifier kLaneIndex             { "index" };
         const juce::Identifier kLaneName              { "name" };
@@ -80,8 +83,11 @@ namespace B33p::ProjectState
         // ---- Pattern ----------------------------------------------
         juce::ValueTree patternNode { kPattern };
         const auto& pattern = processor.getPattern();
-        patternNode.setProperty(kPatternLength,  pattern.getLengthSeconds(), nullptr);
-        patternNode.setProperty(kPatternLooping, processor.getLooping(),     nullptr);
+        patternNode.setProperty(kPatternLength,     pattern.getLengthSeconds(),         nullptr);
+        patternNode.setProperty(kPatternLooping,    processor.getLooping(),             nullptr);
+        patternNode.setProperty(kPatternBpm,        pattern.getBpm(),                   nullptr);
+        patternNode.setProperty(kPatternTimeSigNum, pattern.getTimeSigNumerator(),      nullptr);
+        patternNode.setProperty(kPatternTimeSigDen, pattern.getTimeSigDenominator(),    nullptr);
 
         for (int laneIdx = 0; laneIdx < Pattern::kNumLanes; ++laneIdx)
         {
@@ -370,6 +376,16 @@ namespace B33p::ProjectState
             version = 10;
         }
 
+        if (version == 10)
+        {
+            // v10 → v11: pattern BPM + time signature. Missing
+            // attributes default to (120, 4/4) which matches the
+            // implicit values v10 used (event timing was always in
+            // seconds, never tempo-derived).
+            tree.setProperty(kVersion, 11, nullptr);
+            version = 11;
+        }
+
         return tree;
     }
 
@@ -412,6 +428,14 @@ namespace B33p::ProjectState
             static_cast<double>(patternNode.getProperty(kPatternLength,
                                                         Pattern::kDefaultLengthSeconds)));
         processor.setLooping(static_cast<bool>(patternNode.getProperty(kPatternLooping, true)));
+        pattern.setBpm(
+            static_cast<double>(patternNode.getProperty(kPatternBpm,
+                                                         Pattern::kDefaultBpm)));
+        pattern.setTimeSignature(
+            static_cast<int>(patternNode.getProperty(kPatternTimeSigNum,
+                                                      Pattern::kDefaultTimeSigNum)),
+            static_cast<int>(patternNode.getProperty(kPatternTimeSigDen,
+                                                      Pattern::kDefaultTimeSigDen)));
 
         for (auto laneNode : patternNode)
         {

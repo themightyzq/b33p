@@ -42,7 +42,10 @@ namespace B33p
         //  v10: per-event probability / ratchets / humanize fields — events
         //       gain three new attributes. v9 events without these load with
         //       the inert defaults (probability=1, ratchets=1, humanize=0).
-        inline constexpr int kCurrentVersion = 10;
+        //  v11: pattern tempo + time signature — PATTERN node grows bpm and
+        //       time_sig_num / time_sig_den attributes. v10 patterns without
+        //       these load at the defaults (120 BPM, 4/4).
+        inline constexpr int kCurrentVersion = 11;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

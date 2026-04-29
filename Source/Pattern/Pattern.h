@@ -111,8 +111,26 @@ namespace B33p
         static constexpr double kMaxLengthSeconds     = 10.0;
         static constexpr double kDefaultLengthSeconds = 5.0;
 
+        // Tempo + time signature defaults. The pattern still measures
+        // event timing in seconds (the audio engine is sample-rate-
+        // based, not tempo-based), but BPM and time signature are
+        // first-class fields so the UI can offer musical snap values
+        // and bars/beats display.
+        static constexpr double kDefaultBpm            = 120.0;
+        static constexpr double kMinBpm                = 20.0;
+        static constexpr double kMaxBpm                = 999.0;
+        static constexpr int    kDefaultTimeSigNum     = 4;
+        static constexpr int    kDefaultTimeSigDen     = 4;
+
         double getLengthSeconds() const noexcept;
         void   setLengthSeconds(double seconds);
+
+        double getBpm() const noexcept;
+        void   setBpm(double bpm);
+
+        int    getTimeSigNumerator()   const noexcept;
+        int    getTimeSigDenominator() const noexcept;
+        void   setTimeSignature(int numerator, int denominator);
 
         const std::vector<Event>& getEvents(int lane) const;
 
@@ -153,6 +171,9 @@ namespace B33p
         friend bool operator==(const Pattern& a, const Pattern& b)
         {
             return juce::exactlyEqual(a.lengthSeconds, b.lengthSeconds)
+                && juce::exactlyEqual(a.bpm,           b.bpm)
+                && a.timeSigNumerator   == b.timeSigNumerator
+                && a.timeSigDenominator == b.timeSigDenominator
                 && a.lanes      == b.lanes
                 && a.laneNames  == b.laneNames
                 && a.laneMuted  == b.laneMuted
@@ -162,6 +183,9 @@ namespace B33p
 
     private:
         double                                      lengthSeconds { kDefaultLengthSeconds };
+        double                                      bpm           { kDefaultBpm };
+        int                                         timeSigNumerator   { kDefaultTimeSigNum };
+        int                                         timeSigDenominator { kDefaultTimeSigDen };
         std::array<std::vector<Event>, kNumLanes>   lanes;
         std::array<juce::String, kNumLanes>         laneNames;
         std::array<bool, kNumLanes>                 laneMuted  { false, false, false, false };
