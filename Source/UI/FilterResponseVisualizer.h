@@ -5,23 +5,22 @@
 
 namespace B33p
 {
-    // Paints the magnitude response of the per-lane lowpass filter.
-    // Listens to filterCutoffHz + filterResonanceQ for the current
-    // lane and repaints in response so the curve tracks slider drags
-    // live, mirroring AmpEnvelopeVisualizer's pattern.
+    // Paints the magnitude response of the per-lane filter, picking
+    // the appropriate analytical curve based on the lane's
+    // filter_type parameter (Lowpass / Highpass / Bandpass / Comb /
+    // Formant). Listens to filter_type, filter_cutoff_hz,
+    // filter_resonance_q, and filter_vowel for the current lane and
+    // repaints in response so the curve tracks slider drags live.
     //
     // The plot uses a log frequency axis (20 Hz .. 20 kHz) and a
     // linear dB axis (-36 dB .. +18 dB so the resonance peak is
-    // always visible). The curve is computed from the analog
-    // 2nd-order LPF transfer function:
-    //
-    //   |H(f)|_dB = -10 * log10((1 - r²)² + (r/Q)²)   where r = f / fc
-    //
-    // The digital biquad LowpassFilter actually used at runtime uses
+    // always visible). For LP/HP/BP the analog 2nd-order transfer
+    // function is used; for Comb the closed-form feedback-comb
+    // magnitude; for Formant the sum of three tuned bandpasses.
+    // The digital biquads actually used at runtime use
     // bilinear-warped coefficients, so the digital response deviates
-    // from this analog approximation near Nyquist — but the analog
-    // form is the convention for filter response plots and matches
-    // what users expect to see for a "12 dB/oct LPF with Q peak".
+    // from these analog approximations near Nyquist — but the
+    // analog forms are the convention for filter response plots.
     class FilterResponseVisualizer
         : public juce::Component
         , private juce::AudioProcessorValueTreeState::Listener

@@ -232,6 +232,37 @@ TEST_CASE("ProjectState: v2 file's per-lane custom_waveform attribute migrates i
         REQUIRE(restored.getWavetableSlotCopy(1, slot).empty());
 }
 
+TEST_CASE("ProjectState: a v5 file with no filter type/vowel loads with Lowpass default",
+          "[state][project]")
+{
+    // Hand-rolled v5 tree. After load + migrate, filter_type
+    // should sit at Lowpass (= 0) and filter_vowel at 0.0 — same
+    // audible behaviour the v5 binary produced (only LP existed).
+    juce::ValueTree root { "B33P" };
+    root.setProperty("version", 5, nullptr);
+
+    juce::ValueTree params { "PARAMETERS" };
+    juce::ValueTree apvts  { "B33pParameters" };
+    juce::ValueTree p { "PARAM" };
+    p.setProperty("id",    B33p::ParameterIDs::filterCutoffHz(0), nullptr);
+    p.setProperty("value", 1500.0, nullptr);
+    apvts.appendChild(p, nullptr);
+    params.appendChild(apvts, nullptr);
+    root.appendChild(params, nullptr);
+
+    B33pProcessor processor;
+    REQUIRE(B33p::ProjectState::load(processor, root));
+
+    auto& a = processor.getApvts();
+    for (int lane = 0; lane < B33p::Pattern::kNumLanes; ++lane)
+    {
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::filterType(lane))->load()
+                == Approx(0.0f).margin(1e-3f));
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::filterVowel(lane))->load()
+                == Approx(0.0f).margin(1e-3f));
+    }
+}
+
 TEST_CASE("ProjectState: a v4 file with no Ring params loads with default Ring values",
           "[state][project]")
 {

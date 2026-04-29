@@ -21,15 +21,20 @@ namespace B33p
         void retargetLane(int lane);
 
     private:
+        void onTypeChanged();
 
         B33pProcessor& processor;
 
         FilterResponseVisualizer visualizer;
-        LabeledSlider cutoffSlider    { "Cutoff"    };
-        LabeledSlider resonanceSlider { "Resonance" };
+        juce::ComboBox typeSelector;
+        LabeledSlider  cutoffSlider    { "Cutoff"    };
+        LabeledSlider  resonanceSlider { "Resonance" };
+        LabeledSlider  vowelSlider     { "Vowel"     };
 
-        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> cutoffAttachment;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> resonanceAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> typeAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   cutoffAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   resonanceAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   vowelAttachment;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FilterSection)
     };

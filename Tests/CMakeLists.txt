@@ -5,7 +5,7 @@ set(B33P_DSP_SOURCES
     ${CMAKE_SOURCE_DIR}/Source/DSP/Oscillator.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/AmpEnvelope.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/PitchEnvelope.cpp
-    ${CMAKE_SOURCE_DIR}/Source/DSP/LowpassFilter.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/Filter.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Bitcrush.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Distortion.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Voice.cpp
@@ -16,7 +16,7 @@ add_executable(B33pTests
     DSP/OscillatorTests.cpp
     DSP/AmpEnvelopeTests.cpp
     DSP/PitchEnvelopeTests.cpp
-    DSP/LowpassFilterTests.cpp
+    DSP/FilterTests.cpp
     DSP/BitcrushTests.cpp
     DSP/DistortionTests.cpp
     DSP/VoiceTests.cpp

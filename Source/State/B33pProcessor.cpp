@@ -431,8 +431,14 @@ namespace B33p
         v.setAmpDecay            (apvts.getRawParameterValue(ParameterIDs::ampDecay(lane))->load());
         v.setAmpSustain          (apvts.getRawParameterValue(ParameterIDs::ampSustain(lane))->load());
         v.setAmpRelease          (apvts.getRawParameterValue(ParameterIDs::ampRelease(lane))->load());
+        const auto* ftParam = apvts.getRawParameterValue(ParameterIDs::filterType(lane));
+        v.setFilterType(static_cast<Filter::Type>(
+            juce::jlimit(0,
+                         static_cast<int>(Filter::Type::Formant),
+                         static_cast<int>(ftParam->load()))));
         v.setFilterCutoff        (apvts.getRawParameterValue(ParameterIDs::filterCutoffHz(lane))->load());
         v.setFilterResonance     (apvts.getRawParameterValue(ParameterIDs::filterResonanceQ(lane))->load());
+        v.setFilterVowel         (apvts.getRawParameterValue(ParameterIDs::filterVowel(lane))->load());
         v.setBitcrushBitDepth    (apvts.getRawParameterValue(ParameterIDs::bitcrushBitDepth(lane))->load());
         v.setBitcrushSampleRate  (apvts.getRawParameterValue(ParameterIDs::bitcrushSampleRateHz(lane))->load());
         v.setDistortionDrive     (apvts.getRawParameterValue(ParameterIDs::distortionDrive(lane))->load());

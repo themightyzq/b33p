@@ -3,7 +3,7 @@
 #include "DSP/AmpEnvelope.h"
 #include "DSP/Bitcrush.h"
 #include "DSP/Distortion.h"
-#include "DSP/LowpassFilter.h"
+#include "DSP/Filter.h"
 #include "DSP/Oscillator.h"
 #include "DSP/PitchEnvelope.h"
 
@@ -82,8 +82,10 @@ namespace B33p
 
         void setPitchCurve(const std::vector<PitchEnvelopePoint>& points);
 
+        void setFilterType(Filter::Type type);
         void setFilterCutoff(float hz);
         void setFilterResonance(float q);
+        void setFilterVowel(float vowel01);
 
         void setBitcrushBitDepth(float bits);
         void setBitcrushSampleRate(float targetHz);
@@ -108,7 +110,7 @@ namespace B33p
         Oscillator    oscillator;
         AmpEnvelope   ampEnvelope;
         PitchEnvelope pitchEnvelope;
-        LowpassFilter filter;
+        Filter        filter;
         Bitcrush      bitcrush;
         Distortion    distortion;
 
