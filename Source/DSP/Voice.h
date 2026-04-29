@@ -62,6 +62,12 @@ namespace B33p
         // the four slots. Ignored in Custom / built-in waveform modes.
         void setWavetableMorph(float morph01);
 
+        // Two-operator FM: ratio = modulator/carrier frequency,
+        // depth = modulation index (0 = pure carrier sine). Both
+        // ignored outside FM mode.
+        void setFmRatio(float ratio);
+        void setFmDepth(float depth);
+
         void setAmpAttack(float seconds);
         void setAmpDecay(float seconds);
         void setAmpSustain(float level);

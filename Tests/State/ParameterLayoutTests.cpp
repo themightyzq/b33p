@@ -96,7 +96,7 @@ TEST_CASE("ParameterLayout: waveform choice lists every waveform with Sine defau
     REQUIRE(choice != nullptr);
 
     const juce::StringArray expected
-        { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom", "Wavetable" };
+        { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom", "Wavetable", "FM" };
     REQUIRE(choice->choices == expected);
     REQUIRE(choice->getIndex() == 0);  // Sine
 }

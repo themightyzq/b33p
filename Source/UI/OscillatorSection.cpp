@@ -25,6 +25,8 @@ namespace B33p
         addAndMakeVisible(waveformLock);
         addAndMakeVisible(basePitchSlider);
         addAndMakeVisible(morphSlider);
+        addAndMakeVisible(fmRatioSlider);
+        addAndMakeVisible(fmDepthSlider);
 
         // Edit button — only visible when waveform is Custom or
         // Wavetable, since both modes draw from the slot storage.
@@ -33,8 +35,10 @@ namespace B33p
         addChildComponent(customEditButton);   // hidden until needed
 
         waveformSelector.setTooltip("Oscillator waveform");
-        basePitchSlider .setTooltip("Base pitch of the oscillator");
+        basePitchSlider .setTooltip("Base pitch of the oscillator (carrier pitch in FM mode)");
         morphSlider     .setTooltip("Wavetable mode: 0 = Slot 1, 1 = Slot 4. Blends adjacent slots in between.");
+        fmRatioSlider   .setTooltip("FM mode: modulator pitch as a multiple of the carrier (1.0 = unison)");
+        fmDepthSlider   .setTooltip("FM mode: modulation index. 0 = clean carrier sine; higher = more sidebands");
 
         retargetLane(processor.getSelectedLane());
     }
@@ -44,16 +48,20 @@ namespace B33p
         const int selectedId = waveformSelector.getSelectedId();
         const bool isCustom    = selectedId == 6;
         const bool isWavetable = selectedId == 7;
+        const bool isFm        = selectedId == 8;
         const bool needsEditor = isCustom || isWavetable;
 
         const bool wasVisible = customEditButton.isVisible();
         customEditButton.setVisible(needsEditor);
         customEditButton.setButtonText(isWavetable ? "Edit slots..." : "Edit...");
 
-        // Morph slider is only meaningful in Wavetable mode; greying
-        // it out in other modes communicates that without hiding it
-        // and shifting the layout around.
-        morphSlider.getSlider().setEnabled(isWavetable);
+        // Mode-specific sliders are greyed out (not hidden) outside
+        // their relevant mode so the layout never shifts and the
+        // user can still see at-a-glance which controls a given
+        // mode exposes.
+        morphSlider  .getSlider().setEnabled(isWavetable);
+        fmRatioSlider.getSlider().setEnabled(isFm);
+        fmDepthSlider.getSlider().setEnabled(isFm);
 
         // setVisible doesn't re-run resized() on its own, so the
         // button would otherwise sit at (0,0,0,0). Re-layout when
@@ -89,6 +97,8 @@ namespace B33p
         waveformAttachment.reset();
         basePitchAttachment.reset();
         morphAttachment.reset();
+        fmRatioAttachment.reset();
+        fmDepthAttachment.reset();
 
         waveformAttachment = std::make_unique<
             juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
@@ -108,22 +118,44 @@ namespace B33p
                 ParameterIDs::wavetableMorph(lane),
                 morphSlider.getSlider());
 
+        fmRatioAttachment = std::make_unique<
+            juce::AudioProcessorValueTreeState::SliderAttachment>(
+                processor.getApvts(),
+                ParameterIDs::fmRatio(lane),
+                fmRatioSlider.getSlider());
+
+        fmDepthAttachment = std::make_unique<
+            juce::AudioProcessorValueTreeState::SliderAttachment>(
+                processor.getApvts(),
+                ParameterIDs::fmDepth(lane),
+                fmDepthSlider.getSlider());
+
         wireRandomizerButtons(processor, waveformDice, waveformLock,
                               ParameterIDs::oscWaveform(lane));
         basePitchSlider.attachRandomizer(processor, ParameterIDs::basePitchHz(lane));
         morphSlider    .attachRandomizer(processor, ParameterIDs::wavetableMorph(lane));
+        fmRatioSlider  .attachRandomizer(processor, ParameterIDs::fmRatio(lane));
+        fmDepthSlider  .attachRandomizer(processor, ParameterIDs::fmDepth(lane));
 
         // SliderAttachment installs its own textFromValueFunction at
         // construction, so re-apply our formatting AFTER the
         // attachment exists.
         SliderFormatting::applyHz(basePitchSlider.getSlider());
-        SliderFormatting::applyDecimal(morphSlider.getSlider(), 2);
+        SliderFormatting::applyDecimal(morphSlider.getSlider(),   2);
+        SliderFormatting::applyDecimal(fmRatioSlider.getSlider(), 2);
+        SliderFormatting::applyDecimal(fmDepthSlider.getSlider(), 2);
         SliderFormatting::applyDoubleClickReset(basePitchSlider.getSlider(),
                                                 processor.getApvts(),
                                                 ParameterIDs::basePitchHz(lane));
         SliderFormatting::applyDoubleClickReset(morphSlider.getSlider(),
                                                 processor.getApvts(),
                                                 ParameterIDs::wavetableMorph(lane));
+        SliderFormatting::applyDoubleClickReset(fmRatioSlider.getSlider(),
+                                                processor.getApvts(),
+                                                ParameterIDs::fmRatio(lane));
+        SliderFormatting::applyDoubleClickReset(fmDepthSlider.getSlider(),
+                                                processor.getApvts(),
+                                                ParameterIDs::fmDepth(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));
         setAccentColour(processor.laneAccentColour(lane));
@@ -177,13 +209,17 @@ namespace B33p
 
         bounds.removeFromTop(kRowGap);
 
-        // Pitch and morph sit side-by-side in the bottom area;
-        // morph is greyed out (not hidden) outside Wavetable mode
-        // so the layout doesn't shift around when the user changes
-        // the waveform.
-        const int sliderCellWidth = (bounds.getWidth() - kSliderGap) / 2;
+        // Four sliders side-by-side in the bottom area. Mode-
+        // specific sliders are greyed out (not hidden) so the
+        // layout never shifts when the user changes the waveform.
+        // Order: Pitch (always), Morph (Wavetable), Ratio + Depth (FM).
+        const int sliderCellWidth = (bounds.getWidth() - 3 * kSliderGap) / 4;
         basePitchSlider.setBounds(bounds.removeFromLeft(sliderCellWidth));
         bounds.removeFromLeft(kSliderGap);
-        morphSlider.setBounds(bounds);
+        morphSlider.setBounds(bounds.removeFromLeft(sliderCellWidth));
+        bounds.removeFromLeft(kSliderGap);
+        fmRatioSlider.setBounds(bounds.removeFromLeft(sliderCellWidth));
+        bounds.removeFromLeft(kSliderGap);
+        fmDepthSlider.setBounds(bounds);
     }
 }

@@ -18,7 +18,10 @@ namespace B33p
         //   v3: per-lane wavetable slots (WAVETABLE child with N SLOT children) +
         //       wavetable_morph parameter; v2's custom_waveform attribute migrates
         //       into WAVETABLE/SLOT[index=0]
-        inline constexpr int kCurrentVersion = 3;
+        //   v4: FM oscillator (new fm_ratio + fm_depth parameters per lane); v3
+        //       files migrate forward by simply bumping the version property —
+        //       APVTS supplies the parameter defaults for the missing IDs
+        inline constexpr int kCurrentVersion = 4;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

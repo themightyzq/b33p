@@ -400,11 +400,13 @@ namespace B33p
         const auto* wfParam = apvts.getRawParameterValue(ParameterIDs::oscWaveform(lane));
         v.setWaveform(static_cast<Oscillator::Waveform>(
             juce::jlimit(0,
-                         static_cast<int>(Oscillator::Waveform::Wavetable),
+                         static_cast<int>(Oscillator::Waveform::FM),
                          static_cast<int>(wfParam->load()))));
 
         v.setBasePitchHz         (apvts.getRawParameterValue(ParameterIDs::basePitchHz(lane))->load());
         v.setWavetableMorph      (apvts.getRawParameterValue(ParameterIDs::wavetableMorph(lane))->load());
+        v.setFmRatio             (apvts.getRawParameterValue(ParameterIDs::fmRatio(lane))->load());
+        v.setFmDepth             (apvts.getRawParameterValue(ParameterIDs::fmDepth(lane))->load());
 
         // Push every slot only when its shared_ptr has changed since
         // last push — keeps the common no-edit path zero-cost (one

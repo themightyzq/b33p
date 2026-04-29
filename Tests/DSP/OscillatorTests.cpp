@@ -288,3 +288,52 @@ TEST_CASE("Oscillator: reset yields the same output as a fresh instance", "[dsp]
     for (int i = 0; i < 128; ++i)
         REQUIRE(fresh.processSample() == used.processSample());
 }
+
+TEST_CASE("Oscillator: FM with depth 0 matches a clean sine", "[dsp][oscillator]")
+{
+    // FM mode at depth=0 has zero modulator contribution, so the
+    // carrier is unmodulated — output should be analytically
+    // identical (within float tolerance) to a Sine-mode oscillator
+    // at the same frequency.
+    Oscillator fm;
+    fm.prepare(kSampleRate);
+    fm.setWaveform(Waveform::FM);
+    fm.setFrequency(440.0f);
+    fm.setFmRatio(2.0f);   // ratio is irrelevant when depth = 0
+    fm.setFmDepth(0.0f);
+
+    Oscillator sine;
+    sine.prepare(kSampleRate);
+    sine.setWaveform(Waveform::Sine);
+    sine.setFrequency(440.0f);
+
+    for (int i = 0; i < 512; ++i)
+        REQUIRE(fm.processSample() == Approx(sine.processSample()).margin(1e-5f));
+}
+
+TEST_CASE("Oscillator: FM with non-zero depth diverges from a clean sine", "[dsp][oscillator]")
+{
+    // Sanity check that FM mode actually modulates: at a generous
+    // modulation index, the spectrum diverges from a sine quickly,
+    // so the sum-of-squares difference between the FM signal and a
+    // matched sine should be clearly non-zero.
+    Oscillator fm;
+    fm.prepare(kSampleRate);
+    fm.setWaveform(Waveform::FM);
+    fm.setFrequency(440.0f);
+    fm.setFmRatio(2.0f);
+    fm.setFmDepth(3.0f);
+
+    Oscillator sine;
+    sine.prepare(kSampleRate);
+    sine.setWaveform(Waveform::Sine);
+    sine.setFrequency(440.0f);
+
+    double sumSq = 0.0;
+    for (int i = 0; i < 1024; ++i)
+    {
+        const double diff = fm.processSample() - sine.processSample();
+        sumSq += diff * diff;
+    }
+    REQUIRE(sumSq > 1.0);   // empirically ~hundreds at depth=3
+}
