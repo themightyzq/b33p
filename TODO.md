@@ -257,4 +257,4 @@ Explicitly out of MVP scope — the standalone app is the priority and the "musi
 - [x] **VST3 plugin build** — single CMake target via juce_add_plugin produces VST3 alongside Standalone + AU. Loadable in any modern DAW. (AAX still pending behind the AAX SDK.)
 - [x] **AU plugin build** (macOS) — same juce_add_plugin target produces an AU component on Apple builds.
 - [ ] **AAX plugin build** (Pro Tools)
-- [x] **Additional export formats** — FLAC, OGG, AIFF, 96 kHz, IMA ADPCM WAV (true 4-bit) — Export dialog gains a Format combo (WAV / AIFF / FLAC / OGG Vorbis) and 88.2 / 96 kHz sample rate options. Filename extension auto-rewrites to match the chosen format. IMA ADPCM still pending — JUCE doesn't ship a writer; would need an in-tree implementation.
+- [x] **Additional export formats** — FLAC, OGG, AIFF, 96 kHz — Export dialog gains a Format combo (WAV / AIFF / FLAC / OGG Vorbis) and 88.2 / 96 kHz sample rate options. Filename extension auto-rewrites to match the chosen format. (IMA-ADPCM was originally on this list but dropped — too niche to justify a from-scratch encoder.)
