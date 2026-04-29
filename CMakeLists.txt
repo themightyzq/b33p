@@ -66,6 +66,7 @@ target_sources(B33p PRIVATE
     Source/UI/EffectsSection.cpp
     Source/UI/ExportDialog.cpp
     Source/UI/ExportTask.cpp
+    Source/UI/FilterResponseVisualizer.cpp
     Source/UI/FilterSection.cpp
     Source/UI/IconButton.cpp
     Source/UI/InspectorStrip.cpp
