@@ -1,6 +1,7 @@
 #include "PresetManager.h"
 
 #include "B33pProcessor.h"
+#include "GeneratorPresets.h"
 #include "ProjectState.h"
 
 #include <algorithm>
@@ -93,5 +94,24 @@ namespace B33p
         if (! presetFile.isAChildOf(presetsDirectory))
             return false;
         return presetFile.deleteFile();
+    }
+
+    void PresetManager::seedFactoryPresetsIfMissing()
+    {
+        for (const auto& preset : getFactoryPresets())
+        {
+            const auto destination = presetsDirectory.getChildFile(
+                juce::File::createLegalFileName(preset.name) + ".beep");
+            if (destination.existsAsFile())
+                continue;
+
+            // Use a temporary B33pProcessor so the live processor's
+            // state isn't disturbed during seeding. The temporary
+            // never has an audio device callback attached — it's
+            // purely a state holder for the save path.
+            B33pProcessor temp;
+            preset.configure(temp);
+            ProjectState::writeToFile(temp, destination);
+        }
     }
 }

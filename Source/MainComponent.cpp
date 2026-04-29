@@ -54,6 +54,15 @@ namespace B33p
           deviceManager(deviceManagerRef),
           fileManager(processorRef),
           presetManager(processorRef),
+          // Seed factory presets the first time we see an empty
+          // presets directory. Existing files (whether shipped or
+          // user-modified) are never overwritten — see
+          // PresetManager::seedFactoryPresetsIfMissing for the
+          // policy. The seed call sits here rather than in
+          // PresetManager's constructor so a unit test wanting an
+          // empty directory can construct a PresetManager without
+          // side effects.
+          // (Constructor body below runs the seed.)
           oscillatorSection   (processor),
           ampEnvelopeSection  (processor),
           filterSection       (processor),
@@ -64,6 +73,12 @@ namespace B33p
           pitchEnvelopeSection(processor),
           patternSection      (processor)
     {
+        // Seed factory presets so a fresh install has discoverable
+        // starting points. seedFactoryPresetsIfMissing skips any
+        // file the user has tweaked, so this is safe to call on
+        // every launch.
+        presetManager.seedFactoryPresetsIfMissing();
+
         addAndMakeVisible(menuBar);
         addAndMakeVisible(oscillatorSection);
         addAndMakeVisible(ampEnvelopeSection);

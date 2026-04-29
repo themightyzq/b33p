@@ -50,6 +50,15 @@ namespace B33p
         // even if asked).
         bool deletePreset(const juce::File& presetFile);
 
+        // Walks the curated list of factory presets (see
+        // GeneratorPresets.h) and writes any that don't yet exist
+        // on disk. Existing files are NEVER overwritten — once the
+        // user has tweaked a "Factory - Delay Pad", their version
+        // wins forever, even after b33p updates ship new factory
+        // defaults. The user can always restore by deleting the
+        // file and reopening the app.
+        void seedFactoryPresetsIfMissing();
+
     private:
         B33pProcessor& processor;
         juce::File     presetsDirectory;
