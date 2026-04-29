@@ -85,7 +85,32 @@ namespace B33p
             return false;
 
         const float ceiling = randomizationCeiling(parameterID, apvts);
-        param->setValueNotifyingHost(rng.nextFloat() * ceiling);
+
+        // Per-roll randomization scope: 1.0 = full random across
+        // [0, ceiling] (legacy behaviour); smaller values constrain
+        // the roll to a window centred on the parameter's current
+        // normalised value, so the user can dial how "wild" the
+        // dice get without locking parameters individually.
+        float scope = 1.0f;
+        if (auto* scopeParam = apvts.getRawParameterValue(
+                ParameterIDs::randomizationScope()))
+            scope = juce::jlimit(0.05f, 1.0f, scopeParam->load());
+
+        if (scope >= 0.999f)
+        {
+            // Fast path — preserves the original "uniform across
+            // the full range" behaviour exactly so existing tests
+            // and rolls don't shift their distribution.
+            param->setValueNotifyingHost(rng.nextFloat() * ceiling);
+            return true;
+        }
+
+        const float current    = param->getValue();   // already in 0..1
+        const float halfWindow = scope * ceiling * 0.5f;
+        const float lo = juce::jmax(0.0f,     current - halfWindow);
+        const float hi = juce::jmin(ceiling,  current + halfWindow);
+        const float rolled = lo + rng.nextFloat() * (hi - lo);
+        param->setValueNotifyingHost(rolled);
         return true;
     }
 

@@ -31,6 +31,14 @@ namespace B33p::ParameterIDs
         }
     }
 
+    // Global (non-lane-prefixed) parameter: a single 0..1 scale
+    // applied to every random roll the ParameterRandomizer
+    // produces. 1.0 = full range (current default); 0.1 = rolls
+    // are constrained to ±10% of the parameter's current
+    // normalised value, so the user can dial how "wild" the dice
+    // get without locking parameters individually.
+    inline juce::String randomizationScope() { return "randomization_scope"; }
+
     inline juce::String oscWaveform         (int lane) { return detail::prefixed(lane, "osc_waveform");           }
     inline juce::String basePitchHz         (int lane) { return detail::prefixed(lane, "base_pitch_hz");          }
     inline juce::String wavetableMorph      (int lane) { return detail::prefixed(lane, "wavetable_morph");        }

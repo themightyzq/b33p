@@ -1,5 +1,6 @@
 #include "PatternSection.h"
 
+#include "Core/ParameterIDs.h"
 #include "ExportTask.h"
 #include "State/UndoableActions.h"
 
@@ -233,6 +234,24 @@ namespace B33p
         };
         addAndMakeVisible(randomizeAllButton);
 
+        // Randomization scope slider — 0.05..1.0 multiplier applied
+        // to every dice roll. Visible label so the user knows what
+        // the value means without hovering for the tooltip.
+        scopeLabel.setText("Scope:", juce::dontSendNotification);
+        scopeLabel.setJustificationType(juce::Justification::centredRight);
+        scopeLabel.setFont(juce::FontOptions(11.0f));
+        addAndMakeVisible(scopeLabel);
+
+        scopeSlider.setSliderStyle(juce::Slider::LinearHorizontal);
+        scopeSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 48, 18);
+        scopeSlider.setNumDecimalPlacesToDisplay(2);
+        scopeAttachment = std::make_unique<
+            juce::AudioProcessorValueTreeState::SliderAttachment>(
+                processor.getApvts(),
+                ParameterIDs::randomizationScope(),
+                scopeSlider);
+        addAndMakeVisible(scopeSlider);
+
         exportButton.onClick = [this] { onExportClicked(); };
         addAndMakeVisible(exportButton);
 
@@ -243,6 +262,7 @@ namespace B33p
         bpmSlider         .setTooltip("Pattern tempo in beats per minute. Drives the musical grid + the bars/beats time display.");
         timeSigCombo      .setTooltip("Time signature. Sets how many beats sit in a bar for the time display.");
         randomizeAllButton.setTooltip("Randomize every unlocked parameter across all 4 lanes");
+        scopeSlider       .setTooltip("Randomization scope. 1.0 = full range, 0.1 = small jitter around current value.");
         exportButton      .setTooltip("Render the pattern to a WAV file");
 
         startTimerHz(kRepaintHz);
@@ -431,9 +451,13 @@ namespace B33p
         auto controlsRow = bounds.removeFromTop(kControlsHeight);
         bounds.removeFromTop(kControlsGap);
 
-        // Right-align Export + Randomize All to separate the action
-        // group from the play/edit controls on the left.
+        // Right-align Export + Randomize All + Scope to separate
+        // the action group from the play/edit controls on the left.
+        constexpr int kScopeSliderWidth = 110;
         exportButton      .setBounds(controlsRow.removeFromRight(kExportWidth));
+        controlsRow.removeFromRight(kControlsGap);
+        scopeSlider       .setBounds(controlsRow.removeFromRight(kScopeSliderWidth));
+        scopeLabel        .setBounds(controlsRow.removeFromRight(kLabelWidth));
         controlsRow.removeFromRight(kControlsGap);
         randomizeAllButton.setBounds(controlsRow.removeFromRight(kRandomizeWidth));
         controlsRow.removeFromRight(kControlsGap);
