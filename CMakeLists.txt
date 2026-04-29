@@ -73,6 +73,7 @@ target_sources(B33p PRIVATE
     Source/UI/LabeledSlider.cpp
     Source/UI/MasterSection.cpp
     Source/UI/ModEffectsSection.cpp
+    Source/UI/ModulationSection.cpp
     Source/UI/OscillatorSection.cpp
     Source/UI/PatternGrid.cpp
     Source/UI/PatternSection.cpp
