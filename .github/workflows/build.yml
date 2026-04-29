@@ -33,10 +33,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Cache CPM sources (JUCE and friends)
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.CPM_SOURCE_CACHE }}
           key: cpm-${{ matrix.os }}-juce-${{ hashFiles('CMakeLists.txt') }}
