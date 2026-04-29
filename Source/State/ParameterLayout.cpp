@@ -260,6 +260,18 @@ namespace B33p
         juce::AudioProcessorValueTreeState::ParameterLayout layout;
         for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
             addLaneParameters(layout, lane);
+
+        // Global randomization scope. 1.0 = roll across full
+        // parameter range (legacy behaviour); 0.1 = roll within
+        // ±10% of the current normalised value. Applied uniformly
+        // to every dice roll, including the per-lane and
+        // randomize-all paths.
+        layout.add(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID { ParameterIDs::randomizationScope(), kParameterVersionHint },
+            "Randomization Scope",
+            juce::NormalisableRange<float> { 0.05f, 1.0f },
+            1.0f));
+
         return layout;
     }
 }

@@ -60,6 +60,10 @@ namespace B33p
         juce::ComboBox   timeSigCombo;
 
         juce::TextButton randomizeAllButton { "Randomize All" };
+        juce::Label      scopeLabel;
+        juce::Slider     scopeSlider;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
+                         scopeAttachment;
         juce::TextButton exportButton       { "Export..." };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternSection)
