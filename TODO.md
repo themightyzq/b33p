@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: post-MVP roadmap — working through Sound-design power list top-to-bottom; per-event parameter overrides is next**
+> **Current focus: post-MVP roadmap — working through Sound-design power list top-to-bottom; event probability/ratcheting/humanize is next**
 
 ---
 
@@ -226,7 +226,7 @@ Ordered roughly by priority, not commitment. Each item becomes its own phase whe
 - [x] **Additional filters** — formant, comb, bandpass, highpass (5-mode Filter class with type-conditional UI; visualizer plots the active type's analytic response; v6 .beep schema)
 - [x] **Additional effects** — chorus, reverb, delay, flanger, phaser (single ModulationEffect slot per lane after distortion; type combo + 3 type-aware sliders; v7 .beep schema)
 - [x] **LFOs and a modulation matrix** — 2 LFOs × 4 matrix slots per lane, 11 destinations covering oscillator/filter/effects/gain; block-rate evaluation in B33pProcessor; v8 .beep schema
-- [ ] **Per-event parameter overrides** beyond pitch (e.g., filter cutoff per hit)
+- [x] **Per-event parameter overrides** beyond pitch (e.g., filter cutoff per hit) — 4 override slots per event covering the modulation matrix's 11 destinations; right-click clip → "Edit overrides..." opens a dialog; v9 .beep schema
 - [ ] **Event probability, ratcheting, humanize**
 
 ### Visual feedback
