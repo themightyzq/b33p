@@ -35,7 +35,11 @@ namespace B33p
         //       _dest/_amount per lane); same default-fallback migration. v7
         //       files load with every matrix slot's source / destination
         //       defaulting to None, so the modulation engine stays inert.
-        inline constexpr int kCurrentVersion = 8;
+        //   v9: per-event parameter overrides — events grow OVERRIDE child
+        //       nodes carrying (destination, value) pairs. v8 events have no
+        //       overrides; they reload as inert (every slot's destination
+        //       defaults to None).
+        inline constexpr int kCurrentVersion = 9;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

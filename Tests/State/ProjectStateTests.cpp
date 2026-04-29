@@ -232,6 +232,72 @@ TEST_CASE("ProjectState: v2 file's per-lane custom_waveform attribute migrates i
         REQUIRE(restored.getWavetableSlotCopy(1, slot).empty());
 }
 
+TEST_CASE("ProjectState: per-event overrides round-trip every populated slot",
+          "[state][project]")
+{
+    B33pProcessor original;
+
+    // Place an event with two non-None overrides on lane 0.
+    B33p::Event ev;
+    ev.startSeconds         = 0.5;
+    ev.durationSeconds      = 0.2;
+    ev.pitchOffsetSemitones = 0.0f;
+    ev.velocity             = 1.0f;
+    ev.overrides[0] = B33p::EventOverride { B33p::ModDestination::FilterCutoff,    0.25f };
+    ev.overrides[1] = B33p::EventOverride { B33p::ModDestination::DistortionDrive, 0.85f };
+    original.getPattern().addEvent(0, ev);
+
+    const auto tree = B33p::ProjectState::save(original);
+
+    B33pProcessor restored;
+    REQUIRE(B33p::ProjectState::load(restored, tree));
+
+    const auto& restoredEvents = restored.getPattern().getEvents(0);
+    REQUIRE(restoredEvents.size() == 1);
+    const auto& restoredEv = restoredEvents.front();
+
+    REQUIRE(restoredEv.overrides[0].destination == B33p::ModDestination::FilterCutoff);
+    REQUIRE(restoredEv.overrides[0].value       == Approx(0.25f).margin(1e-3f));
+    REQUIRE(restoredEv.overrides[1].destination == B33p::ModDestination::DistortionDrive);
+    REQUIRE(restoredEv.overrides[1].value       == Approx(0.85f).margin(1e-3f));
+    // Slots 2..3 must still be empty (None).
+    REQUIRE(restoredEv.overrides[2].destination == B33p::ModDestination::None);
+    REQUIRE(restoredEv.overrides[3].destination == B33p::ModDestination::None);
+}
+
+TEST_CASE("ProjectState: a v8 file with no overrides loads with all-None override slots",
+          "[state][project]")
+{
+    // Hand-rolled v8 tree carrying one event with no OVERRIDE
+    // children. After load + migrate, the event should sit at the
+    // current schema with every override slot at None.
+    juce::ValueTree root { "B33P" };
+    root.setProperty("version", 8, nullptr);
+
+    juce::ValueTree pattern { "PATTERN" };
+    pattern.setProperty("length_seconds", 2.0, nullptr);
+
+    juce::ValueTree lane { "LANE" };
+    lane.setProperty("index", 0, nullptr);
+
+    juce::ValueTree event { "EVENT" };
+    event.setProperty("start_seconds",          0.5,  nullptr);
+    event.setProperty("duration_seconds",       0.2,  nullptr);
+    event.setProperty("pitch_offset_semitones", 0.0,  nullptr);
+    event.setProperty("velocity",               1.0,  nullptr);
+    lane.appendChild(event, nullptr);
+    pattern.appendChild(lane, nullptr);
+    root.appendChild(pattern, nullptr);
+
+    B33pProcessor restored;
+    REQUIRE(B33p::ProjectState::load(restored, root));
+
+    const auto& events = restored.getPattern().getEvents(0);
+    REQUIRE(events.size() == 1);
+    for (const auto& slot : events.front().overrides)
+        REQUIRE(slot.destination == B33p::ModDestination::None);
+}
+
 TEST_CASE("ProjectState: a v6 file with no mod-effect params loads with None / 0.5 defaults",
           "[state][project]")
 {

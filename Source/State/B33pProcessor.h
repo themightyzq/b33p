@@ -232,6 +232,15 @@ namespace B33p
                                   ModDestination destination,
                                   float modAmount) const;
 
+        // If any active override slot for `lane` targets the given
+        // destination, returns the converted (natural-range) value;
+        // otherwise returns false. The first matching slot wins —
+        // duplicate-destination slots are a UI bug, not handled
+        // specially here.
+        bool tryGetActiveOverride(int lane,
+                                  ModDestination destination,
+                                  float& outValue) const;
+
         // juce::AudioProcessorValueTreeState::Listener
         void parameterChanged(const juce::String& parameterID, float newValue) override;
 
@@ -253,6 +262,14 @@ namespace B33p
         // reads currentValue() before deciding which Voice setters
         // to call with modulated values.
         std::array<std::array<LFO, kNumLfosPerLane>, Pattern::kNumLanes> lfos;
+
+        // Per-lane "currently active per-event overrides" mirror.
+        // Loaded from Event::overrides in triggerVoiceFromEvent and
+        // consulted in pushParametersToLane. Override slots with
+        // destination == None are inert. Cleared per trigger so a
+        // new event's overrides fully replace the previous event's.
+        std::array<std::array<EventOverride, kNumEventOverrides>,
+                   Pattern::kNumLanes>             activeOverrides {};
 
         // Curve writes lock on the message thread; audio-thread reads
         // use a ScopedTryLock and fall back to whatever curve each

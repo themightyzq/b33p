@@ -486,18 +486,47 @@ namespace B33p
         return param->convertFrom0to1(effNorm);
     }
 
+    bool B33pProcessor::tryGetActiveOverride(int lane,
+                                              ModDestination destination,
+                                              float& outValue) const
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes
+            || destination == ModDestination::None)
+            return false;
+
+        const auto& slots = activeOverrides[static_cast<size_t>(lane)];
+        for (const auto& slot : slots)
+        {
+            if (slot.destination != destination)
+                continue;
+            const auto id = paramIdForDest(lane, destination);
+            if (id.isEmpty())
+                return false;
+            auto* param = apvts.getParameter(id);
+            if (param == nullptr)
+                return false;
+            outValue = param->convertFrom0to1(juce::jlimit(0.0f, 1.0f, slot.value));
+            return true;
+        }
+        return false;
+    }
+
     void B33pProcessor::pushParametersToLane(int lane)
     {
         auto& v = voices[static_cast<size_t>(lane)];
 
         const auto modContribs = evaluateModulationContributions(lane);
 
-        // Picks the modulated value if any matrix slot routes to
-        // this destination, otherwise falls back to the raw APVTS
-        // value. Avoids the parameter-by-id hashmap lookup on the
-        // common no-modulation path.
+        // Picks the effective value for a modulatable destination.
+        // Priority: per-event override (wins outright if set) >
+        // matrix-modulated value > raw APVTS value. The override
+        // path skips matrix evaluation entirely so a clip can
+        // pin a parameter independently of any wiring.
         auto modulated = [&](ModDestination d, const juce::String& fallbackId)
         {
+            float overrideValue = 0.0f;
+            if (tryGetActiveOverride(lane, d, overrideValue))
+                return overrideValue;
             const float c = modContribs[static_cast<size_t>(d)];
             if (c != 0.0f)
                 return effectiveParamValue(lane, d, c);
@@ -568,6 +597,14 @@ namespace B33p
             return;
 
         auto& v = voices[static_cast<size_t>(lane)];
+
+        // Replace this lane's active override slots with the event's
+        // overrides, then re-run pushParametersToLane so the new
+        // overrides take effect on the very first sample of the
+        // trigger. Without the re-push, overrides would only apply
+        // starting at the next audio block (~10 ms latency).
+        activeOverrides[static_cast<size_t>(lane)] = event.overrides;
+        pushParametersToLane(lane);
 
         // Try to refresh the voice's pitch curve before triggering;
         // if the lock is contended we keep whatever curve the voice

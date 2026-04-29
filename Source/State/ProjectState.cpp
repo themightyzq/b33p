@@ -41,6 +41,9 @@ namespace B33p::ProjectState
         const juce::Identifier kEventDuration         { "duration_seconds" };
         const juce::Identifier kEventPitch            { "pitch_offset_semitones" };
         const juce::Identifier kEventVelocity         { "velocity" };
+        const juce::Identifier kEventOverride         { "OVERRIDE" };
+        const juce::Identifier kOverrideDest          { "dest" };
+        const juce::Identifier kOverrideValue         { "value" };
 
         const juce::Identifier kLocks                 { "LOCKS" };
         const juce::Identifier kLock                  { "LOCK" };
@@ -119,6 +122,22 @@ namespace B33p::ProjectState
                 eventNode.setProperty(kEventDuration, e.durationSeconds,                    nullptr);
                 eventNode.setProperty(kEventPitch,    static_cast<double>(e.pitchOffsetSemitones), nullptr);
                 eventNode.setProperty(kEventVelocity, static_cast<double>(e.velocity),             nullptr);
+
+                // Per-event overrides — only emit slots whose
+                // destination is non-None, so events without
+                // overrides serialise as before.
+                for (const auto& o : e.overrides)
+                {
+                    if (o.destination == ModDestination::None)
+                        continue;
+                    juce::ValueTree overrideNode { kEventOverride };
+                    overrideNode.setProperty(kOverrideDest,
+                                              static_cast<int>(o.destination), nullptr);
+                    overrideNode.setProperty(kOverrideValue,
+                                              static_cast<double>(o.value),    nullptr);
+                    eventNode.appendChild(overrideNode, nullptr);
+                }
+
                 laneNode.appendChild(eventNode, nullptr);
             }
 
@@ -325,6 +344,16 @@ namespace B33p::ProjectState
             version = 8;
         }
 
+        if (version == 8)
+        {
+            // v8 → v9: per-event overrides. v8 events have no
+            // OVERRIDE children, which the loader treats as "every
+            // override slot stays at destination = None" (inert) —
+            // so a v8 file is audibly unchanged on reload.
+            tree.setProperty(kVersion, 9, nullptr);
+            version = 9;
+        }
+
         return tree;
     }
 
@@ -417,6 +446,28 @@ namespace B33p::ProjectState
                 e.pitchOffsetSemitones = static_cast<float> (static_cast<double>(eventNode.getProperty(kEventPitch,    0.0)));
                 // velocity defaults to 1.0 for v1 files that pre-date this field.
                 e.velocity             = static_cast<float> (static_cast<double>(eventNode.getProperty(kEventVelocity, 1.0)));
+
+                // Walk OVERRIDE children, populating override slots
+                // in encounter order. Excess children (more than
+                // kNumEventOverrides) are silently dropped — same
+                // tolerant policy v1 events use for missing fields.
+                int slotIx = 0;
+                for (auto overrideNode : eventNode)
+                {
+                    if (! overrideNode.hasType(kEventOverride))
+                        continue;
+                    if (slotIx >= kNumEventOverrides)
+                        break;
+                    const int destInt = juce::jlimit(0,
+                        kNumModDestinations - 1,
+                        static_cast<int>(overrideNode.getProperty(kOverrideDest, 0)));
+                    e.overrides[static_cast<size_t>(slotIx)] = EventOverride {
+                        static_cast<ModDestination>(destInt),
+                        static_cast<float>(static_cast<double>(overrideNode.getProperty(kOverrideValue, 0.0)))
+                    };
+                    ++slotIx;
+                }
+
                 pattern.addEvent(laneIdx, e);
             }
         }
