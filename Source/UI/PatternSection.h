@@ -31,9 +31,13 @@ namespace B33p
         void timerCallback() override;
         void onLengthChanged();
         void onGridChanged();
+        void onBpmChanged();
+        void onTimeSigChanged();
         void onExportClicked();
         void runExport(ExportDialog::Result settings);
         void syncLengthComboToPattern();
+        void syncBpmAndTimeSigFromPattern();
+        void applyGridPreset();
 
         B33pProcessor&   processor;
         PatternGrid      grid;
@@ -49,6 +53,11 @@ namespace B33p
 
         juce::Label      gridLabel;
         juce::ComboBox   gridCombo;
+
+        juce::Label      bpmLabel;
+        juce::Slider     bpmSlider;
+        juce::Label      timeSigLabel;
+        juce::ComboBox   timeSigCombo;
 
         juce::TextButton randomizeAllButton { "Randomize All" };
         juce::TextButton exportButton       { "Export..." };

@@ -232,6 +232,44 @@ TEST_CASE("ProjectState: v2 file's per-lane custom_waveform attribute migrates i
         REQUIRE(restored.getWavetableSlotCopy(1, slot).empty());
 }
 
+TEST_CASE("ProjectState: pattern BPM and time signature round-trip", "[state][project]")
+{
+    B33pProcessor original;
+    original.getPattern().setBpm(140.5);
+    original.getPattern().setTimeSignature(7, 8);
+
+    const auto tree = B33p::ProjectState::save(original);
+
+    B33pProcessor restored;
+    REQUIRE(B33p::ProjectState::load(restored, tree));
+
+    REQUIRE(restored.getPattern().getBpm()
+            == Approx(140.5).margin(1e-3));
+    REQUIRE(restored.getPattern().getTimeSigNumerator()   == 7);
+    REQUIRE(restored.getPattern().getTimeSigDenominator() == 8);
+}
+
+TEST_CASE("ProjectState: a v10 file with no BPM/sig loads with 120/4/4 defaults",
+          "[state][project]")
+{
+    juce::ValueTree root { "B33P" };
+    root.setProperty("version", 10, nullptr);
+
+    juce::ValueTree pattern { "PATTERN" };
+    pattern.setProperty("length_seconds", 2.0, nullptr);
+    root.appendChild(pattern, nullptr);
+
+    B33pProcessor restored;
+    REQUIRE(B33p::ProjectState::load(restored, root));
+
+    REQUIRE(restored.getPattern().getBpm()
+            == Approx(B33p::Pattern::kDefaultBpm).margin(1e-3));
+    REQUIRE(restored.getPattern().getTimeSigNumerator()
+            == B33p::Pattern::kDefaultTimeSigNum);
+    REQUIRE(restored.getPattern().getTimeSigDenominator()
+            == B33p::Pattern::kDefaultTimeSigDen);
+}
+
 TEST_CASE("ProjectState: per-event overrides round-trip every populated slot",
           "[state][project]")
 {

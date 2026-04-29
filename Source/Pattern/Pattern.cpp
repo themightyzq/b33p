@@ -22,6 +22,38 @@ namespace B33p
         lengthSeconds = std::clamp(seconds, kMinLengthSeconds, kMaxLengthSeconds);
     }
 
+    double Pattern::getBpm() const noexcept
+    {
+        return bpm;
+    }
+
+    void Pattern::setBpm(double newBpm)
+    {
+        bpm = std::clamp(newBpm, kMinBpm, kMaxBpm);
+    }
+
+    int Pattern::getTimeSigNumerator() const noexcept
+    {
+        return timeSigNumerator;
+    }
+
+    int Pattern::getTimeSigDenominator() const noexcept
+    {
+        return timeSigDenominator;
+    }
+
+    void Pattern::setTimeSignature(int numerator, int denominator)
+    {
+        // Numerator: 1..32 covers everything from 1/4 (a single
+        // beat per bar) up to extended 32/4 ostinatos. Denominator
+        // is restricted to powers of two (2/4/8/16) — the only
+        // values that map cleanly onto a beat-fraction grid.
+        timeSigNumerator   = std::clamp(numerator, 1, 32);
+        if (denominator == 2 || denominator == 4
+            || denominator == 8 || denominator == 16)
+            timeSigDenominator = denominator;
+    }
+
     const std::vector<Event>& Pattern::getEvents(int lane) const
     {
         static const std::vector<Event> empty;

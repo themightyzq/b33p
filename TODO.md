@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: post-MVP roadmap — Sound-design power list complete; moving to Musical timing / DAW integration next**
+> **Current focus: post-MVP roadmap — Musical timing landed; DAW transport sync stays parked behind plugin builds; moving to Workflow next**
 
 ---
 
@@ -237,9 +237,9 @@ Ordered roughly by priority, not commitment. Each item becomes its own phase whe
 
 Explicitly out of MVP scope — the standalone app is the priority and the "music" framing comes later.
 
-- [ ] **Tempo (BPM) + time signature** as pattern attributes
-- [ ] **Musical snap values** (1/4, 1/8, 1/16, 1/32) derived from BPM
-- [ ] **Dual time display** in the pattern ruler (bars/beats + seconds)
+- [x] **Tempo (BPM) + time signature** as pattern attributes — Pattern gains BPM (20..999) + time-sig (numerator 1..32, denominator 2/4/8/16); v11 .beep schema; UI controls in PatternSection
+- [x] **Musical snap values** (1/4, 1/8, 1/16, 1/32) derived from BPM — grid combo extended with note-value entries (1/32 .. Whole) that recompute when BPM changes
+- [x] **Dual time display** in the pattern ruler (bars/beats + seconds) — ruler now shows seconds along the top half + bar/beat labels along the bottom; playhead readout includes "Bar N.M"
 - [ ] **DAW transport sync** — when running as VST/AU, follow host tempo, play/stop, and bar position
 
 ### Workflow

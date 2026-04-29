@@ -603,20 +603,20 @@ namespace B33p
             g.setColour(juce::Colour::fromRGB(40, 40, 40));
             g.fillRect(rulerRow);
 
-            // Tick marks across the bottom of the ruler.
-            g.setColour(juce::Colour::fromRGB(100, 100, 100));
+            // Second labels along the top half of the ruler — keeps
+            // the seconds reference visible for users who think in
+            // raw time.
             const int lastSec = static_cast<int>(std::floor(length));
+            g.setColour(juce::Colour::fromRGB(100, 100, 100));
             for (int s = 0; s <= lastSec; ++s)
             {
                 const float x = secondsToX(static_cast<double>(s));
                 g.drawVerticalLine(static_cast<int>(std::round(x)),
-                                    rulerRow.getBottom() - 4.0f,
-                                    rulerRow.getBottom());
+                                    rulerRow.getY() + 1.0f,
+                                    rulerRow.getY() + 5.0f);
             }
-
-            // Second labels.
-            g.setColour(juce::Colour::fromRGB(190, 190, 190));
-            g.setFont(juce::FontOptions(10.0f));
+            g.setColour(juce::Colour::fromRGB(160, 160, 160));
+            g.setFont(juce::FontOptions(9.0f));
             for (int s = 0; s <= lastSec; ++s)
             {
                 const float x = secondsToX(static_cast<double>(s));
@@ -624,7 +624,49 @@ namespace B33p
                            juce::Rectangle<float>(x + 2.0f,
                                                   rulerRow.getY() + 1.0f,
                                                   30.0f,
-                                                  kRulerHeight - 6.0f),
+                                                  kRulerHeight * 0.5f),
+                           juce::Justification::centredLeft);
+            }
+
+            // Bar / beat labels along the bottom half. Bars get a
+            // long tick + "Bar N" label; beats inside a bar get a
+            // short tick. Tempo + time signature drive the spacing,
+            // so changing BPM live re-rules the grid.
+            const auto& pattern = processor.getPattern();
+            const double bpm    = pattern.getBpm();
+            const int    numer  = pattern.getTimeSigNumerator();
+            const double secPerBeat = 60.0 / bpm;
+            const double secPerBar  = secPerBeat * static_cast<double>(numer);
+
+            // Collect every beat boundary from 0 up to the pattern
+            // length. At standard 120 BPM / 4/4 / 5 s pattern that's
+            // 10 ticks — cheap.
+            int beatIdx = 0;
+            for (double t = 0.0; t <= length + 1e-9; t += secPerBeat, ++beatIdx)
+            {
+                const float x = secondsToX(t);
+                const bool  isBarStart = (beatIdx % numer) == 0;
+
+                g.setColour(isBarStart
+                                ? juce::Colour::fromRGB(150, 150, 150)
+                                : juce::Colour::fromRGB( 80,  80,  80));
+                g.drawVerticalLine(static_cast<int>(std::round(x)),
+                                    rulerRow.getBottom() - (isBarStart ? 6.0f : 3.0f),
+                                    rulerRow.getBottom());
+            }
+
+            // Bar labels — one per bar boundary.
+            g.setColour(juce::Colour::fromRGB(190, 190, 190));
+            g.setFont(juce::FontOptions(9.0f));
+            int barNum = 1;
+            for (double t = 0.0; t <= length + 1e-9; t += secPerBar, ++barNum)
+            {
+                const float x = secondsToX(t);
+                g.drawText("Bar " + juce::String(barNum),
+                           juce::Rectangle<float>(x + 2.0f,
+                                                  rulerRow.getCentreY(),
+                                                  46.0f,
+                                                  kRulerHeight * 0.5f),
                            juce::Justification::centredLeft);
             }
         }

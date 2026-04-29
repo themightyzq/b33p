@@ -379,6 +379,9 @@ namespace B33p
         pattern.clearAll();
         pattern.resetAllLaneMeta();
         pattern.setLengthSeconds(Pattern::kDefaultLengthSeconds);
+        pattern.setBpm(Pattern::kDefaultBpm);
+        pattern.setTimeSignature(Pattern::kDefaultTimeSigNum,
+                                  Pattern::kDefaultTimeSigDen);
         looping.store(true);
 
         randomizer.clearAllLocks();
