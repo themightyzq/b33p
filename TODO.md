@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: post-MVP roadmap — VST3 + AU plugin builds shipping; remaining Distribution items are installers, AAX, and extra audio export formats**
+> **Current focus: post-MVP roadmap — VST3 + AU plugin builds shipping; remaining Distribution items are installers and the release workflow**
 
 ---
 
@@ -254,7 +254,6 @@ Explicitly out of MVP scope — the standalone app is the priority and the "musi
 ### Distribution
 
 - [ ] **Release installers** — proper `.dmg` (macOS), Windows installer (NSIS / Inno Setup), Linux AppImage or tarball, auto-attached to a GitHub Release on tag push via CPack + a release workflow. Lives here rather than in the MVP because b33p is currently shared via "build from source" or "grab the CI workflow artifact"; installers come back when there's a public-facing release worth packaging.
-- [x] **VST3 plugin build** — single CMake target via juce_add_plugin produces VST3 alongside Standalone + AU. Loadable in any modern DAW. (AAX still pending behind the AAX SDK.)
+- [x] **VST3 plugin build** — single CMake target via juce_add_plugin produces VST3 alongside Standalone + AU. Loadable in any modern DAW.
 - [x] **AU plugin build** (macOS) — same juce_add_plugin target produces an AU component on Apple builds.
-- [ ] **AAX plugin build** (Pro Tools)
 - [x] **Additional export formats** — FLAC, OGG, AIFF, 96 kHz — Export dialog gains a Format combo (WAV / AIFF / FLAC / OGG Vorbis) and 88.2 / 96 kHz sample rate options. Filename extension auto-rewrites to match the chosen format. (IMA-ADPCM was originally on this list but dropped — too niche to justify a from-scratch encoder.)
