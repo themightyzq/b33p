@@ -247,7 +247,7 @@ Explicitly out of MVP scope — the standalone app is the priority and the "musi
 - [x] **Preset browser** with tags, favorites, search — basic browser ships now (Save Preset / Browse Presets in File menu, ListBox with Load/Delete, per-user Presets directory under app-data); tags, favorites, and full-text search are post-MVP polish on top of this base.
 - [x] **Generator presets** — one-click starting points (droid chatter, alarms, weapon charge, UI beeps) — 4 factory presets ship with the app and seed into the user's presets directory on first launch (FM Bell, Resonant Stab, Delay Pad, Ring Mod Robot). Seed is non-destructive — existing files are never overwritten.
 - [x] **User-configurable randomization ranges and distributions** — global Randomization Scope slider in PatternSection (0.05..1.0). 1.0 = full-range rolls (legacy behaviour); smaller values constrain rolls to a window centred on each parameter's current value. Single APVTS param so it round-trips through .beep saves automatically.
-- [ ] **MIDI input** for auditioning
+- [x] **MIDI input** for auditioning — every available MIDI input device routes notes into the selected lane's voice (note 60 = no transposition, higher / lower notes pitch up / down accordingly). Velocity-sensitive. Note-off releases the amp envelope.
 - [ ] **Polyphony** for voices that benefit from it
 - [ ] **Batch export** — render N dice-rolled variations in one shot
 

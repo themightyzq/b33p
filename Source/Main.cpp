@@ -34,6 +34,20 @@ namespace B33p
             processorPlayer->setProcessor(processor.get());
             deviceManager->addAudioCallback(processorPlayer.get());
 
+            // Enable every available MIDI input and route each one
+            // to the AudioProcessorPlayer, which forwards every
+            // note-on / note-off into B33pProcessor::processBlock's
+            // MidiBuffer. Refusing to enable individual devices is
+            // post-MVP polish — the simple "all inputs on" default
+            // matches the user's expectation when they plug in a
+            // single keyboard.
+            for (const auto& input : juce::MidiInput::getAvailableDevices())
+            {
+                deviceManager->setMidiInputDeviceEnabled(input.identifier, true);
+                deviceManager->addMidiInputDeviceCallback(input.identifier,
+                                                           processorPlayer.get());
+            }
+
             mainWindow = std::make_unique<MainWindow>(getApplicationName(),
                                                        *processor,
                                                        *deviceManager);
@@ -44,7 +58,12 @@ namespace B33p
         void shutdown() override
         {
             if (deviceManager != nullptr && processorPlayer != nullptr)
+            {
                 deviceManager->removeAudioCallback(processorPlayer.get());
+                for (const auto& input : juce::MidiInput::getAvailableDevices())
+                    deviceManager->removeMidiInputDeviceCallback(input.identifier,
+                                                                  processorPlayer.get());
+            }
 
             processorPlayer.reset();
             deviceManager.reset();

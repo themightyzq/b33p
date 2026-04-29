@@ -627,7 +627,7 @@ namespace B33p
     }
 
     void B33pProcessor::processBlock(juce::AudioBuffer<float>& buffer,
-                                     juce::MidiBuffer& /*midi*/)
+                                     juce::MidiBuffer& midi)
     {
         juce::ScopedNoDenormals noDenormals;
 
@@ -635,6 +635,45 @@ namespace B33p
         const int numChannels = buffer.getNumChannels();
 
         pushParametersToVoices();
+
+        // ---- MIDI input ------------------------------------------
+        // Route every note-on / note-off to the currently-selected
+        // lane's voice. MIDI note 60 (middle C) is treated as the
+        // "no transposition" reference so the voice's basePitchHz
+        // sounds at note 60 — pressing higher notes pitches up,
+        // lower notes pitch down.
+        for (const auto meta : midi)
+        {
+            const auto& msg = meta.getMessage();
+            if (msg.isNoteOn())
+            {
+                const int lane = juce::jlimit(0, Pattern::kNumLanes - 1,
+                                               selectedLane.load());
+                Event e;
+                e.startSeconds         = 0.0;     // unused inside trigger
+                e.durationSeconds      = 1.0;     // long duration; release on note-off
+                e.pitchOffsetSemitones = static_cast<float>(msg.getNoteNumber() - 60);
+                e.velocity             = msg.getVelocity() / 127.0f;
+                triggerVoiceFromEvent(lane, e);
+                // Cancel any pending pattern-driven note-off for
+                // this lane — MIDI play takes priority and is
+                // released by the matching note-off rather than
+                // a sample-count timer.
+                samplesUntilNoteOff[static_cast<size_t>(lane)] = 0;
+            }
+            else if (msg.isNoteOff())
+            {
+                const int lane = juce::jlimit(0, Pattern::kNumLanes - 1,
+                                               selectedLane.load());
+                voices[static_cast<size_t>(lane)].noteOff();
+            }
+            else if (msg.isAllNotesOff() || msg.isAllSoundOff())
+            {
+                for (auto& v : voices)
+                    v.noteOff();
+            }
+        }
+        midi.clear();   // we never produce MIDI
 
         // ---- Detect playback start / stop transitions -------------
         const bool nowPlaying = playing.load(std::memory_order_acquire);

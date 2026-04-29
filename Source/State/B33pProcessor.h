@@ -195,7 +195,7 @@ namespace B33p
         bool  hasEditor() const override                                         { return false; }
         juce::AudioProcessorEditor* createEditor() override                      { return nullptr; }
 
-        bool  acceptsMidi() const override                                       { return false; }
+        bool  acceptsMidi() const override                                       { return true;  }
         bool  producesMidi() const override                                      { return false; }
         double getTailLengthSeconds() const override                             { return 0.0; }
 
