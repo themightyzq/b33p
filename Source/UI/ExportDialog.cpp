@@ -45,7 +45,7 @@ namespace B33p
     void ExportDialog::showAsync(juce::Component* parent, OnClose onClose)
     {
         auto* dialog = new ExportDialog(std::move(onClose));
-        dialog->setSize(420, 220);
+        dialog->setSize(420, 260);
 
         juce::DialogWindow::LaunchOptions options;
         options.content.setOwned(dialog);
@@ -99,6 +99,16 @@ namespace B33p
         channelCombo.setSelectedId(idForIndex(0), juce::dontSendNotification); // Mono
         addAndMakeVisible(channelCombo);
 
+        styleLabel(variationsLabel, "Variations:");
+        addAndMakeVisible(variationsLabel);
+        variationsSlider.setSliderStyle(juce::Slider::IncDecButtons);
+        variationsSlider.setRange(1.0, 100.0, 1.0);
+        variationsSlider.setIncDecButtonsMode(juce::Slider::incDecButtonsDraggable_AutoDirection);
+        variationsSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 60, 22);
+        variationsSlider.setValue(1.0, juce::dontSendNotification);
+        variationsSlider.setTooltip("1 = single render. 2+ = render that many dice-rolled variations into numbered files (Filename_001.wav, etc.). The original parameter values are restored when the batch finishes.");
+        addAndMakeVisible(variationsSlider);
+
         cancelButton.onClick = [this] { cancelClicked(); };
         addAndMakeVisible(cancelButton);
 
@@ -144,6 +154,7 @@ namespace B33p
         layoutRow(sampleRateLabel,  sampleRateCombo);
         layoutRow(bitDepthLabel,    bitDepthCombo);
         layoutRow(channelLabel,     channelCombo);
+        layoutRow(variationsLabel,  variationsSlider);
     }
 
     void ExportDialog::browseClicked()
@@ -206,6 +217,9 @@ namespace B33p
         const int chIdx = indexForId(channelCombo.getSelectedId());
         if (chIdx >= 0 && chIdx < static_cast<int>(kChannels.size()))
             r.channelMode = kChannels[static_cast<size_t>(chIdx)].value;
+
+        r.variationCount = juce::jlimit(1, 100,
+            static_cast<int>(variationsSlider.getValue()));
 
         return r;
     }

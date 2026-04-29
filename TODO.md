@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: post-MVP roadmap — preset browser shipped; next item in Workflow is Generator presets / Configurable randomization ranges / MIDI input / Polyphony / Batch export**
+> **Current focus: post-MVP roadmap — Workflow category complete; only Distribution items (installers + plugin builds + extra export formats) remain on the post-MVP list**
 
 ---
 
@@ -249,7 +249,7 @@ Explicitly out of MVP scope — the standalone app is the priority and the "musi
 - [x] **User-configurable randomization ranges and distributions** — global Randomization Scope slider in PatternSection (0.05..1.0). 1.0 = full-range rolls (legacy behaviour); smaller values constrain rolls to a window centred on each parameter's current value. Single APVTS param so it round-trips through .beep saves automatically.
 - [x] **MIDI input** for auditioning — every available MIDI input device routes notes into the selected lane's voice (note 60 = no transposition, higher / lower notes pitch up / down accordingly). Velocity-sensitive. Note-off releases the amp envelope.
 - [x] **Polyphony** for voices that benefit from it — 8-voice MIDI keyboard pool added alongside the existing per-lane pattern voices. Pattern playback stays monophonic per lane (overlapping events still re-trigger via the existing amp-env retrigger). MIDI chords now ring together up to 8 notes deep.
-- [ ] **Batch export** — render N dice-rolled variations in one shot
+- [x] **Batch export** — render N dice-rolled variations in one shot — Variations field in the Export dialog (1..100). Variation 1 captures the user's current patch verbatim; subsequent variations roll all unlocked params before each render. APVTS state is snapshotted before the batch and restored after, so the user's patch survives the dice rolls.
 
 ### Distribution
 
