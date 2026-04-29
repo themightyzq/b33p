@@ -42,7 +42,7 @@ namespace B33p
             layout.add(std::make_unique<juce::AudioParameterChoice>(
                 juce::ParameterID { ParameterIDs::oscWaveform(lane), kParameterVersionHint },
                 prefix + "Waveform",
-                juce::StringArray { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom" },
+                juce::StringArray { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom", "Wavetable" },
                 0));
 
             // Tightened to "musical beep" range so randomisation
@@ -53,6 +53,13 @@ namespace B33p
                                  prefix + "Base Pitch",
                                  skewedRange(80.0f, 4000.0f, 440.0f),
                                  440.0f, "Hz"));
+
+            // 0..1 morph across the four wavetable slots. Only
+            // active when waveform is Wavetable; ignored otherwise.
+            layout.add(makeFloat(ParameterIDs::wavetableMorph(lane),
+                                 prefix + "Wavetable Morph",
+                                 juce::NormalisableRange<float> { 0.0f, 1.0f },
+                                 0.0f));
 
             layout.add(makeFloat(ParameterIDs::ampAttack(lane),
                                  prefix + "Amp Attack",

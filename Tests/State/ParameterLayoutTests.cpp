@@ -86,7 +86,7 @@ TEST_CASE("ParameterLayout: continuous parameters have correct ranges and defaul
     }
 }
 
-TEST_CASE("ParameterLayout: waveform choice lists all five waveforms with Sine default",
+TEST_CASE("ParameterLayout: waveform choice lists every waveform with Sine default",
           "[state][layout]")
 {
     B33p::B33pProcessor processor;
@@ -95,7 +95,8 @@ TEST_CASE("ParameterLayout: waveform choice lists all five waveforms with Sine d
     auto* choice = asChoice(apvts.getParameter(B33p::ParameterIDs::oscWaveform(0)));
     REQUIRE(choice != nullptr);
 
-    const juce::StringArray expected { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom" };
+    const juce::StringArray expected
+        { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom", "Wavetable" };
     REQUIRE(choice->choices == expected);
     REQUIRE(choice->getIndex() == 0);  // Sine
 }

@@ -1,5 +1,6 @@
 #include "Oscillator.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace B33p
@@ -47,6 +48,26 @@ namespace B33p
             const float frac     = static_cast<float>(scaled - std::floor(scaled));
             return t[i] + frac * (t[j] - t[i]);
         }
+
+        // Linear blend between two adjacent wavetable slots.
+        // morph01 is normalised to a [0, slotCount-1] position
+        // before being split into integer + fractional parts.
+        float wavetableAt(double phase,
+                           const std::array<std::vector<float>,
+                                            Oscillator::kNumWavetableSlots>& slots,
+                           float morph01) noexcept
+        {
+            constexpr int last = Oscillator::kNumWavetableSlots - 1;
+            const float clamped = std::clamp(morph01, 0.0f, 1.0f);
+            const float pos     = clamped * static_cast<float>(last);
+            const int   lo      = std::clamp(static_cast<int>(std::floor(pos)), 0, last);
+            const int   hi      = std::min(lo + 1, last);
+            const float frac    = pos - static_cast<float>(lo);
+
+            const float a = customAt(phase, slots[static_cast<std::size_t>(lo)]);
+            const float b = customAt(phase, slots[static_cast<std::size_t>(hi)]);
+            return a + frac * (b - a);
+        }
     }
 
     Oscillator::Oscillator()
@@ -79,7 +100,19 @@ namespace B33p
 
     void Oscillator::setCustomTable(const std::vector<float>& samples)
     {
-        customTable = samples;
+        setWavetableSlot(0, samples);
+    }
+
+    void Oscillator::setWavetableSlot(int slot, const std::vector<float>& samples)
+    {
+        if (slot < 0 || slot >= kNumWavetableSlots)
+            return;
+        wavetableSlots[static_cast<std::size_t>(slot)] = samples;
+    }
+
+    void Oscillator::setWavetableMorph(float morph01)
+    {
+        wavetableMorph = std::clamp(morph01, 0.0f, 1.0f);
     }
 
     void Oscillator::updatePhaseIncrement()
@@ -100,12 +133,13 @@ namespace B33p
         float output = 0.0f;
         switch (waveform)
         {
-            case Waveform::Sine:     output = sineAt(phase);                  break;
-            case Waveform::Square:   output = squareAt(phase);                break;
-            case Waveform::Triangle: output = triangleAt(phase);              break;
-            case Waveform::Saw:      output = sawAt(phase);                   break;
-            case Waveform::Custom:   output = customAt(phase, customTable);   break;
-            case Waveform::Noise:    break; // handled above
+            case Waveform::Sine:      output = sineAt(phase);                                         break;
+            case Waveform::Square:    output = squareAt(phase);                                       break;
+            case Waveform::Triangle:  output = triangleAt(phase);                                     break;
+            case Waveform::Saw:       output = sawAt(phase);                                          break;
+            case Waveform::Custom:    output = customAt(phase, wavetableSlots[0]);                    break;
+            case Waveform::Wavetable: output = wavetableAt(phase, wavetableSlots, wavetableMorph);    break;
+            case Waveform::Noise:     break; // handled above
         }
 
         phase += phaseIncrement;

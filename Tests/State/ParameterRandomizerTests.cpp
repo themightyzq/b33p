@@ -137,13 +137,13 @@ TEST_CASE("ParameterRandomizer: choice parameters roll across multiple valid ind
         observedIndices.insert(waveform->getIndex());
     }
 
-    // Six choices * 100 rolls — hitting at least three distinct
+    // Seven choices * 100 rolls — hitting at least three distinct
     // indices is essentially certain but leaves margin for bad luck.
     REQUIRE(observedIndices.size() >= 3);
     for (int idx : observedIndices)
     {
         REQUIRE(idx >= 0);
-        REQUIRE(idx <= 5);
+        REQUIRE(idx <= 6);
     }
 }
 

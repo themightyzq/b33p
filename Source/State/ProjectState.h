@@ -11,7 +11,14 @@ namespace B33p
         // .beep file format version. Bump on any breaking schema
         // change and add a corresponding case to the migrate()
         // function below — never break older saved projects.
-        inline constexpr int kCurrentVersion = 2;
+        //
+        // History:
+        //   v1: single-voice MVP (one set of parameters, one custom table)
+        //   v2: per-lane voices (lane-prefixed parameter IDs, per-lane custom_waveform attribute)
+        //   v3: per-lane wavetable slots (WAVETABLE child with N SLOT children) +
+        //       wavetable_morph parameter; v2's custom_waveform attribute migrates
+        //       into WAVETABLE/SLOT[index=0]
+        inline constexpr int kCurrentVersion = 3;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

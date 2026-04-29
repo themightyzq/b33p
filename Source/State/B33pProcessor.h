@@ -67,14 +67,22 @@ namespace B33p
         // a copy here cannot race with a concurrent UI write.
         std::vector<PitchEnvelopePoint> getPitchCurveCopy() const;
 
-        // Per-lane custom oscillator waveform table. Each lane stores
-        // a single-cycle table read by Oscillator::Waveform::Custom.
+        // Per-lane wavetable storage. Each lane owns
+        // Oscillator::kNumWavetableSlots single-cycle tables. Slot 0
+        // doubles as the Custom-mode table — Custom and Wavetable
+        // modes share the same storage to keep the editor and the
+        // saved-file schema simple.
+        //
         // Set is non-blocking via atomic shared_ptr swap; get returns
-        // a value copy of the currently-published table (or an empty
-        // vector if none has ever been set for the lane).
+        // a value copy of the currently-published slot (or an empty
+        // vector if none has ever been set).
         void                setCustomWaveform(int lane,
                                               std::vector<float> samples);
         std::vector<float>  getCustomWaveformCopy(int lane) const;
+
+        void                setWavetableSlot(int lane, int slot,
+                                             std::vector<float> samples);
+        std::vector<float>  getWavetableSlotCopy(int lane, int slot) const;
 
         // The user-authored sequencer pattern. UI edits go through
         // this reference directly. Playback uses an immutable
@@ -250,15 +258,19 @@ namespace B33p
         std::array<int, Pattern::kNumLanes>    samplesUntilNoteOff { { 0, 0, 0, 0 } };
         double                                 currentSampleRate   { 44100.0 };
 
-        // Per-lane custom oscillator waveform tables. Message thread
-        // writes via atomic shared_ptr store; audio thread loads
-        // each block and pushes to the corresponding voice only if
-        // the pointer changed since last push (avoids per-block
-        // vector copies when the user isn't editing).
-        std::array<std::shared_ptr<const std::vector<float>>,
-                   Pattern::kNumLanes>         customWaveformSlots;
-        std::array<std::shared_ptr<const std::vector<float>>,
-                   Pattern::kNumLanes>         lastPushedCustomTables;
+        // Per-lane wavetable slot storage. Message thread writes via
+        // atomic shared_ptr store; audio thread loads each block and
+        // pushes the corresponding slot to the voice only if the
+        // pointer changed since last push (avoids per-block vector
+        // copies when the user isn't editing). One inner array per
+        // lane, one shared_ptr per slot. Custom mode reads slot 0;
+        // Wavetable mode reads all four blended by the morph param.
+        using WavetableSlotPtr = std::shared_ptr<const std::vector<float>>;
+        using WavetableSlotArray = std::array<WavetableSlotPtr,
+                                              Oscillator::kNumWavetableSlots>;
+
+        std::array<WavetableSlotArray, Pattern::kNumLanes> wavetableSlots;
+        std::array<WavetableSlotArray, Pattern::kNumLanes> lastPushedWavetableSlots;
 
         // Unsaved-changes flag + listener.
         std::atomic<bool>     dirty                       { false };

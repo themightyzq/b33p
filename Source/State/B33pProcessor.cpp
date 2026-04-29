@@ -60,27 +60,44 @@ namespace B33p
     {
         markDirty();
 
-        // When a lane's waveform parameter flips to Custom, seed
-        // the lane's table with one cycle of sine if it doesn't
-        // have one yet — so audition / playback produces sound
-        // immediately instead of silence until the user opens
-        // the editor and draws something.
+        // When a lane's waveform parameter flips to Custom or
+        // Wavetable, seed any empty slot with one cycle of sine —
+        // so audition / playback produces sound immediately instead
+        // of silence until the user opens the editor and draws
+        // something. Custom only needs slot 0; Wavetable benefits
+        // from every slot being seeded so the morph parameter
+        // produces sine-to-sine blends until the user differentiates
+        // any individual slot.
         for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
         {
             if (parameterID != ParameterIDs::oscWaveform(lane))
                 continue;
+
             const int newIndex = static_cast<int>(newValue);
-            if (newIndex != static_cast<int>(Oscillator::Waveform::Custom))
+            const bool isCustom    = newIndex == static_cast<int>(Oscillator::Waveform::Custom);
+            const bool isWavetable = newIndex == static_cast<int>(Oscillator::Waveform::Wavetable);
+            if (! isCustom && ! isWavetable)
                 break;
-            auto current = std::atomic_load(&customWaveformSlots[static_cast<size_t>(lane)]);
-            if (current != nullptr && ! current->empty())
-                break;   // user already has a table for this lane
-            std::vector<float> sine(static_cast<size_t>(Oscillator::kCustomTableSize));
-            for (size_t i = 0; i < sine.size(); ++i)
-                sine[i] = static_cast<float>(std::sin(
-                    2.0 * 3.14159265358979323846
-                    * static_cast<double>(i) / static_cast<double>(sine.size())));
-            setCustomWaveform(lane, std::move(sine));
+
+            auto sineCycle = []
+            {
+                std::vector<float> sine(static_cast<size_t>(Oscillator::kCustomTableSize));
+                for (size_t i = 0; i < sine.size(); ++i)
+                    sine[i] = static_cast<float>(std::sin(
+                        2.0 * 3.14159265358979323846
+                        * static_cast<double>(i) / static_cast<double>(sine.size())));
+                return sine;
+            };
+
+            const int seedSlots = isWavetable ? Oscillator::kNumWavetableSlots : 1;
+            for (int slot = 0; slot < seedSlots; ++slot)
+            {
+                auto current = std::atomic_load(
+                    &wavetableSlots[static_cast<size_t>(lane)][static_cast<size_t>(slot)]);
+                if (current != nullptr && ! current->empty())
+                    continue;   // slot already has a user-edited table
+                setWavetableSlot(lane, slot, sineCycle());
+            }
             break;
         }
     }
@@ -118,18 +135,39 @@ namespace B33p
 
     void B33pProcessor::setCustomWaveform(int lane, std::vector<float> samples)
     {
-        if (lane < 0 || lane >= Pattern::kNumLanes)
-            return;
-        auto next = std::make_shared<const std::vector<float>>(std::move(samples));
-        std::atomic_store(&customWaveformSlots[static_cast<size_t>(lane)], next);
-        markDirty();
+        // Custom mode reads slot 0 of the wavetable storage — a
+        // single-table edit lands in the same slot the Wavetable
+        // mode treats as "morph position 0".
+        setWavetableSlot(lane, 0, std::move(samples));
     }
 
     std::vector<float> B33pProcessor::getCustomWaveformCopy(int lane) const
     {
+        return getWavetableSlotCopy(lane, 0);
+    }
+
+    void B33pProcessor::setWavetableSlot(int lane, int slot,
+                                          std::vector<float> samples)
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return;
+        if (slot < 0 || slot >= Oscillator::kNumWavetableSlots)
+            return;
+        auto next = std::make_shared<const std::vector<float>>(std::move(samples));
+        std::atomic_store(&wavetableSlots[static_cast<size_t>(lane)]
+                                         [static_cast<size_t>(slot)],
+                          next);
+        markDirty();
+    }
+
+    std::vector<float> B33pProcessor::getWavetableSlotCopy(int lane, int slot) const
+    {
         if (lane < 0 || lane >= Pattern::kNumLanes)
             return {};
-        auto current = std::atomic_load(&customWaveformSlots[static_cast<size_t>(lane)]);
+        if (slot < 0 || slot >= Oscillator::kNumWavetableSlots)
+            return {};
+        auto current = std::atomic_load(&wavetableSlots[static_cast<size_t>(lane)]
+                                                       [static_cast<size_t>(slot)]);
         return current ? *current : std::vector<float>{};
     }
 
@@ -257,8 +295,13 @@ namespace B33p
         if (sourceLane < 0 || sourceLane >= Pattern::kNumLanes)
             return;
 
-        const auto srcIds   = ParameterIDs::allForLane(sourceLane);
-        const auto srcTable = getCustomWaveformCopy(sourceLane);
+        const auto srcIds = ParameterIDs::allForLane(sourceLane);
+
+        // Snapshot every wavetable slot up front so we don't repeat
+        // the (lock + copy) work for each destination lane.
+        std::array<std::vector<float>, Oscillator::kNumWavetableSlots> srcSlots;
+        for (int slot = 0; slot < Oscillator::kNumWavetableSlots; ++slot)
+            srcSlots[static_cast<size_t>(slot)] = getWavetableSlotCopy(sourceLane, slot);
 
         undoManager.beginNewTransaction("Copy lane to all lanes");
 
@@ -273,11 +316,12 @@ namespace B33p
                 if (src != nullptr && dst != nullptr)
                     dst->setValueNotifyingHost(src->getValue());
             }
-            // Copy the custom waveform table too — otherwise the
+            // Copy every wavetable slot too — otherwise the
             // destination lanes keep their old shapes and "Copy
             // voice to all" silently produces non-uniform timbre
-            // for any lane that was on Custom.
-            setCustomWaveform(dest, srcTable);
+            // for any lane that was on Custom or Wavetable.
+            for (int slot = 0; slot < Oscillator::kNumWavetableSlots; ++slot)
+                setWavetableSlot(dest, slot, srcSlots[static_cast<size_t>(slot)]);
         }
     }
 
@@ -292,10 +336,11 @@ namespace B33p
             if (auto* p = apvts.getParameter(id))
                 p->setValueNotifyingHost(p->getDefaultValue());
 
-        // Drop the custom waveform table too — "Reset voice to
-        // defaults" should put the lane back to a fresh state, not
-        // leave a custom shape lurking on the Custom waveform mode.
-        setCustomWaveform(lane, {});
+        // Drop every wavetable slot too — "Reset voice to defaults"
+        // should put the lane back to a fresh state, not leave drawn
+        // shapes lurking on the Custom / Wavetable modes.
+        for (int slot = 0; slot < Oscillator::kNumWavetableSlots; ++slot)
+            setWavetableSlot(lane, slot, {});
     }
 
     void B33pProcessor::notifyDirtyChanged()
@@ -322,7 +367,8 @@ namespace B33p
         setPitchCurve({ { 0.0f, 0.0f }, { 1.0f, 0.0f } });
 
         for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
-            setCustomWaveform(lane, {});
+            for (int slot = 0; slot < Oscillator::kNumWavetableSlots; ++slot)
+                setWavetableSlot(lane, slot, {});
 
         pattern.clearAll();
         pattern.resetAllLaneMeta();
@@ -353,24 +399,29 @@ namespace B33p
 
         const auto* wfParam = apvts.getRawParameterValue(ParameterIDs::oscWaveform(lane));
         v.setWaveform(static_cast<Oscillator::Waveform>(
-            juce::jlimit(0, 5, static_cast<int>(wfParam->load()))));
+            juce::jlimit(0,
+                         static_cast<int>(Oscillator::Waveform::Wavetable),
+                         static_cast<int>(wfParam->load()))));
 
         v.setBasePitchHz         (apvts.getRawParameterValue(ParameterIDs::basePitchHz(lane))->load());
+        v.setWavetableMorph      (apvts.getRawParameterValue(ParameterIDs::wavetableMorph(lane))->load());
 
-        // Push the lane's custom waveform table to the voice only
-        // when it has actually changed since last push — keeps the
-        // common no-edit path zero-cost (one atomic_load + pointer
-        // compare).
+        // Push every slot only when its shared_ptr has changed since
+        // last push — keeps the common no-edit path zero-cost (one
+        // atomic_load + pointer compare per slot).
+        for (int slot = 0; slot < Oscillator::kNumWavetableSlots; ++slot)
         {
-            auto current = std::atomic_load(&customWaveformSlots[static_cast<size_t>(lane)]);
-            if (current != lastPushedCustomTables[static_cast<size_t>(lane)])
-            {
-                if (current != nullptr)
-                    v.setCustomWaveformTable(*current);
-                else
-                    v.setCustomWaveformTable({});
-                lastPushedCustomTables[static_cast<size_t>(lane)] = current;
-            }
+            auto current = std::atomic_load(
+                &wavetableSlots[static_cast<size_t>(lane)][static_cast<size_t>(slot)]);
+            auto& last = lastPushedWavetableSlots[static_cast<size_t>(lane)]
+                                                 [static_cast<size_t>(slot)];
+            if (current == last)
+                continue;
+            if (current != nullptr)
+                v.setWavetableSlot(slot, *current);
+            else
+                v.setWavetableSlot(slot, {});
+            last = current;
         }
         v.setAmpAttack           (apvts.getRawParameterValue(ParameterIDs::ampAttack(lane))->load());
         v.setAmpDecay            (apvts.getRawParameterValue(ParameterIDs::ampDecay(lane))->load());

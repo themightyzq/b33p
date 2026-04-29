@@ -32,6 +32,7 @@ namespace B33p::ParameterIDs
 
     inline juce::String oscWaveform         (int lane) { return detail::prefixed(lane, "osc_waveform");           }
     inline juce::String basePitchHz         (int lane) { return detail::prefixed(lane, "base_pitch_hz");          }
+    inline juce::String wavetableMorph      (int lane) { return detail::prefixed(lane, "wavetable_morph");        }
 
     inline juce::String ampAttack           (int lane) { return detail::prefixed(lane, "amp_attack");             }
     inline juce::String ampDecay            (int lane) { return detail::prefixed(lane, "amp_decay");              }
@@ -54,6 +55,7 @@ namespace B33p::ParameterIDs
     {
         return {
             oscWaveform(lane),         basePitchHz(lane),
+            wavetableMorph(lane),
             ampAttack(lane),           ampDecay(lane),
             ampSustain(lane),          ampRelease(lane),
             filterCutoffHz(lane),      filterResonanceQ(lane),

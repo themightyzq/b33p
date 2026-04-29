@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <random>
 #include <vector>
 
@@ -12,6 +13,12 @@ namespace B33p
     // Lifecycle: construct -> prepare(sampleRate) -> setWaveform/setFrequency
     // -> processSample() per output sample. Before prepare() is called,
     // processSample() returns silence (0.0f).
+    //
+    // Wavetable mode: linearly interpolates between four single-cycle
+    // tables (slot 0..3) based on a 0..1 morph value, where 0 = pure
+    // slot 0, 1 = pure slot 3, and intermediate values blend two
+    // adjacent slots. Custom mode reuses slot 0 — the difference is
+    // whether the morph parameter participates.
     class Oscillator
     {
     public:
@@ -22,13 +29,19 @@ namespace B33p
             Triangle,
             Saw,
             Noise,
-            Custom
+            Custom,
+            Wavetable
         };
 
         // Default custom-table size — small enough that the full
         // table fits in CPU cache, large enough that a freely-drawn
         // shape doesn't sound aliased at typical pitches.
-        static constexpr int kCustomTableSize = 256;
+        static constexpr int kCustomTableSize  = 256;
+
+        // Wavetable slot count. Fixed at four for MVP. The morph
+        // parameter spans [0, kNumWavetableSlots - 1] internally; the
+        // public API normalises that to a 0..1 input.
+        static constexpr int kNumWavetableSlots = 4;
 
         Oscillator();
 
@@ -39,9 +52,20 @@ namespace B33p
         void setFrequency(float hz);
 
         // Replaces the per-cycle sample table used when waveform is
-        // Custom. Empty / wrong-size tables fall back to silence.
-        // Linear-interpolated lookup at the current phase position.
+        // Custom. Convenience alias for setWavetableSlot(0, samples)
+        // — Custom mode reads slot 0 of the wavetable storage.
         void setCustomTable(const std::vector<float>& samples);
+
+        // Replaces a single wavetable slot. slot is clamped to
+        // [0, kNumWavetableSlots). Empty / wrong-size tables play
+        // silence for that slot.
+        void setWavetableSlot(int slot, const std::vector<float>& samples);
+
+        // 0..1 morph position across the kNumWavetableSlots slots.
+        // 0 = pure slot 0, 1 = pure slot N-1, intermediate values
+        // linearly blend the two adjacent slots. Out-of-range inputs
+        // are clamped.
+        void setWavetableMorph(float morph01);
 
         float processSample();
 
@@ -54,7 +78,8 @@ namespace B33p
         double   phaseIncrement { 0.0 };
         Waveform waveform       { Waveform::Sine };
 
-        std::vector<float>                    customTable;
+        std::array<std::vector<float>, kNumWavetableSlots> wavetableSlots;
+        float                                              wavetableMorph { 0.0f };
 
         std::mt19937                          rng;
         std::uniform_real_distribution<float> noiseDist { -1.0f, 1.0f };
