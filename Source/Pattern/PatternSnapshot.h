@@ -2,6 +2,8 @@
 
 #include "Pattern.h"
 
+#include <juce_core/juce_core.h>
+
 #include <vector>
 
 namespace B33p
@@ -32,5 +34,20 @@ namespace B33p
         std::vector<ScheduledEvent> events;
     };
 
-    PatternSnapshot makeSnapshot(const Pattern& pattern);
+    // The random source is used to roll per-event probability,
+    // expand ratchets, and apply humanize jitter to start time +
+    // velocity. Re-snapshot to re-randomise; loop iterations of
+    // the same snapshot fire deterministically.
+    PatternSnapshot makeSnapshot(const Pattern& pattern, juce::Random& rng);
+
+    // Convenience overload for callers that don't care about
+    // randomisation (tests that only exercise deterministic
+    // behaviour). Uses a temporary local Random — its seed is
+    // unspecified, so any test relying on determinism should
+    // pass an explicit Random.
+    inline PatternSnapshot makeSnapshot(const Pattern& pattern)
+    {
+        juce::Random rng;
+        return makeSnapshot(pattern, rng);
+    }
 }

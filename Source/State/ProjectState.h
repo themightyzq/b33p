@@ -39,7 +39,10 @@ namespace B33p
         //       nodes carrying (destination, value) pairs. v8 events have no
         //       overrides; they reload as inert (every slot's destination
         //       defaults to None).
-        inline constexpr int kCurrentVersion = 9;
+        //  v10: per-event probability / ratchets / humanize fields — events
+        //       gain three new attributes. v9 events without these load with
+        //       the inert defaults (probability=1, ratchets=1, humanize=0).
+        inline constexpr int kCurrentVersion = 10;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

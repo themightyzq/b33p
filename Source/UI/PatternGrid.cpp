@@ -814,23 +814,30 @@ namespace B33p
                         overridesWindow = std::make_unique<EventOverridesDialogWindow>(
                             evRef,
                             [this, laneClicked, idxClicked]
-                                (const std::array<EventOverride, kNumEventOverrides>& edited)
+                                (const EventDialogEdits& edited)
                             {
                                 auto& p = processor.getPattern();
                                 if (idxClicked >= p.getEvents(laneClicked).size())
                                     return;
                                 Pattern beforeApply = p;
                                 Event modified = p.getEvents(laneClicked)[idxClicked];
-                                modified.overrides = edited;
+                                modified.overrides      = edited.overrides;
+                                modified.probability    = edited.probability;
+                                modified.ratchets       = edited.ratchets;
+                                modified.humanizeAmount = edited.humanizeAmount;
                                 p.updateEvent(laneClicked, idxClicked, modified);
                                 processor.markDirty();
                                 repaint();
                                 processor.getUndoManager().beginNewTransaction(
-                                    "Edit event overrides");
+                                    "Edit event properties");
                                 processor.getUndoManager().perform(
                                     new SetPatternAction(processor, this,
                                                          std::move(beforeApply),
                                                          p));
+                                // Re-snapshot so probability + ratchet
+                                // expansion + humanize jitter take
+                                // effect on the next loop iteration.
+                                processor.refreshPatternSnapshot();
                             },
                             [this] { overridesWindow.reset(); });
                         overridesWindow->setVisible(true);

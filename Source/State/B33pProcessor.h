@@ -271,6 +271,13 @@ namespace B33p
         std::array<std::array<EventOverride, kNumEventOverrides>,
                    Pattern::kNumLanes>             activeOverrides {};
 
+        // Source of randomness for snapshot-time probability rolls,
+        // ratchet expansion humanize jitter, and any other future
+        // randomised pattern features. Re-seeded by the system on
+        // construction; unseeded re-snapshots will pick up wherever
+        // the previous call left off.
+        juce::Random snapshotRng;
+
         // Curve writes lock on the message thread; audio-thread reads
         // use a ScopedTryLock and fall back to whatever curve each
         // voice already has. One curve is shared across all four
