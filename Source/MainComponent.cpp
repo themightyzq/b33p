@@ -14,6 +14,10 @@ namespace B33p
         // Menu item IDs. Kept in one enum so the dispatch in
         // menuItemSelected stays readable. IDs must be > 0 — JUCE
         // treats 0 as "nothing selected".
+        //
+        // Recent-files items live in their own ID range above all
+        // the static items so we can dispatch them with a single
+        // range check — see menuItemSelected.
         enum MenuId
         {
             FileNew = 1,
@@ -21,6 +25,7 @@ namespace B33p
             FileSave,
             FileSaveAs,
             FileAudioSettings,
+            FileClearRecent,
             EditUndo,
             EditRedo,
             EditCopy,
@@ -33,6 +38,9 @@ namespace B33p
             LaneGenerate,
             LaneClear,
             HelpAbout,
+
+            FileOpenRecentBase = 1000,   // [1000, 1000 + N) reserved for MRU slots
+            FileOpenRecentMax  = 1099,
         };
     }
 
@@ -312,6 +320,24 @@ namespace B33p
             case 0: // File
                 m.addItem(withShortcut(MenuId::FileNew,    "New",        "Cmd+N"));
                 m.addItem(withShortcut(MenuId::FileOpen,   "Open...",    "Cmd+O"));
+                {
+                    // Persistent MRU. Disabled when empty so the user
+                    // gets a visual hint that the list will populate
+                    // as they open / save projects.
+                    const auto& recents = fileManager.getRecentFiles();
+                    const int n = juce::jmin(recents.getNumFiles(),
+                                             MenuId::FileOpenRecentMax - MenuId::FileOpenRecentBase);
+                    juce::PopupMenu recentMenu;
+                    for (int i = 0; i < n; ++i)
+                        recentMenu.addItem(MenuId::FileOpenRecentBase + i,
+                                           recents.getFile(i).getFileName());
+                    if (n > 0)
+                    {
+                        recentMenu.addSeparator();
+                        recentMenu.addItem(MenuId::FileClearRecent, "Clear Menu");
+                    }
+                    m.addSubMenu("Open Recent", recentMenu, n > 0);
+                }
                 m.addSeparator();
                 m.addItem(withShortcut(MenuId::FileSave,   "Save",       "Cmd+S"));
                 m.addItem(withShortcut(MenuId::FileSaveAs, "Save As...", "Cmd+Shift+S"));
@@ -356,6 +382,17 @@ namespace B33p
 
     void MainComponent::menuItemSelected(int menuItemId, int /*topLevelIndex*/)
     {
+        // MRU items live in a contiguous range so a single check
+        // routes them all through the same discard-confirmation
+        // path that File ▸ Open uses.
+        if (menuItemId >= MenuId::FileOpenRecentBase
+            && menuItemId <= MenuId::FileOpenRecentMax)
+        {
+            const int index = menuItemId - MenuId::FileOpenRecentBase;
+            confirmDiscardThen([this, index] { fileManager.openRecentFile(index); });
+            return;
+        }
+
         switch (menuItemId)
         {
             case MenuId::FileNew:
@@ -367,6 +404,7 @@ namespace B33p
             case MenuId::FileSave:           fileManager.save  (this);          break;
             case MenuId::FileSaveAs:         fileManager.saveAs(this);          break;
             case MenuId::FileAudioSettings:  showAudioSettings();               break;
+            case MenuId::FileClearRecent:    fileManager.clearRecentFiles();    break;
             case MenuId::EditUndo:        processor.getUndoManager().undo(); break;
             case MenuId::EditCopy:        patternSection.getGrid().copySelectedToClipboard();      break;
             case MenuId::EditPaste:       patternSection.getGrid().pasteFromClipboardAtPlayhead(); break;
@@ -444,12 +482,20 @@ namespace B33p
           + "  Arrow / Shift+Arrow nudge by 1 / 10 grid steps\n"
           + "  Cmd+Z / Shift+Z     undo / redo";
 
+        // "Close" is added first so it's the default/Enter-key
+        // button — clicking the GitHub button should be deliberate,
+        // not what hammering Return does.
         juce::AlertWindow::showAsync(
             juce::MessageBoxOptions()
                 .withIconType(juce::MessageBoxIconType::InfoIcon)
                 .withTitle("About b33p")
                 .withMessage(body)
-                .withButton("OK"),
-            nullptr);
+                .withButton("Close")
+                .withButton("Open GitHub Page"),
+            [](int result)
+            {
+                if (result == 2)
+                    juce::URL("https://github.com/themightyzq/b33p").launchInDefaultBrowser();
+            });
     }
 }

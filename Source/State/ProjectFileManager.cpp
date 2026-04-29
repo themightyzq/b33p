@@ -7,7 +7,9 @@ namespace B33p
 {
     namespace
     {
-        constexpr const char* kFilePattern = "*.beep";
+        constexpr const char* kFilePattern    = "*.beep";
+        constexpr const char* kRecentFilesKey = "recentFiles";
+        constexpr int         kMaxRecentFiles = 10;
 
         juce::File defaultStartLocation(const juce::File& currentFile)
         {
@@ -26,11 +28,24 @@ namespace B33p
                     .withButton("OK"),
                 nullptr);
         }
+
+        std::unique_ptr<juce::PropertiesFile> makePropertiesFile()
+        {
+            juce::PropertiesFile::Options options;
+            options.applicationName     = "b33p";
+            options.filenameSuffix      = ".settings";
+            options.folderName          = "b33p";
+            options.osxLibrarySubFolder = "Application Support";
+            return std::make_unique<juce::PropertiesFile>(options);
+        }
     }
 
     ProjectFileManager::ProjectFileManager(B33pProcessor& processorRef)
-        : processor(processorRef)
+        : processor(processorRef),
+          properties(makePropertiesFile())
     {
+        recentFiles.restoreFromString(properties->getValue(kRecentFilesKey));
+        recentFiles.setMaxNumberOfItems(kMaxRecentFiles);
     }
 
     void ProjectFileManager::setOnStateChanged(OnStateChanged callback)
@@ -116,6 +131,46 @@ namespace B33p
         }
     }
 
+    void ProjectFileManager::openRecentFile(int index)
+    {
+        if (index < 0 || index >= recentFiles.getNumFiles())
+            return;
+
+        const auto file = recentFiles.getFile(index);
+        if (! file.existsAsFile())
+        {
+            // Self-clean: a stale entry pointing at a moved/deleted
+            // file gets pruned the moment the user tries to open it,
+            // so the menu doesn't accumulate dead links forever.
+            recentFiles.removeFile(file);
+            persistRecentFiles();
+            showError("Open failed",
+                      "Could not find:\n" + file.getFullPathName()
+                      + "\n\nIt may have been moved, renamed, or deleted.");
+            return;
+        }
+
+        readAndReport(file);
+    }
+
+    void ProjectFileManager::clearRecentFiles()
+    {
+        recentFiles.clear();
+        persistRecentFiles();
+    }
+
+    void ProjectFileManager::rememberRecentFile(const juce::File& file)
+    {
+        recentFiles.addFile(file);
+        persistRecentFiles();
+    }
+
+    void ProjectFileManager::persistRecentFiles()
+    {
+        properties->setValue(kRecentFilesKey, recentFiles.toString());
+        properties->saveIfNeeded();
+    }
+
     void ProjectFileManager::writeAndReport(const juce::File& destination,
                                              OnSaveComplete onComplete)
     {
@@ -137,6 +192,8 @@ namespace B33p
                 onStateChangedCallback();
         }
 
+        rememberRecentFile(destination);
+
         if (onComplete) onComplete(true);
     }
 
@@ -153,5 +210,7 @@ namespace B33p
         currentFile = source;
         if (onStateChangedCallback)
             onStateChangedCallback();
+
+        rememberRecentFile(source);
     }
 }
