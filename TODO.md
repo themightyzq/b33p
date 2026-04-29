@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: post-MVP roadmap — working through Sound-design power list top-to-bottom; Ring modulation is next**
+> **Current focus: post-MVP roadmap — working through Sound-design power list top-to-bottom; Additional filters is next**
 
 ---
 
@@ -222,7 +222,7 @@ Ordered roughly by priority, not commitment. Each item becomes its own phase whe
 - [x] **Custom drawn waveforms** — user draws a single-cycle oscillator shape (high-priority post-MVP) — shipped in v0.1.x
 - [x] **Wavetable oscillator** — morph between waveforms (4 fixed slots per lane, single morph param 0..1; v3 .beep schema lifts v2 custom_waveform into slot 0)
 - [x] **FM oscillator** — two-operator FM with ratio + depth (sine carrier + sine modulator; v4 .beep schema; APVTS supplies defaults for v3 files)
-- [ ] **Ring modulation** — second oscillator + ring-mod mix
+- [x] **Ring modulation** — second oscillator + ring-mod mix (sine carrier × sine modulator with wet/dry crossfade; v5 .beep schema)
 - [ ] **Additional filters** — formant, comb, bandpass, highpass
 - [ ] **Additional effects** — chorus, reverb, delay, flanger, phaser
 - [ ] **LFOs and a modulation matrix** — any source → any destination

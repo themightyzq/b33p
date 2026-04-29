@@ -337,3 +337,51 @@ TEST_CASE("Oscillator: FM with non-zero depth diverges from a clean sine", "[dsp
     }
     REQUIRE(sumSq > 1.0);   // empirically ~hundreds at depth=3
 }
+
+TEST_CASE("Oscillator: Ring with mix 0 matches a clean sine", "[dsp][oscillator]")
+{
+    // Ring mix = 0 collapses to the dry carrier sine — output
+    // should be analytically identical (within float tolerance) to
+    // a Sine-mode oscillator at the same frequency, regardless of
+    // what the ring ratio is set to.
+    Oscillator ring;
+    ring.prepare(kSampleRate);
+    ring.setWaveform(Waveform::Ring);
+    ring.setFrequency(440.0f);
+    ring.setRingRatio(2.5f);   // ratio is irrelevant when mix = 0
+    ring.setRingMix(0.0f);
+
+    Oscillator sine;
+    sine.prepare(kSampleRate);
+    sine.setWaveform(Waveform::Sine);
+    sine.setFrequency(440.0f);
+
+    for (int i = 0; i < 512; ++i)
+        REQUIRE(ring.processSample() == Approx(sine.processSample()).margin(1e-5f));
+}
+
+TEST_CASE("Oscillator: Ring at full mix multiplies carrier by modulator", "[dsp][oscillator]")
+{
+    // At mix = 1, the output is the literal product of two sines.
+    // Verify against the analytic reference at a handful of sample
+    // indices — exact match within the same tolerance the sine
+    // test uses.
+    constexpr float fc       = 440.0f;
+    constexpr float ratio    = 2.0f;
+    Oscillator ring;
+    ring.prepare(kSampleRate);
+    ring.setWaveform(Waveform::Ring);
+    ring.setFrequency(fc);
+    ring.setRingRatio(ratio);
+    ring.setRingMix(1.0f);
+
+    for (int n = 0; n < 256; ++n)
+    {
+        const double t          = static_cast<double>(n) / kSampleRate;
+        const double carrier    = std::sin(kTwoPi * fc * t);
+        const double modulator  = std::sin(kTwoPi * fc * ratio * t);
+        const double expected   = carrier * modulator;
+        const float  actual     = ring.processSample();
+        REQUIRE(static_cast<double>(actual) == Approx(expected).margin(1e-5));
+    }
+}

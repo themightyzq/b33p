@@ -35,6 +35,8 @@ namespace B33p::ParameterIDs
     inline juce::String wavetableMorph      (int lane) { return detail::prefixed(lane, "wavetable_morph");        }
     inline juce::String fmRatio             (int lane) { return detail::prefixed(lane, "fm_ratio");               }
     inline juce::String fmDepth             (int lane) { return detail::prefixed(lane, "fm_depth");               }
+    inline juce::String ringRatio           (int lane) { return detail::prefixed(lane, "ring_ratio");             }
+    inline juce::String ringMix             (int lane) { return detail::prefixed(lane, "ring_mix");               }
 
     inline juce::String ampAttack           (int lane) { return detail::prefixed(lane, "amp_attack");             }
     inline juce::String ampDecay            (int lane) { return detail::prefixed(lane, "amp_decay");              }
@@ -59,6 +61,7 @@ namespace B33p::ParameterIDs
             oscWaveform(lane),         basePitchHz(lane),
             wavetableMorph(lane),
             fmRatio(lane),             fmDepth(lane),
+            ringRatio(lane),           ringMix(lane),
             ampAttack(lane),           ampDecay(lane),
             ampSustain(lane),          ampRelease(lane),
             filterCutoffHz(lane),      filterResonanceQ(lane),

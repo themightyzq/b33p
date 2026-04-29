@@ -24,6 +24,12 @@ namespace B33p
     // basePitchHz and is phase-modulated by a sine modulator running
     // at basePitchHz * fmRatio with depth fmDepth (modulation index).
     // Both operators are sines; future modes can extend the palette.
+    //
+    // Ring mode: amplitude modulation of a sine carrier by a sine
+    // modulator running at basePitchHz * ringRatio. ringMix linearly
+    // crossfades between the dry carrier sine (mix = 0) and the
+    // fully ring-modulated product (mix = 1), so the user can dial
+    // in any amount of clangy sidebands without losing the carrier.
     class Oscillator
     {
     public:
@@ -36,7 +42,8 @@ namespace B33p
             Noise,
             Custom,
             Wavetable,
-            FM
+            FM,
+            Ring
         };
 
         // Default custom-table size — small enough that the full
@@ -82,6 +89,13 @@ namespace B33p
         void setFmRatio(float ratio);
         void setFmDepth(float depth);
 
+        // Ring-mode parameters. ratio = modulator frequency divided
+        // by carrier frequency (same convention as FM ratio).
+        // mix = wet/dry crossfade: 0 = pure carrier sine, 1 = pure
+        // carrier × modulator. Both inputs are clamped.
+        void setRingRatio(float ratio);
+        void setRingMix(float mix01);
+
         float processSample();
 
     private:
@@ -102,6 +116,13 @@ namespace B33p
         double modulatorPhase { 0.0 };
         float  fmRatio        { 1.0f };
         float  fmDepth        { 0.0f };
+
+        // Ring modulator phase accumulator. Kept separate from the
+        // FM modulator so the two modes don't share state when the
+        // user flips between them mid-event.
+        double ringModulatorPhase { 0.0 };
+        float  ringRatio          { 2.0f };
+        float  ringMix            { 1.0f };
 
         std::mt19937                          rng;
         std::uniform_real_distribution<float> noiseDist { -1.0f, 1.0f };
