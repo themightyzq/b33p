@@ -78,19 +78,19 @@ namespace B33p
                         | juce::FileBrowserComponent::warnAboutOverwriting;
 
         fileChooser->launchAsync(flags,
-            [this, parent, onComplete = std::move(onComplete)](const juce::FileChooser& fc) mutable
+            [this, parent, capturedOnComplete = std::move(onComplete)](const juce::FileChooser& fc) mutable
         {
             juce::ignoreUnused(parent);
             const auto chosen = fc.getResult();
             if (chosen == juce::File())
             {
-                if (onComplete) onComplete(false);
+                if (capturedOnComplete) capturedOnComplete(false);
                 return;
             }
             // Force the .beep extension if the user dropped or
             // edited it away — keeps the file-type association
             // and the Open dialog filter both predictable.
-            writeAndReport(chosen.withFileExtension(".beep"), std::move(onComplete));
+            writeAndReport(chosen.withFileExtension(".beep"), std::move(capturedOnComplete));
         });
     }
 

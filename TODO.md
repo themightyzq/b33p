@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: v0.2 polish & doc sweep — close the gap between the README and the build, then resume the post-MVP roadmap below**
+> **Current focus: post-MVP roadmap — Filter response visualizer is the next item being worked on**
 
 ---
 
@@ -209,7 +209,7 @@ End-user review surfaced a stack of items that all amount to "the README and the
 
 Cross-cutting work that isn't tied to any single phase. Review at the start of every session — if any item has a time-sensitive deadline approaching, flag it to the user before starting feature work.
 
-- [ ] Bump `actions/checkout` and `actions/cache` to `@v5` before June 2, 2026 (Node 20 deprecation — GitHub Actions warning surfaced on every run)
+- [x] Bump `actions/checkout` and `actions/cache` to `@v5` before June 2, 2026 (Node 20 deprecation — GitHub Actions warning surfaced on every run)
 
 ---
 
@@ -219,7 +219,7 @@ Ordered roughly by priority, not commitment. Each item becomes its own phase whe
 
 ### Sound-design power
 
-- [ ] **Custom drawn waveforms** — user draws a single-cycle oscillator shape (high-priority post-MVP)
+- [x] **Custom drawn waveforms** — user draws a single-cycle oscillator shape (high-priority post-MVP) — shipped in v0.1.x
 - [ ] **Wavetable oscillator** — morph between waveforms
 - [ ] **FM oscillator** — two-operator FM with ratio + depth
 - [ ] **Ring modulation** — second oscillator + ring-mod mix
