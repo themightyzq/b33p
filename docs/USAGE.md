@@ -281,4 +281,4 @@ See the post-MVP roadmap in [TODO.md](../TODO.md) for the canonical list. Briefl
 
 - **No DAW transport sync** — the pattern plays on its own timeline regardless of host transport. Adding sync is its own follow-up commit.
 - **No per-lane pitch envelopes** — one pitch envelope is shared across all four voices.
-- **No release installers / signed binaries** — currently shipped via raw build artifacts. CPack + a release workflow is on the roadmap.
+- **No release installers / signed binaries** — binaries are distributed via the CI artifacts on each green push to `main`; signed installers aren't on the roadmap.
