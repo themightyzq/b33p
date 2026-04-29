@@ -111,6 +111,21 @@ namespace B33p
         void   setLooping(bool shouldLoop);
         bool   getLooping() const          { return looping.load(); }
 
+        // When running as a VST3 / AU plugin, the host provides a
+        // playhead. Setting follow=true makes b33p's pattern
+        // playback mirror host transport: host play / stop drives
+        // our `playing` flag and the playhead position becomes
+        // (host_time % patternLength). Pattern BPM is intentionally
+        // NOT synced — sound-design users routinely want a beep
+        // pattern that runs at a different tempo from the host
+        // session it's layered into.
+        //
+        // In standalone mode (or plugin contexts that don't expose
+        // a playhead), this setting is inert and pattern playback
+        // uses the existing internal transport.
+        void   setFollowHostTransport(bool shouldFollow);
+        bool   getFollowHostTransport() const { return followHostTransport.load(); }
+
         // Unsaved-changes tracking. Anything that mutates persisted
         // project state (APVTS values, pitch curve, pattern, locks)
         // marks the processor dirty; saving / loading clears it.
@@ -316,11 +331,12 @@ namespace B33p
         Pattern pattern;
 
         // ---- Playback / audition state shared across threads ------
-        std::atomic<bool>   pendingAudition  { false };
-        std::atomic<bool>   playing          { false };
-        std::atomic<bool>   looping          { true  };
-        std::atomic<double> playheadSeconds  { 0.0   };
-        std::atomic<float>  outputPeak       { 0.0f  };
+        std::atomic<bool>   pendingAudition       { false };
+        std::atomic<bool>   playing               { false };
+        std::atomic<bool>   looping               { true  };
+        std::atomic<bool>   followHostTransport   { false };
+        std::atomic<double> playheadSeconds       { 0.0   };
+        std::atomic<float>  outputPeak            { 0.0f  };
 
         // Pattern snapshot lives behind atomic_load/store — see
         // class-level comment for the threading model.

@@ -232,6 +232,33 @@ TEST_CASE("ProjectState: v2 file's per-lane custom_waveform attribute migrates i
         REQUIRE(restored.getWavetableSlotCopy(1, slot).empty());
 }
 
+TEST_CASE("ProjectState: follow_host_transport round-trips", "[state][project]")
+{
+    B33pProcessor original;
+    original.setFollowHostTransport(true);
+
+    const auto tree = B33p::ProjectState::save(original);
+
+    B33pProcessor restored;
+    REQUIRE_FALSE(restored.getFollowHostTransport());   // sanity: default is false
+    REQUIRE(B33p::ProjectState::load(restored, tree));
+    REQUIRE(restored.getFollowHostTransport());
+}
+
+TEST_CASE("ProjectState: a v11 file with no follow_host_transport loads with false default",
+          "[state][project]")
+{
+    juce::ValueTree root { "B33P" };
+    root.setProperty("version", 11, nullptr);
+    juce::ValueTree pattern { "PATTERN" };
+    pattern.setProperty("length_seconds", 2.0, nullptr);
+    root.appendChild(pattern, nullptr);
+
+    B33pProcessor restored;
+    REQUIRE(B33p::ProjectState::load(restored, root));
+    REQUIRE_FALSE(restored.getFollowHostTransport());
+}
+
 TEST_CASE("ProjectState: pattern BPM and time signature round-trip", "[state][project]")
 {
     B33pProcessor original;
