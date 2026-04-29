@@ -4,7 +4,6 @@
 #include "State/PresetManager.h"
 #include "State/ProjectFileManager.h"
 #include "UI/AmpEnvSection.h"
-#include "UI/AudioSettingsWindow.h"
 #include "UI/PresetBrowserDialog.h"
 #include "UI/EffectsSection.h"
 #include "UI/FilterSection.h"
@@ -15,7 +14,6 @@
 #include "UI/PatternSection.h"
 #include "UI/PitchEnvSection.h"
 
-#include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
 namespace B33p
@@ -25,11 +23,12 @@ namespace B33p
                         , public juce::KeyListener
     {
     public:
-        // deviceManager is a non-owning reference held by the
-        // application. MainComponent uses it for the Audio Settings
-        // dialog only — it never adds/removes audio callbacks.
-        MainComponent(B33pProcessor& processor,
-                      juce::AudioDeviceManager& deviceManager);
+        // The plugin / standalone editor passes a B33pProcessor in;
+        // audio device management lives in JUCE's plugin wrapper
+        // now (StandaloneFilterApp on the standalone path; the host
+        // for VST3 / AU), so MainComponent is fully decoupled from
+        // the device layer.
+        explicit MainComponent(B33pProcessor& processor);
         ~MainComponent() override;
 
         void paint(juce::Graphics& g) override;
@@ -68,7 +67,6 @@ namespace B33p
         void parentHierarchyChanged() override;
         void updateWindowTitle();
         void showAboutDialog();
-        void showAudioSettings();
         void showPresetBrowser();
         void promptSavePreset();
 
@@ -78,11 +76,9 @@ namespace B33p
         juce::Component::SafePointer<juce::Component> keyListenerHost;
 
         B33pProcessor&             processor;
-        juce::AudioDeviceManager&  deviceManager;
         ProjectFileManager         fileManager;
         PresetManager              presetManager;
 
-        std::unique_ptr<AudioSettingsWindow>          audioSettingsWindow;
         std::unique_ptr<PresetBrowserDialogWindow>    presetBrowserWindow;
         std::unique_ptr<juce::AlertWindow>            savePresetWindow;
 

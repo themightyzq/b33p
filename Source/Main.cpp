@@ -1,163 +1,21 @@
-#include <juce_audio_devices/juce_audio_devices.h>
-#include <juce_audio_utils/juce_audio_utils.h>
-#include <juce_gui_basics/juce_gui_basics.h>
+// JUCE plugin entry point. juce_add_plugin in the CMakeLists.txt
+// generates the format-specific wrappers (Standalone .app, VST3,
+// AU); each one calls createPluginFilter to mint a fresh
+// AudioProcessor instance.
+//
+// The custom Application class that used to live here (single-
+// instance enforcement, quit-confirm on dirty, command-line file
+// open routing) is gone — JUCE's StandaloneFilterApp wrapper
+// replaces it for the .app build. Restoring those features means
+// providing a custom standalone wrapper via
+// JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP, which is its own follow-
+// up commit.
 
-#include "MainComponent.h"
+#include <juce_audio_processors/juce_audio_processors.h>
+
 #include "State/B33pProcessor.h"
 
-namespace B33p
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    class Application : public juce::JUCEApplication
-    {
-    public:
-        Application() = default;
-
-        const juce::String getApplicationName() override    { return "b33p"; }
-        const juce::String getApplicationVersion() override { return B33P_VERSION_STRING; }
-
-        // Single-instance enforcement: when a second copy is
-        // launched (e.g. user double-clicks a .beep file in
-        // Finder), JUCE routes the request to the running instance
-        // via anotherInstanceStarted() rather than spawning a
-        // duplicate. Standard document-app convention on macOS.
-        bool moreThanOneInstanceAllowed() override           { return false; }
-
-        void initialise(const juce::String& commandLine) override
-        {
-            processor = std::make_unique<B33pProcessor>();
-
-            // 0 inputs, 2 outputs, default device, no stored XML.
-            deviceManager = std::make_unique<juce::AudioDeviceManager>();
-            deviceManager->initialiseWithDefaultDevices(0, 2);
-
-            processorPlayer = std::make_unique<juce::AudioProcessorPlayer>();
-            processorPlayer->setProcessor(processor.get());
-            deviceManager->addAudioCallback(processorPlayer.get());
-
-            // Enable every available MIDI input and route each one
-            // to the AudioProcessorPlayer, which forwards every
-            // note-on / note-off into B33pProcessor::processBlock's
-            // MidiBuffer. Refusing to enable individual devices is
-            // post-MVP polish — the simple "all inputs on" default
-            // matches the user's expectation when they plug in a
-            // single keyboard.
-            for (const auto& input : juce::MidiInput::getAvailableDevices())
-            {
-                deviceManager->setMidiInputDeviceEnabled(input.identifier, true);
-                deviceManager->addMidiInputDeviceCallback(input.identifier,
-                                                           processorPlayer.get());
-            }
-
-            mainWindow = std::make_unique<MainWindow>(getApplicationName(),
-                                                       *processor,
-                                                       *deviceManager);
-
-            handleCommandLineFile(commandLine);
-        }
-
-        void shutdown() override
-        {
-            if (deviceManager != nullptr && processorPlayer != nullptr)
-            {
-                deviceManager->removeAudioCallback(processorPlayer.get());
-                for (const auto& input : juce::MidiInput::getAvailableDevices())
-                    deviceManager->removeMidiInputDeviceCallback(input.identifier,
-                                                                  processorPlayer.get());
-            }
-
-            processorPlayer.reset();
-            deviceManager.reset();
-            mainWindow.reset();
-            processor.reset();
-        }
-
-        void systemRequestedQuit() override
-        {
-            // Detour through the dirty-prompt before honouring the
-            // quit. If the user picks Cancel in the prompt, quit()
-            // is never called and the app keeps running.
-            if (mainWindow != nullptr)
-            {
-                if (auto* mc = mainWindow->getMainComponent())
-                {
-                    mc->confirmDiscardThen([] { JUCEApplication::quit(); });
-                    return;
-                }
-            }
-            quit();
-        }
-
-        // Re-routes "open with file" requests from the OS into the
-        // already-running instance. On macOS this fires when the
-        // user double-clicks a registered .beep file in Finder
-        // while b33p is already open; on Linux/Windows it fires
-        // when a second copy is launched with the file as an
-        // argument.
-        void anotherInstanceStarted(const juce::String& commandLine) override
-        {
-            handleCommandLineFile(commandLine);
-        }
-
-    private:
-        void handleCommandLineFile(const juce::String& commandLine)
-        {
-            const auto path = commandLine.trim().unquoted();
-            if (path.isEmpty())
-                return;
-
-            const juce::File file(path);
-            if (file.existsAsFile() && file.hasFileExtension(".beep"))
-            {
-                if (mainWindow != nullptr)
-                    if (auto* mc = mainWindow->getMainComponent())
-                        mc->openProjectFile(file);
-            }
-        }
-
-        class MainWindow : public juce::DocumentWindow
-        {
-        public:
-            MainWindow(const juce::String& name,
-                       B33pProcessor& processorRef,
-                       juce::AudioDeviceManager& deviceManagerRef)
-                : DocumentWindow(name,
-                                 juce::Desktop::getInstance()
-                                     .getDefaultLookAndFeel()
-                                     .findColour(juce::ResizableWindow::backgroundColourId),
-                                 DocumentWindow::allButtons)
-            {
-                setUsingNativeTitleBar(true);
-                auto* component = new MainComponent(processorRef, deviceManagerRef);
-                mainComponent = component;
-                setContentOwned(component, true);
-                setResizable(true, false);
-                centreWithSize(getWidth(), getHeight());
-                setVisible(true);
-            }
-
-            void closeButtonPressed() override
-            {
-                JUCEApplication::getInstance()->systemRequestedQuit();
-            }
-
-            // Non-owning typed pointer kept so the Application can
-            // route OS-driven file-open events into the right
-            // component. The window owns the lifetime via
-            // setContentOwned; mainComponent is invalidated only by
-            // a subsequent setContentOwned call which we don't do.
-            MainComponent* getMainComponent() const noexcept { return mainComponent; }
-
-        private:
-            MainComponent* mainComponent { nullptr };
-
-            JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
-        };
-
-        std::unique_ptr<B33pProcessor>              processor;
-        std::unique_ptr<juce::AudioDeviceManager>   deviceManager;
-        std::unique_ptr<juce::AudioProcessorPlayer> processorPlayer;
-        std::unique_ptr<MainWindow>                 mainWindow;
-    };
+    return new B33p::B33pProcessor();
 }
-
-START_JUCE_APPLICATION(B33p::Application)

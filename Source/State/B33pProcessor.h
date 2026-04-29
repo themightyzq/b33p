@@ -192,8 +192,14 @@ namespace B33p
         void  processBlock(juce::AudioBuffer<float>& buffer,
                            juce::MidiBuffer& midi) override;
 
-        bool  hasEditor() const override                                         { return false; }
-        juce::AudioProcessorEditor* createEditor() override                      { return nullptr; }
+        // hasEditor / createEditor are gated on the B33P_HAS_EDITOR
+        // compile flag set by the plugin / standalone target. The
+        // tests target builds the same B33pProcessor.cpp without
+        // the editor sources (which would drag the entire UI layer
+        // into a non-UI test binary), so it gets the no-editor
+        // branch automatically.
+        bool                        hasEditor()    const override;
+        juce::AudioProcessorEditor* createEditor()       override;
 
         bool  acceptsMidi() const override                                       { return true;  }
         bool  producesMidi() const override                                      { return false; }

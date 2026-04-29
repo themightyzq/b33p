@@ -7,6 +7,10 @@
 
 #include <cmath>
 
+#if B33P_HAS_EDITOR
+namespace B33p { juce::AudioProcessorEditor* createB33pEditor(B33pProcessor&); }
+#endif
+
 namespace B33p
 {
     namespace
@@ -189,6 +193,24 @@ namespace B33p
     {
         const auto xml = ProjectState::toXmlString(ProjectState::save(*this));
         destData.replaceAll(xml.toRawUTF8(), xml.getNumBytesAsUTF8());
+    }
+
+    bool B33pProcessor::hasEditor() const
+    {
+#if B33P_HAS_EDITOR
+        return true;
+#else
+        return false;
+#endif
+    }
+
+    juce::AudioProcessorEditor* B33pProcessor::createEditor()
+    {
+#if B33P_HAS_EDITOR
+        return createB33pEditor(*this);
+#else
+        return nullptr;
+#endif
     }
 
     void B33pProcessor::setStateInformation(const void* data, int sizeInBytes)
