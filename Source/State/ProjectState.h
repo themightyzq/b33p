@@ -31,7 +31,11 @@ namespace B33p
         //       floats per lane); same default-fallback migration. v6 files
         //       load with mod_effect_type defaulting to None (= bypass), so
         //       the wet effect chain stays inert.
-        inline constexpr int kCurrentVersion = 7;
+        //   v8: LFOs and modulation matrix (lfoN_shape/_rate_hz, modN_source/
+        //       _dest/_amount per lane); same default-fallback migration. v7
+        //       files load with every matrix slot's source / destination
+        //       defaulting to None, so the modulation engine stays inert.
+        inline constexpr int kCurrentVersion = 8;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

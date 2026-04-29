@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DSP/ModulationMatrix.h"
 #include "Pattern/Pattern.h"
 
 #include <juce_core/juce_core.h>
@@ -60,11 +61,35 @@ namespace B33p::ParameterIDs
 
     inline juce::String voiceGain           (int lane) { return detail::prefixed(lane, "voice_gain");             }
 
+    // LFO and modulation matrix per lane. lfo and slot indices are
+    // 1-based in user-facing APVTS IDs to match the on-screen
+    // labels ("LFO 1" / "Slot 1") — easier to grep saved files for.
+    inline juce::String lfoShape            (int lane, int lfoIdx)
+    {
+        return detail::prefixed(lane, ("lfo" + juce::String(lfoIdx + 1) + "_shape").toRawUTF8());
+    }
+    inline juce::String lfoRateHz           (int lane, int lfoIdx)
+    {
+        return detail::prefixed(lane, ("lfo" + juce::String(lfoIdx + 1) + "_rate_hz").toRawUTF8());
+    }
+    inline juce::String modSlotSource       (int lane, int slotIdx)
+    {
+        return detail::prefixed(lane, ("mod" + juce::String(slotIdx + 1) + "_source").toRawUTF8());
+    }
+    inline juce::String modSlotDest         (int lane, int slotIdx)
+    {
+        return detail::prefixed(lane, ("mod" + juce::String(slotIdx + 1) + "_dest").toRawUTF8());
+    }
+    inline juce::String modSlotAmount       (int lane, int slotIdx)
+    {
+        return detail::prefixed(lane, ("mod" + juce::String(slotIdx + 1) + "_amount").toRawUTF8());
+    }
+
     // Convenience iterator: every parameter ID for a single lane,
     // in the same order ParameterLayout registers them.
     inline std::vector<juce::String> allForLane(int lane)
     {
-        return {
+        std::vector<juce::String> ids = {
             oscWaveform(lane),         basePitchHz(lane),
             wavetableMorph(lane),
             fmRatio(lane),             fmDepth(lane),
@@ -80,6 +105,18 @@ namespace B33p::ParameterIDs
             modEffectParam2(lane),     modEffectMix(lane),
             voiceGain(lane)
         };
+        for (int i = 0; i < kNumLfosPerLane; ++i)
+        {
+            ids.push_back(lfoShape (lane, i));
+            ids.push_back(lfoRateHz(lane, i));
+        }
+        for (int i = 0; i < kNumModSlots; ++i)
+        {
+            ids.push_back(modSlotSource(lane, i));
+            ids.push_back(modSlotDest  (lane, i));
+            ids.push_back(modSlotAmount(lane, i));
+        }
+        return ids;
     }
 
     // Per-parameter randomization gate. voiceGain is excluded
