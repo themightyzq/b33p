@@ -232,6 +232,40 @@ TEST_CASE("ProjectState: v2 file's per-lane custom_waveform attribute migrates i
         REQUIRE(restored.getWavetableSlotCopy(1, slot).empty());
 }
 
+TEST_CASE("ProjectState: a v3 file with no FM params loads into v4 with default FM values",
+          "[state][project]")
+{
+    // Hand-rolled v3 tree: one PARAM (basePitchHz) for lane 0,
+    // version=3, no FM-related parameters. After load + migrate,
+    // the version property should be bumped to current and the new
+    // fm_ratio / fm_depth APVTS values should sit at their
+    // registered defaults (1.0, 0.0).
+    juce::ValueTree root { "B33P" };
+    root.setProperty("version", 3, nullptr);
+
+    juce::ValueTree params { "PARAMETERS" };
+    juce::ValueTree apvts  { "B33pParameters" };
+
+    juce::ValueTree p { "PARAM" };
+    p.setProperty("id",    B33p::ParameterIDs::basePitchHz(0), nullptr);
+    p.setProperty("value", 880.0, nullptr);
+    apvts.appendChild(p, nullptr);
+    params.appendChild(apvts, nullptr);
+    root.appendChild(params, nullptr);
+
+    B33pProcessor processor;
+    REQUIRE(B33p::ProjectState::load(processor, root));
+
+    auto& a = processor.getApvts();
+    for (int lane = 0; lane < B33p::Pattern::kNumLanes; ++lane)
+    {
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::fmRatio(lane))->load()
+                == Approx(1.0f).margin(1e-3f));
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::fmDepth(lane))->load()
+                == Approx(0.0f).margin(1e-3f));
+    }
+}
+
 TEST_CASE("ProjectState: round-trip preserves every wavetable slot",
           "[state][project]")
 {

@@ -269,6 +269,19 @@ namespace B33p::ProjectState
             version = 3;
         }
 
+        if (version == 3)
+        {
+            // v3 → v4: fm_ratio + fm_depth parameters were added.
+            // No data migration is needed — APVTS::replaceState
+            // leaves any parameter that isn't present in the loaded
+            // tree at its registered default (1.0 ratio, 0.0 depth),
+            // which produces the same audible result a v3 file had
+            // (no FM mode existed, so silent FM params don't change
+            // anything for non-FM lanes).
+            tree.setProperty(kVersion, 4, nullptr);
+            version = 4;
+        }
+
         return tree;
     }
 

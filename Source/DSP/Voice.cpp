@@ -51,6 +51,16 @@ namespace B33p
         oscillator.setWavetableMorph(morph01);
     }
 
+    void Voice::setFmRatio(float ratio)
+    {
+        oscillator.setFmRatio(ratio);
+    }
+
+    void Voice::setFmDepth(float depth)
+    {
+        oscillator.setFmDepth(depth);
+    }
+
     void Voice::setAmpAttack(float seconds)   { ampEnvelope.setAttack(seconds);   }
     void Voice::setAmpDecay(float seconds)    { ampEnvelope.setDecay(seconds);    }
     void Voice::setAmpSustain(float level)    { ampEnvelope.setSustain(level);    }

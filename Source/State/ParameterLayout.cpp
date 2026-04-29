@@ -42,7 +42,7 @@ namespace B33p
             layout.add(std::make_unique<juce::AudioParameterChoice>(
                 juce::ParameterID { ParameterIDs::oscWaveform(lane), kParameterVersionHint },
                 prefix + "Waveform",
-                juce::StringArray { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom", "Wavetable" },
+                juce::StringArray { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom", "Wavetable", "FM" },
                 0));
 
             // Tightened to "musical beep" range so randomisation
@@ -59,6 +59,22 @@ namespace B33p
             layout.add(makeFloat(ParameterIDs::wavetableMorph(lane),
                                  prefix + "Wavetable Morph",
                                  juce::NormalisableRange<float> { 0.0f, 1.0f },
+                                 0.0f));
+
+            // FM operator parameters. Both only active when waveform
+            // is FM; ignored otherwise. Ratio range covers sub-octave
+            // to four octaves up; depth caps at 10 (well into
+            // bell/percussion territory). Default depth = 0 so a
+            // fresh FM lane plays a clean carrier sine until the
+            // user dials depth up.
+            layout.add(makeFloat(ParameterIDs::fmRatio(lane),
+                                 prefix + "FM Ratio",
+                                 skewedRange(0.1f, 16.0f, 1.0f),
+                                 1.0f));
+
+            layout.add(makeFloat(ParameterIDs::fmDepth(lane),
+                                 prefix + "FM Depth",
+                                 skewedRange(0.0f, 10.0f, 1.0f),
                                  0.0f));
 
             layout.add(makeFloat(ParameterIDs::ampAttack(lane),

@@ -84,7 +84,8 @@ namespace B33p
 
     void Oscillator::reset()
     {
-        phase = 0.0;
+        phase          = 0.0;
+        modulatorPhase = 0.0;
     }
 
     void Oscillator::setWaveform(Waveform newWaveform)
@@ -115,6 +116,22 @@ namespace B33p
         wavetableMorph = std::clamp(morph01, 0.0f, 1.0f);
     }
 
+    void Oscillator::setFmRatio(float ratio)
+    {
+        // 0.1 .. 16: covers sub-octave (0.5), unison (1.0), and the
+        // common harmonic ratios (2..16) without letting a runaway
+        // value alias hard.
+        fmRatio = std::clamp(ratio, 0.1f, 16.0f);
+    }
+
+    void Oscillator::setFmDepth(float depth)
+    {
+        // 0..10: 0 = pure carrier, ~1 = mild "vocal" sidebands,
+        // 5+ starts pushing into bell / DX-style territory. Above
+        // 10 the spectrum quickly devolves into noise; cap there.
+        fmDepth = std::clamp(depth, 0.0f, 10.0f);
+    }
+
     void Oscillator::updatePhaseIncrement()
     {
         phaseIncrement = sampleRate > 0.0
@@ -139,12 +156,28 @@ namespace B33p
             case Waveform::Saw:       output = sawAt(phase);                                          break;
             case Waveform::Custom:    output = customAt(phase, wavetableSlots[0]);                    break;
             case Waveform::Wavetable: output = wavetableAt(phase, wavetableSlots, wavetableMorph);    break;
+            case Waveform::FM:
+            {
+                // Two-operator sine FM. The modulator output offsets
+                // the carrier's instantaneous phase by depth radians
+                // per unit. Dividing depth by 2π scales it from
+                // radians into normalised-phase units (0..1) so the
+                // sineAt() call below matches the standard
+                // analytical form sin(2π·fc·t + I·sin(2π·fm·t)).
+                const double modOut    = std::sin(kTwoPi * modulatorPhase);
+                const double phaseOff  = static_cast<double>(fmDepth) * modOut / kTwoPi;
+                output = static_cast<float>(std::sin(kTwoPi * (phase + phaseOff)));
+                break;
+            }
             case Waveform::Noise:     break; // handled above
         }
 
-        phase += phaseIncrement;
+        phase          += phaseIncrement;
+        modulatorPhase += phaseIncrement * static_cast<double>(fmRatio);
         while (phase >= 1.0)
             phase -= 1.0;
+        while (modulatorPhase >= 1.0)
+            modulatorPhase -= 1.0;
 
         return output;
     }

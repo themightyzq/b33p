@@ -19,6 +19,11 @@ namespace B33p
     // slot 0, 1 = pure slot 3, and intermediate values blend two
     // adjacent slots. Custom mode reuses slot 0 — the difference is
     // whether the morph parameter participates.
+    //
+    // FM mode: classic two-operator sine FM. The carrier runs at
+    // basePitchHz and is phase-modulated by a sine modulator running
+    // at basePitchHz * fmRatio with depth fmDepth (modulation index).
+    // Both operators are sines; future modes can extend the palette.
     class Oscillator
     {
     public:
@@ -30,7 +35,8 @@ namespace B33p
             Saw,
             Noise,
             Custom,
-            Wavetable
+            Wavetable,
+            FM
         };
 
         // Default custom-table size — small enough that the full
@@ -67,6 +73,15 @@ namespace B33p
         // are clamped.
         void setWavetableMorph(float morph01);
 
+        // FM-mode parameters. ratio = modulator frequency divided by
+        // carrier frequency (1.0 = same pitch, 2.0 = octave-up
+        // modulator, etc.). depth = modulation index, in radians of
+        // carrier-phase deviation per modulator-output unit. 0 turns
+        // the modulator off (pure sine carrier). Both inputs are
+        // clamped to sane ranges.
+        void setFmRatio(float ratio);
+        void setFmDepth(float depth);
+
         float processSample();
 
     private:
@@ -80,6 +95,13 @@ namespace B33p
 
         std::array<std::vector<float>, kNumWavetableSlots> wavetableSlots;
         float                                              wavetableMorph { 0.0f };
+
+        // FM modulator runs in parallel with the carrier phase. Kept
+        // as double for the same drift-free reasons as the main
+        // accumulator; reset() zeros it alongside the carrier phase.
+        double modulatorPhase { 0.0 };
+        float  fmRatio        { 1.0f };
+        float  fmDepth        { 0.0f };
 
         std::mt19937                          rng;
         std::uniform_real_distribution<float> noiseDist { -1.0f, 1.0f };
