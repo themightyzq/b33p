@@ -27,7 +27,11 @@ namespace B33p
         //       per lane); same default-fallback migration. v5 files load with
         //       filter_type defaulting to Lowpass — the existing cutoff / Q
         //       behaviour — so they sound identical.
-        inline constexpr int kCurrentVersion = 6;
+        //   v7: modulation effect slot (mod_effect_type choice + p1/p2/mix
+        //       floats per lane); same default-fallback migration. v6 files
+        //       load with mod_effect_type defaulting to None (= bypass), so
+        //       the wet effect chain stays inert.
+        inline constexpr int kCurrentVersion = 7;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

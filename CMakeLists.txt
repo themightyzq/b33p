@@ -72,6 +72,7 @@ target_sources(B33p PRIVATE
     Source/UI/InspectorStrip.cpp
     Source/UI/LabeledSlider.cpp
     Source/UI/MasterSection.cpp
+    Source/UI/ModEffectsSection.cpp
     Source/UI/OscillatorSection.cpp
     Source/UI/PatternGrid.cpp
     Source/UI/PatternSection.cpp
@@ -84,6 +85,7 @@ target_sources(B33p PRIVATE
     Source/DSP/AmpEnvelope.cpp
     Source/DSP/PitchEnvelope.cpp
     Source/DSP/Filter.cpp
+    Source/DSP/ModulationEffect.cpp
     Source/DSP/Bitcrush.cpp
     Source/DSP/Distortion.cpp
     Source/DSP/Voice.cpp

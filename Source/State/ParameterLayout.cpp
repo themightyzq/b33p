@@ -162,6 +162,31 @@ namespace B33p
                                  juce::NormalisableRange<float> { 0.1f, 100.0f },
                                  1.0f));
 
+            // Modulation effect slot at the end of the chain. Type
+            // selects among None / Chorus / Reverb / Delay / Flanger
+            // / Phaser; the three continuous parameters carry
+            // type-dependent semantics (see ModulationEffect.h).
+            layout.add(std::make_unique<juce::AudioParameterChoice>(
+                juce::ParameterID { ParameterIDs::modEffectType(lane), kParameterVersionHint },
+                prefix + "Mod Effect Type",
+                juce::StringArray { "None", "Chorus", "Reverb", "Delay", "Flanger", "Phaser" },
+                0));
+
+            layout.add(makeFloat(ParameterIDs::modEffectParam1(lane),
+                                 prefix + "Mod Effect P1",
+                                 juce::NormalisableRange<float> { 0.0f, 1.0f },
+                                 0.5f));
+
+            layout.add(makeFloat(ParameterIDs::modEffectParam2(lane),
+                                 prefix + "Mod Effect P2",
+                                 juce::NormalisableRange<float> { 0.0f, 1.0f },
+                                 0.5f));
+
+            layout.add(makeFloat(ParameterIDs::modEffectMix(lane),
+                                 prefix + "Mod Effect Mix",
+                                 juce::NormalisableRange<float> { 0.0f, 1.0f },
+                                 0.5f));
+
             layout.add(makeFloat(ParameterIDs::voiceGain(lane),
                                  prefix + "Voice Gain",
                                  juce::NormalisableRange<float> { 0.0f, 10.0f },

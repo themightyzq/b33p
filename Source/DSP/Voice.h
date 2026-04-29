@@ -4,6 +4,7 @@
 #include "DSP/Bitcrush.h"
 #include "DSP/Distortion.h"
 #include "DSP/Filter.h"
+#include "DSP/ModulationEffect.h"
 #include "DSP/Oscillator.h"
 #include "DSP/PitchEnvelope.h"
 
@@ -92,6 +93,15 @@ namespace B33p
 
         void setDistortionDrive(float drive);
 
+        // Modulation effect slot at the end of the chain.
+        // setModEffectType picks the active mode; the three
+        // continuous setters carry type-dependent semantics — see
+        // ModulationEffect.h for the per-type meaning.
+        void setModEffectType(ModulationEffect::Type type);
+        void setModEffectParam1(float v01);
+        void setModEffectParam2(float v01);
+        void setModEffectMix(float v01);
+
         void setGain(float linearGain);
 
         // velocity is a per-trigger 0..1 scalar applied on top of
@@ -107,12 +117,13 @@ namespace B33p
         bool isActive() const;
 
     private:
-        Oscillator    oscillator;
-        AmpEnvelope   ampEnvelope;
-        PitchEnvelope pitchEnvelope;
-        Filter        filter;
-        Bitcrush      bitcrush;
-        Distortion    distortion;
+        Oscillator       oscillator;
+        AmpEnvelope      ampEnvelope;
+        PitchEnvelope    pitchEnvelope;
+        Filter           filter;
+        Bitcrush         bitcrush;
+        Distortion       distortion;
+        ModulationEffect modEffect;
 
         float basePitchHz          { 440.0f };
         float pitchOffsetSemitones { 0.0f };

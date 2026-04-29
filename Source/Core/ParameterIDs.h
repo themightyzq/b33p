@@ -53,6 +53,11 @@ namespace B33p::ParameterIDs
 
     inline juce::String distortionDrive     (int lane) { return detail::prefixed(lane, "distortion_drive");       }
 
+    inline juce::String modEffectType       (int lane) { return detail::prefixed(lane, "mod_effect_type");        }
+    inline juce::String modEffectParam1     (int lane) { return detail::prefixed(lane, "mod_effect_p1");          }
+    inline juce::String modEffectParam2     (int lane) { return detail::prefixed(lane, "mod_effect_p2");          }
+    inline juce::String modEffectMix        (int lane) { return detail::prefixed(lane, "mod_effect_mix");         }
+
     inline juce::String voiceGain           (int lane) { return detail::prefixed(lane, "voice_gain");             }
 
     // Convenience iterator: every parameter ID for a single lane,
@@ -70,7 +75,10 @@ namespace B33p::ParameterIDs
             filterCutoffHz(lane),      filterResonanceQ(lane),
             filterVowel(lane),
             bitcrushBitDepth(lane),    bitcrushSampleRateHz(lane),
-            distortionDrive(lane),     voiceGain(lane)
+            distortionDrive(lane),
+            modEffectType(lane),       modEffectParam1(lane),
+            modEffectParam2(lane),     modEffectMix(lane),
+            voiceGain(lane)
         };
     }
 
