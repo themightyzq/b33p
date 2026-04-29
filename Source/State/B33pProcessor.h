@@ -213,6 +213,11 @@ namespace B33p
     private:
         void pushParametersToVoices();
         void pushParametersToLane(int lane);
+        // Lower-level worker: push the lane's APVTS values + matrix
+        // modulation into the supplied Voice. applyOverrides toggles
+        // whether per-event override slots win; MIDI keyboard voices
+        // pass false because they aren't event-driven.
+        void pushParametersToVoiceImpl(int lane, Voice& v, bool applyOverrides);
         void triggerVoiceFromEvent(int lane, const Event& event);
 
         // Reads APVTS LFO params + modulation-matrix slots for the
@@ -252,10 +257,27 @@ namespace B33p
         juce::AudioProcessorValueTreeState apvts;
         ParameterRandomizer                randomizer;
 
+        // Number of polyphonic voices reserved for MIDI keyboard
+        // play. Pattern playback stays monophonic per lane (events
+        // re-trigger the same voice with the amp-env-retrigger
+        // policy from CLAUDE.md); MIDI voices live in their own
+        // pool so a user playing a chord doesn't fight the pattern
+        // for voice slots.
+        static constexpr int kMidiPolyphony = 8;
+
         // One Voice per pattern lane. Each lane's events trigger
         // its own voice; the pattern engine sums all four voices
         // each sample.
         std::array<Voice, Pattern::kNumLanes> voices;
+
+        // MIDI keyboard voice pool. Allocated round-robin on
+        // note-on, released on note-off via the midiNoteToVoice
+        // lookup. Always inherits the currently-selected lane's
+        // parameters so the MIDI player is sound-designing the
+        // selected lane in real time.
+        std::array<Voice, kMidiPolyphony>     midiVoices;
+        std::array<int,   128>                midiNoteToVoice;     // -1 = note not held
+        int                                   nextMidiVoiceIndex { 0 };
 
         // Two free-running LFOs per lane. Phase advances once per
         // audio block (block-rate modulation) — pushParametersToLane
