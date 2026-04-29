@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: post-MVP roadmap — Workflow category complete; only Distribution items (installers + plugin builds + extra export formats) remain on the post-MVP list**
+> **Current focus: post-MVP roadmap — VST3 + AU plugin builds shipping; remaining Distribution items are installers, AAX, and extra audio export formats**
 
 ---
 
@@ -254,7 +254,7 @@ Explicitly out of MVP scope — the standalone app is the priority and the "musi
 ### Distribution
 
 - [ ] **Release installers** — proper `.dmg` (macOS), Windows installer (NSIS / Inno Setup), Linux AppImage or tarball, auto-attached to a GitHub Release on tag push via CPack + a release workflow. Lives here rather than in the MVP because b33p is currently shared via "build from source" or "grab the CI workflow artifact"; installers come back when there's a public-facing release worth packaging.
-- [ ] **VST3 plugin build**
-- [ ] **AU plugin build** (macOS)
+- [x] **VST3 plugin build** — single CMake target via juce_add_plugin produces VST3 alongside Standalone + AU. Loadable in any modern DAW. (AAX still pending behind the AAX SDK.)
+- [x] **AU plugin build** (macOS) — same juce_add_plugin target produces an AU component on Apple builds.
 - [ ] **AAX plugin build** (Pro Tools)
 - [ ] **Additional export formats** — FLAC, OGG, AIFF, 96 kHz, IMA ADPCM WAV (true 4-bit)

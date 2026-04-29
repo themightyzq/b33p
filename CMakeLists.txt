@@ -40,16 +40,33 @@ CPMAddPackage(
 )
 
 # ---------------------------------------------------------------------------
-# Standalone GUI app target
+# Plugin + standalone target
+#
+# Built via juce_add_plugin so a single source set produces every shipping
+# format. FORMATS values:
+#   Standalone — yields b33p.app via JUCE's StandaloneFilterApp wrapper
+#   VST3       — Steinberg's modern plugin format; loads in every major DAW
+#   AU         — Audio Units (Apple-only; the format JUCE auto-skips on
+#                non-Apple builds)
+# AAX is intentionally absent — it requires the (non-free) AAX SDK from
+# Avid; gating it behind an opt-in option is its own follow-up commit
+# once we have a build pipeline ready to ship Pro Tools support.
 # ---------------------------------------------------------------------------
-juce_add_gui_app(B33p
-    PRODUCT_NAME        "b33p"
-    COMPANY_NAME        "${B33P_COMPANY_NAME}"
-    BUNDLE_ID           "${B33P_BUNDLE_ID}"
-    VERSION             "${PROJECT_VERSION}"
-    DOCUMENT_EXTENSIONS "beep"
-    ICON_BIG            "${CMAKE_SOURCE_DIR}/Source/Resources/icon_big.png"
-    ICON_SMALL          "${CMAKE_SOURCE_DIR}/Source/Resources/icon_small.png"
+juce_add_plugin(B33p
+    PRODUCT_NAME            "b33p"
+    COMPANY_NAME            "${B33P_COMPANY_NAME}"
+    BUNDLE_ID               "${B33P_BUNDLE_ID}"
+    VERSION                 "${PROJECT_VERSION}"
+    PLUGIN_MANUFACTURER_CODE Zqsf
+    PLUGIN_CODE              B33p
+    FORMATS                 Standalone VST3 AU
+    IS_SYNTH                TRUE
+    NEEDS_MIDI_INPUT        TRUE
+    NEEDS_MIDI_OUTPUT       FALSE
+    EDITOR_WANTS_KEYBOARD_FOCUS TRUE
+    DOCUMENT_EXTENSIONS     "beep"
+    ICON_BIG                "${CMAKE_SOURCE_DIR}/Source/Resources/icon_big.png"
+    ICON_SMALL              "${CMAKE_SOURCE_DIR}/Source/Resources/icon_small.png"
 )
 
 target_sources(B33p PRIVATE
@@ -64,7 +81,7 @@ target_sources(B33p PRIVATE
     Source/State/ProjectState.cpp
     Source/UI/AmpEnvSection.cpp
     Source/UI/AmpEnvelopeVisualizer.cpp
-    Source/UI/AudioSettingsWindow.cpp
+    Source/UI/B33pEditor.cpp
     Source/UI/EffectsSection.cpp
     Source/UI/EventOverridesDialog.cpp
     Source/UI/ExportDialog.cpp
@@ -109,6 +126,16 @@ target_compile_definitions(B33p PRIVATE
     JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:B33p,JUCE_PRODUCT_NAME>"
     JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:B33p,JUCE_VERSION>"
     B33P_VERSION_STRING="${PROJECT_VERSION}"
+    # Selects the editor-bearing branch of B33pProcessor's
+    # hasEditor / createEditor implementation. The tests target
+    # leaves this undefined so it can link without the UI sources.
+    B33P_HAS_EDITOR=1
+    # b33p has never shipped a VST2, so the VST3 doesn't need to
+    # claim parameter-automation continuity with one. JUCE's VST3
+    # wrapper guards on this and #errors out if VST2 is absent
+    # (Build_VST=0) and JUCE_VST3_CAN_REPLACE_VST2 isn't explicitly
+    # zero.
+    JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
 target_link_libraries(B33p

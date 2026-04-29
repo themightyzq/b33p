@@ -28,7 +28,6 @@ namespace B33p
             FileSaveAs,
             FileSavePreset,
             FileBrowsePresets,
-            FileAudioSettings,
             FileClearRecent,
             EditUndo,
             EditRedo,
@@ -48,10 +47,8 @@ namespace B33p
         };
     }
 
-    MainComponent::MainComponent(B33pProcessor& processorRef,
-                                  juce::AudioDeviceManager& deviceManagerRef)
+    MainComponent::MainComponent(B33pProcessor& processorRef)
         : processor(processorRef),
-          deviceManager(deviceManagerRef),
           fileManager(processorRef),
           presetManager(processorRef),
           // Seed factory presets the first time we see an empty
@@ -379,8 +376,6 @@ namespace B33p
                 m.addSeparator();
                 m.addItem(withShortcut(MenuId::FileSavePreset,    "Save Preset...",   ""));
                 m.addItem(withShortcut(MenuId::FileBrowsePresets, "Browse Presets...", ""));
-                m.addSeparator();
-                m.addItem(withShortcut(MenuId::FileAudioSettings, "Audio Settings...", ""));
                 break;
             case 1: // Edit
                 m.addItem(withShortcut(MenuId::EditUndo, "Undo", "Cmd+Z",
@@ -443,7 +438,6 @@ namespace B33p
             case MenuId::FileSaveAs:         fileManager.saveAs(this);          break;
             case MenuId::FileSavePreset:     promptSavePreset();                break;
             case MenuId::FileBrowsePresets:  showPresetBrowser();               break;
-            case MenuId::FileAudioSettings:  showAudioSettings();               break;
             case MenuId::FileClearRecent:    fileManager.clearRecentFiles();    break;
             case MenuId::EditUndo:        processor.getUndoManager().undo(); break;
             case MenuId::EditCopy:        patternSection.getGrid().copySelectedToClipboard();      break;
@@ -472,14 +466,6 @@ namespace B33p
             case MenuId::HelpAbout:  showAboutDialog();                         break;
             default:                                                            break;
         }
-    }
-
-    void MainComponent::showAudioSettings()
-    {
-        if (audioSettingsWindow == nullptr)
-            audioSettingsWindow = std::make_unique<AudioSettingsWindow>(deviceManager);
-        audioSettingsWindow->setVisible(true);
-        audioSettingsWindow->toFront(true);
     }
 
     void MainComponent::showPresetBrowser()
