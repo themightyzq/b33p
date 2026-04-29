@@ -200,8 +200,8 @@ End-user review surfaced a stack of items that all amount to "the README and the
 
 ### Nice-to-have polish
 - [x] **Per-lane background tint** in the voice editor sections so the "(Lane N)" suffix matches a visual cue and lane switching is obviously different.
-- [ ] **Recent Files submenu** in File.
-- [ ] **About dialog hyperlink to the GitHub repo.**
+- [x] **Recent Files submenu** in File.
+- [x] **About dialog hyperlink to the GitHub repo.**
 
 ---
 
