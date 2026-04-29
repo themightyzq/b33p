@@ -48,9 +48,6 @@ CPMAddPackage(
 #   VST3       — Steinberg's modern plugin format; loads in every major DAW
 #   AU         — Audio Units (Apple-only; the format JUCE auto-skips on
 #                non-Apple builds)
-# AAX is intentionally absent — it requires the (non-free) AAX SDK from
-# Avid; gating it behind an opt-in option is its own follow-up commit
-# once we have a build pipeline ready to ship Pro Tools support.
 # ---------------------------------------------------------------------------
 juce_add_plugin(B33p
     PRODUCT_NAME            "b33p"

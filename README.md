@@ -8,7 +8,7 @@ Built for sound designers, game developers, and synth hobbyists who want a tight
 
 ## Status
 
-**Active development.** The post-MVP feature set has landed: full modulation engine, multi-mode oscillator and filter, per-event overrides, presets, MIDI input, polyphony, plugin formats. See [TODO.md](TODO.md) for what remains (installers, AAX). Built binaries for macOS, Linux, and Windows are attached to each [GitHub Actions run on `main`](https://github.com/themightyzq/b33p/actions/workflows/build.yml).
+**Active development.** The post-MVP feature set has landed: full modulation engine, multi-mode oscillator and filter, per-event overrides, presets, MIDI input, polyphony, plugin formats. See [TODO.md](TODO.md) for what remains. Built binaries for macOS, Linux, and Windows are attached to each [GitHub Actions run on `main`](https://github.com/themightyzq/b33p/actions/workflows/build.yml).
 
 ## Features
 
