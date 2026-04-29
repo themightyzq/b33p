@@ -112,6 +112,14 @@ namespace B33p
             v.prepare(sampleRate);
             v.reset();
         }
+        for (auto& v : midiVoices)
+        {
+            v.prepare(sampleRate);
+            v.reset();
+        }
+        for (auto& slot : midiNoteToVoice)
+            slot = -1;
+        nextMidiVoiceIndex = 0;
         for (auto& laneLfos : lfos)
             for (auto& lfo : laneLfos)
             {
@@ -516,20 +524,32 @@ namespace B33p
 
     void B33pProcessor::pushParametersToLane(int lane)
     {
-        auto& v = voices[static_cast<size_t>(lane)];
+        pushParametersToVoiceImpl(lane,
+                                   voices[static_cast<size_t>(lane)],
+                                   /*applyOverrides=*/true);
+    }
 
+    void B33pProcessor::pushParametersToVoiceImpl(int lane,
+                                                   Voice& v,
+                                                   bool applyOverrides)
+    {
         const auto modContribs = evaluateModulationContributions(lane);
 
         // Picks the effective value for a modulatable destination.
-        // Priority: per-event override (wins outright if set) >
-        // matrix-modulated value > raw APVTS value. The override
-        // path skips matrix evaluation entirely so a clip can
-        // pin a parameter independently of any wiring.
+        // Priority: per-event override (wins outright if set, when
+        // applyOverrides is true) > matrix-modulated value > raw
+        // APVTS value. The override path skips matrix evaluation
+        // entirely so a clip can pin a parameter independently of
+        // any wiring. MIDI voices skip the override path because
+        // they aren't event-driven.
         auto modulated = [&](ModDestination d, const juce::String& fallbackId)
         {
-            float overrideValue = 0.0f;
-            if (tryGetActiveOverride(lane, d, overrideValue))
-                return overrideValue;
+            if (applyOverrides)
+            {
+                float overrideValue = 0.0f;
+                if (tryGetActiveOverride(lane, d, overrideValue))
+                    return overrideValue;
+            }
             const float c = modContribs[static_cast<size_t>(d)];
             if (c != 0.0f)
                 return effectiveParamValue(lane, d, c);
@@ -637,11 +657,13 @@ namespace B33p
         pushParametersToVoices();
 
         // ---- MIDI input ------------------------------------------
-        // Route every note-on / note-off to the currently-selected
-        // lane's voice. MIDI note 60 (middle C) is treated as the
-        // "no transposition" reference so the voice's basePitchHz
-        // sounds at note 60 — pressing higher notes pitches up,
-        // lower notes pitch down.
+        // Route every note-on to the next MIDI voice slot; route
+        // note-off to whichever slot was assigned that note. The
+        // MIDI voices live in their own pool so a held chord
+        // doesn't fight pattern playback for voice slots. Each
+        // MIDI voice inherits the currently-selected lane's params
+        // at trigger time — sound-design happens on the selected
+        // lane and MIDI plays the same patch.
         for (const auto meta : midi)
         {
             const auto& msg = meta.getMessage();
@@ -649,28 +671,49 @@ namespace B33p
             {
                 const int lane = juce::jlimit(0, Pattern::kNumLanes - 1,
                                                selectedLane.load());
-                Event e;
-                e.startSeconds         = 0.0;     // unused inside trigger
-                e.durationSeconds      = 1.0;     // long duration; release on note-off
-                e.pitchOffsetSemitones = static_cast<float>(msg.getNoteNumber() - 60);
-                e.velocity             = msg.getVelocity() / 127.0f;
-                triggerVoiceFromEvent(lane, e);
-                // Cancel any pending pattern-driven note-off for
-                // this lane — MIDI play takes priority and is
-                // released by the matching note-off rather than
-                // a sample-count timer.
-                samplesUntilNoteOff[static_cast<size_t>(lane)] = 0;
+                const int note = juce::jlimit(0, 127, msg.getNoteNumber());
+
+                // Round-robin allocation. If the slot is currently
+                // ringing, the assignment retriggers it (Voice's
+                // amp envelope handles the click-free retrigger
+                // from current level per CLAUDE.md).
+                const int slot = nextMidiVoiceIndex;
+                nextMidiVoiceIndex = (nextMidiVoiceIndex + 1) % kMidiPolyphony;
+
+                // If the stolen slot was already mapped to a held
+                // note, that note's tracking is now stale — clear
+                // the entry so a future note-off doesn't release
+                // a voice the new note has claimed.
+                for (auto& m : midiNoteToVoice)
+                    if (m == slot) m = -1;
+                midiNoteToVoice[static_cast<size_t>(note)] = slot;
+
+                auto& v = midiVoices[static_cast<size_t>(slot)];
+                pushParametersToVoiceImpl(lane, v, /*applyOverrides=*/false);
+                {
+                    const juce::ScopedTryLock tryLock(pitchCurveLock);
+                    if (tryLock.isLocked())
+                        v.setPitchCurve(pitchCurve);
+                }
+                v.trigger(/*durationSeconds=*/10.0f,   // long; release on note-off
+                          static_cast<float>(note - 60),
+                          msg.getVelocity() / 127.0f);
             }
             else if (msg.isNoteOff())
             {
-                const int lane = juce::jlimit(0, Pattern::kNumLanes - 1,
-                                               selectedLane.load());
-                voices[static_cast<size_t>(lane)].noteOff();
+                const int note = juce::jlimit(0, 127, msg.getNoteNumber());
+                const int slot = midiNoteToVoice[static_cast<size_t>(note)];
+                if (slot >= 0 && slot < kMidiPolyphony)
+                {
+                    midiVoices[static_cast<size_t>(slot)].noteOff();
+                    midiNoteToVoice[static_cast<size_t>(note)] = -1;
+                }
             }
             else if (msg.isAllNotesOff() || msg.isAllSoundOff())
             {
-                for (auto& v : voices)
-                    v.noteOff();
+                for (auto& v : voices)     v.noteOff();
+                for (auto& v : midiVoices) v.noteOff();
+                for (auto& m : midiNoteToVoice) m = -1;
             }
         }
         midi.clear();   // we never produce MIDI
@@ -777,10 +820,10 @@ namespace B33p
                     voices[static_cast<size_t>(lane)].noteOff();
             }
 
-            // ---- Mix all four voices -----------------------------
+            // ---- Mix all four lane voices + the MIDI voice pool ---
             float s = 0.0f;
-            for (auto& v : voices)
-                s += v.processSample();
+            for (auto& v : voices)     s += v.processSample();
+            for (auto& v : midiVoices) s += v.processSample();
 
             if (left  != nullptr) left[i]  = s;
             if (right != nullptr) right[i] = s;
