@@ -1,11 +1,13 @@
 #pragma once
 
+#include "EventOverridesDialog.h"
 #include "Pattern/Pattern.h"
 #include "State/B33pProcessor.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include <cstddef>
+#include <memory>
 
 namespace B33p
 {
@@ -184,6 +186,11 @@ namespace B33p
         // at the playhead while preserving relative timing.
         struct ClipboardItem { int lane; Event event; };
         std::vector<ClipboardItem> clipboard;
+
+        // Lazily-created popup window for editing per-event
+        // overrides. Owned here so the window can survive PatternGrid
+        // gestures and can be reset from the close callback.
+        std::unique_ptr<EventOverridesDialogWindow> overridesWindow;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatternGrid)
     };

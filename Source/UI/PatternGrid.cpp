@@ -789,6 +789,8 @@ namespace B33p
             juce::PopupMenu menu;
             menu.addItem(1, "Delete");
             menu.addItem(2, "Duplicate");
+            menu.addSeparator();
+            menu.addItem(3, "Edit overrides...");
             const int laneClicked  = hit.lane;
             const std::size_t idxClicked = hit.index;
             menu.showMenuAsync(juce::PopupMenu::Options{},
@@ -797,6 +799,44 @@ namespace B33p
                     auto& pattern = processor.getPattern();
                     if (idxClicked >= pattern.getEvents(laneClicked).size())
                         return;
+
+                    if (result == 3)
+                    {
+                        // Lazy-construct (or replace) the overrides
+                        // window pointing at this clip. apply commits
+                        // through the same SetPatternAction undo
+                        // machinery the other context-menu actions
+                        // use; close drops the window pointer so the
+                        // next invocation builds a fresh one targeted
+                        // at whichever clip is right-clicked next.
+                        const auto& evRef = pattern.getEvents(laneClicked)[idxClicked];
+                        overridesWindow.reset();
+                        overridesWindow = std::make_unique<EventOverridesDialogWindow>(
+                            evRef,
+                            [this, laneClicked, idxClicked]
+                                (const std::array<EventOverride, kNumEventOverrides>& edited)
+                            {
+                                auto& p = processor.getPattern();
+                                if (idxClicked >= p.getEvents(laneClicked).size())
+                                    return;
+                                Pattern beforeApply = p;
+                                Event modified = p.getEvents(laneClicked)[idxClicked];
+                                modified.overrides = edited;
+                                p.updateEvent(laneClicked, idxClicked, modified);
+                                processor.markDirty();
+                                repaint();
+                                processor.getUndoManager().beginNewTransaction(
+                                    "Edit event overrides");
+                                processor.getUndoManager().perform(
+                                    new SetPatternAction(processor, this,
+                                                         std::move(beforeApply),
+                                                         p));
+                            },
+                            [this] { overridesWindow.reset(); });
+                        overridesWindow->setVisible(true);
+                        overridesWindow->toFront(true);
+                        return;
+                    }
 
                     Pattern before = pattern;
                     if (result == 1)
