@@ -7,8 +7,10 @@ namespace B33p
 {
     FilterSection::FilterSection(B33pProcessor& processorRef)
         : Section("Filter"),
-          processor(processorRef)
+          processor(processorRef),
+          visualizer(processorRef.getApvts())
     {
+        addAndMakeVisible(visualizer);
         addAndMakeVisible(cutoffSlider);
         addAndMakeVisible(resonanceSlider);
 
@@ -37,6 +39,7 @@ namespace B33p
         SliderFormatting::applyDoubleClickReset(cutoffSlider   .getSlider(), processor.getApvts(), ParameterIDs::filterCutoffHz(lane));
         SliderFormatting::applyDoubleClickReset(resonanceSlider.getSlider(), processor.getApvts(), ParameterIDs::filterResonanceQ(lane));
 
+        visualizer.retargetLane(lane);
         setTitleSuffix(processor.laneTitleSuffix(lane));
         setAccentColour(processor.laneAccentColour(lane));
     }
@@ -44,6 +47,12 @@ namespace B33p
     void FilterSection::resized()
     {
         auto bounds = getContentBounds();
+
+        constexpr int kVisualizerHeight = 90;
+        constexpr int kVisualizerGap    = 6;
+
+        visualizer.setBounds(bounds.removeFromTop(kVisualizerHeight));
+        bounds.removeFromTop(kVisualizerGap);
 
         constexpr int kGap = 8;
         const int cellWidth = (bounds.getWidth() - kGap) / 2;

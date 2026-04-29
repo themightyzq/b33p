@@ -231,7 +231,7 @@ Ordered roughly by priority, not commitment. Each item becomes its own phase whe
 
 ### Visual feedback
 
-- [ ] **Filter response visualizer** — FabFilter/iZotope-style spectrum overlay showing the current cutoff + Q curve so the filter's behaviour reads at a glance; the log-skewed cutoff slider alone feels abrupt without the visual. Good time to also consider coefficient smoothing (`SmoothedValue`) so dragging doesn't zipper.
+- [x] **Filter response visualizer** — FabFilter/iZotope-style spectrum overlay showing the current cutoff + Q curve so the filter's behaviour reads at a glance; the log-skewed cutoff slider alone feels abrupt without the visual. (Coefficient smoothing was deferred — filter params currently push to the voice only on event trigger, so there's no live-drag zipper to fix yet. Revisit when modulation matrix or per-sample param updates land.)
 
 ### Musical timing / DAW integration
 

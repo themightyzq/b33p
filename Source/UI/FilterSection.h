@@ -1,5 +1,6 @@
 #pragma once
 
+#include "FilterResponseVisualizer.h"
 #include "LabeledSlider.h"
 #include "Section.h"
 #include "State/B33pProcessor.h"
@@ -23,6 +24,7 @@ namespace B33p
 
         B33pProcessor& processor;
 
+        FilterResponseVisualizer visualizer;
         LabeledSlider cutoffSlider    { "Cutoff"    };
         LabeledSlider resonanceSlider { "Resonance" };
 
