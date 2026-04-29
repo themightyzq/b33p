@@ -21,7 +21,9 @@ namespace B33p
         //   v4: FM oscillator (new fm_ratio + fm_depth parameters per lane); v3
         //       files migrate forward by simply bumping the version property —
         //       APVTS supplies the parameter defaults for the missing IDs
-        inline constexpr int kCurrentVersion = 4;
+        //   v5: Ring modulator (new ring_ratio + ring_mix parameters per lane);
+        //       same default-fallback migration as v4
+        inline constexpr int kCurrentVersion = 5;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

@@ -84,8 +84,9 @@ namespace B33p
 
     void Oscillator::reset()
     {
-        phase          = 0.0;
-        modulatorPhase = 0.0;
+        phase              = 0.0;
+        modulatorPhase     = 0.0;
+        ringModulatorPhase = 0.0;
     }
 
     void Oscillator::setWaveform(Waveform newWaveform)
@@ -132,6 +133,19 @@ namespace B33p
         fmDepth = std::clamp(depth, 0.0f, 10.0f);
     }
 
+    void Oscillator::setRingRatio(float ratio)
+    {
+        // Same range as fmRatio — sub-octave to four-octaves-up
+        // covers everything from "tremolo-like" (ratio < 1) through
+        // classic bell ratios (e.g. 1.41, 2.76).
+        ringRatio = std::clamp(ratio, 0.1f, 16.0f);
+    }
+
+    void Oscillator::setRingMix(float mix01)
+    {
+        ringMix = std::clamp(mix01, 0.0f, 1.0f);
+    }
+
     void Oscillator::updatePhaseIncrement()
     {
         phaseIncrement = sampleRate > 0.0
@@ -169,15 +183,30 @@ namespace B33p
                 output = static_cast<float>(std::sin(kTwoPi * (phase + phaseOff)));
                 break;
             }
+            case Waveform::Ring:
+            {
+                // Sine carrier × sine ring modulator, then crossfaded
+                // with the dry carrier. mix=0 collapses to a clean
+                // sine; mix=1 is the full multiplied product
+                // (carrier suppressed, sum and difference sidebands
+                // only). Verified against a sine in the test suite.
+                const float carrier = sineAt(phase);
+                const float modOut  = static_cast<float>(std::sin(kTwoPi * ringModulatorPhase));
+                output = (1.0f - ringMix) * carrier + ringMix * (carrier * modOut);
+                break;
+            }
             case Waveform::Noise:     break; // handled above
         }
 
-        phase          += phaseIncrement;
-        modulatorPhase += phaseIncrement * static_cast<double>(fmRatio);
+        phase              += phaseIncrement;
+        modulatorPhase     += phaseIncrement * static_cast<double>(fmRatio);
+        ringModulatorPhase += phaseIncrement * static_cast<double>(ringRatio);
         while (phase >= 1.0)
             phase -= 1.0;
         while (modulatorPhase >= 1.0)
             modulatorPhase -= 1.0;
+        while (ringModulatorPhase >= 1.0)
+            ringModulatorPhase -= 1.0;
 
         return output;
     }

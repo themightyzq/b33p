@@ -35,8 +35,10 @@ namespace B33p
 
         LabeledSlider    basePitchSlider { "Pitch" };
         LabeledSlider    morphSlider     { "Morph" };
-        LabeledSlider    fmRatioSlider   { "Ratio" };
-        LabeledSlider    fmDepthSlider   { "Depth" };
+        LabeledSlider    fmRatioSlider   { "FM Ratio" };
+        LabeledSlider    fmDepthSlider   { "FM Depth" };
+        LabeledSlider    ringRatioSlider { "Ring Ratio" };
+        LabeledSlider    ringMixSlider   { "Ring Mix" };
 
         // unique_ptr so retargetLane can swap them out.
         std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> waveformAttachment;
@@ -44,6 +46,8 @@ namespace B33p
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   morphAttachment;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   fmRatioAttachment;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   fmDepthAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   ringRatioAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   ringMixAttachment;
 
         // Lazily-created popup for editing the lane's custom
         // single-cycle waveform. Visibility is toggled by the

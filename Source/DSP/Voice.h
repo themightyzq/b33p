@@ -68,6 +68,13 @@ namespace B33p
         void setFmRatio(float ratio);
         void setFmDepth(float depth);
 
+        // Ring modulation: ratio sets the modulator pitch relative
+        // to the carrier; mix is a 0..1 wet/dry crossfade between
+        // the dry carrier sine and the multiplied product. Both
+        // ignored outside Ring mode.
+        void setRingRatio(float ratio);
+        void setRingMix(float mix01);
+
         void setAmpAttack(float seconds);
         void setAmpDecay(float seconds);
         void setAmpSustain(float level);

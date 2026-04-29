@@ -61,6 +61,16 @@ namespace B33p
         oscillator.setFmDepth(depth);
     }
 
+    void Voice::setRingRatio(float ratio)
+    {
+        oscillator.setRingRatio(ratio);
+    }
+
+    void Voice::setRingMix(float mix01)
+    {
+        oscillator.setRingMix(mix01);
+    }
+
     void Voice::setAmpAttack(float seconds)   { ampEnvelope.setAttack(seconds);   }
     void Voice::setAmpDecay(float seconds)    { ampEnvelope.setDecay(seconds);    }
     void Voice::setAmpSustain(float level)    { ampEnvelope.setSustain(level);    }

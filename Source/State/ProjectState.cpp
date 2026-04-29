@@ -282,6 +282,16 @@ namespace B33p::ProjectState
             version = 4;
         }
 
+        if (version == 4)
+        {
+            // v4 → v5: ring_ratio + ring_mix parameters were added.
+            // Same default-fallback story as v4 — a v4 file can't
+            // have selected the new Ring waveform anyway, so the
+            // missing-but-defaulted ring params are inert on load.
+            tree.setProperty(kVersion, 5, nullptr);
+            version = 5;
+        }
+
         return tree;
     }
 

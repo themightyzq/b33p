@@ -42,7 +42,7 @@ namespace B33p
             layout.add(std::make_unique<juce::AudioParameterChoice>(
                 juce::ParameterID { ParameterIDs::oscWaveform(lane), kParameterVersionHint },
                 prefix + "Waveform",
-                juce::StringArray { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom", "Wavetable", "FM" },
+                juce::StringArray { "Sine", "Square", "Triangle", "Saw", "Noise", "Custom", "Wavetable", "FM", "Ring" },
                 0));
 
             // Tightened to "musical beep" range so randomisation
@@ -76,6 +76,22 @@ namespace B33p
                                  prefix + "FM Depth",
                                  skewedRange(0.0f, 10.0f, 1.0f),
                                  0.0f));
+
+            // Ring modulator parameters. Default ratio of 2.0 picks
+            // a non-unity starting point (a unison ring mod just
+            // shifts the sine into a 2x sine, which is hard to
+            // distinguish from a regular sine at first glance).
+            // Default mix = 1.0 so flipping into Ring mode produces
+            // the full ring-modulated sound immediately.
+            layout.add(makeFloat(ParameterIDs::ringRatio(lane),
+                                 prefix + "Ring Ratio",
+                                 skewedRange(0.1f, 16.0f, 2.0f),
+                                 2.0f));
+
+            layout.add(makeFloat(ParameterIDs::ringMix(lane),
+                                 prefix + "Ring Mix",
+                                 juce::NormalisableRange<float> { 0.0f, 1.0f },
+                                 1.0f));
 
             layout.add(makeFloat(ParameterIDs::ampAttack(lane),
                                  prefix + "Amp Attack",
