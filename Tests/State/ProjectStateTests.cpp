@@ -232,6 +232,38 @@ TEST_CASE("ProjectState: v2 file's per-lane custom_waveform attribute migrates i
         REQUIRE(restored.getWavetableSlotCopy(1, slot).empty());
 }
 
+TEST_CASE("ProjectState: a v6 file with no mod-effect params loads with None / 0.5 defaults",
+          "[state][project]")
+{
+    juce::ValueTree root { "B33P" };
+    root.setProperty("version", 6, nullptr);
+
+    juce::ValueTree params { "PARAMETERS" };
+    juce::ValueTree apvts  { "B33pParameters" };
+    juce::ValueTree p { "PARAM" };
+    p.setProperty("id",    B33p::ParameterIDs::basePitchHz(0), nullptr);
+    p.setProperty("value", 880.0, nullptr);
+    apvts.appendChild(p, nullptr);
+    params.appendChild(apvts, nullptr);
+    root.appendChild(params, nullptr);
+
+    B33pProcessor processor;
+    REQUIRE(B33p::ProjectState::load(processor, root));
+
+    auto& a = processor.getApvts();
+    for (int lane = 0; lane < B33p::Pattern::kNumLanes; ++lane)
+    {
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::modEffectType  (lane))->load()
+                == Approx(0.0f).margin(1e-3f));   // None
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::modEffectParam1(lane))->load()
+                == Approx(0.5f).margin(1e-3f));
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::modEffectParam2(lane))->load()
+                == Approx(0.5f).margin(1e-3f));
+        REQUIRE(a.getRawParameterValue(B33p::ParameterIDs::modEffectMix   (lane))->load()
+                == Approx(0.5f).margin(1e-3f));
+    }
+}
+
 TEST_CASE("ProjectState: a v5 file with no filter type/vowel loads with Lowpass default",
           "[state][project]")
 {

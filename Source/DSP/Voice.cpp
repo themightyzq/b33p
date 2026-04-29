@@ -13,6 +13,7 @@ namespace B33p
         filter.prepare(sampleRate);
         bitcrush.prepare(sampleRate);
         distortion.prepare(sampleRate);
+        modEffect.prepare(sampleRate);
         prepared = true;
     }
 
@@ -24,6 +25,7 @@ namespace B33p
         filter.reset();
         bitcrush.reset();
         distortion.reset();
+        modEffect.reset();
     }
 
     void Voice::setWaveform(Oscillator::Waveform waveform)
@@ -91,6 +93,11 @@ namespace B33p
 
     void Voice::setDistortionDrive(float drive)        { distortion.setDrive(drive);         }
 
+    void Voice::setModEffectType(ModulationEffect::Type t) { modEffect.setType(t);    }
+    void Voice::setModEffectParam1(float v01)              { modEffect.setParam1(v01); }
+    void Voice::setModEffectParam2(float v01)              { modEffect.setParam2(v01); }
+    void Voice::setModEffectMix(float v01)                 { modEffect.setMix(v01);    }
+
     void Voice::setGain(float linearGain)
     {
         gain = std::clamp(linearGain, 0.0f, 10.0f);
@@ -129,6 +136,7 @@ namespace B33p
         sample  = filter.processSample(sample);
         sample  = bitcrush.processSample(sample);
         sample  = distortion.processSample(sample);
+        sample  = modEffect.processSample(sample);
         sample *= gain * triggerVelocity;
 
         return sample;

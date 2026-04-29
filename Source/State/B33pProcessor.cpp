@@ -442,6 +442,16 @@ namespace B33p
         v.setBitcrushBitDepth    (apvts.getRawParameterValue(ParameterIDs::bitcrushBitDepth(lane))->load());
         v.setBitcrushSampleRate  (apvts.getRawParameterValue(ParameterIDs::bitcrushSampleRateHz(lane))->load());
         v.setDistortionDrive     (apvts.getRawParameterValue(ParameterIDs::distortionDrive(lane))->load());
+
+        const auto* mxParam = apvts.getRawParameterValue(ParameterIDs::modEffectType(lane));
+        v.setModEffectType(static_cast<ModulationEffect::Type>(
+            juce::jlimit(0,
+                         static_cast<int>(ModulationEffect::Type::Phaser),
+                         static_cast<int>(mxParam->load()))));
+        v.setModEffectParam1     (apvts.getRawParameterValue(ParameterIDs::modEffectParam1(lane))->load());
+        v.setModEffectParam2     (apvts.getRawParameterValue(ParameterIDs::modEffectParam2(lane))->load());
+        v.setModEffectMix        (apvts.getRawParameterValue(ParameterIDs::modEffectMix(lane))->load());
+
         v.setGain                (apvts.getRawParameterValue(ParameterIDs::voiceGain(lane))->load());
     }
 

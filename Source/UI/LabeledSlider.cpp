@@ -51,6 +51,11 @@ namespace B33p
         label .setTooltip(text);
     }
 
+    void LabeledSlider::setLabelText(const juce::String& newLabelText)
+    {
+        label.setText(newLabelText, juce::dontSendNotification);
+    }
+
     void LabeledSlider::resized()
     {
         auto bounds = getLocalBounds();

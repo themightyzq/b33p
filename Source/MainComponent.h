@@ -7,6 +7,7 @@
 #include "UI/EffectsSection.h"
 #include "UI/FilterSection.h"
 #include "UI/MasterSection.h"
+#include "UI/ModEffectsSection.h"
 #include "UI/OscillatorSection.h"
 #include "UI/PatternSection.h"
 #include "UI/PitchEnvSection.h"
@@ -91,6 +92,7 @@ namespace B33p
         AmpEnvSection     ampEnvelopeSection;
         FilterSection     filterSection;
         EffectsSection    effectsSection;
+        ModEffectsSection modEffectsSection;
         MasterSection     masterSection;
         PitchEnvSection   pitchEnvelopeSection;
         PatternSection    patternSection;

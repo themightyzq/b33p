@@ -39,6 +39,12 @@ namespace B33p
         // lands. Dice + lock keep their own generic tooltips.
         void setTooltip(const juce::String& text);
 
+        // Replaces the label text. Used by sections whose slider
+        // semantics change at runtime (e.g. ModEffectsSection
+        // re-labelling P1 between "Rate" / "Size" / "Time" per
+        // effect type).
+        void setLabelText(const juce::String& newLabelText);
+
         void resized() override;
 
     private:

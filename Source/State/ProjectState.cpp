@@ -303,6 +303,17 @@ namespace B33p::ProjectState
             version = 6;
         }
 
+        if (version == 6)
+        {
+            // v6 → v7: mod_effect_type (Choice) + mod_effect_p1 /
+            // _p2 / _mix (Floats) were added. mod_effect_type
+            // defaults to None (= 0, bypass), so the wet effect
+            // is inert on a v6 file load and the audio chain ends
+            // exactly where it did under v6.
+            tree.setProperty(kVersion, 7, nullptr);
+            version = 7;
+        }
+
         return tree;
     }
 
