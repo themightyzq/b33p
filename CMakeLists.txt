@@ -83,7 +83,7 @@ target_sources(B33p PRIVATE
     Source/DSP/Oscillator.cpp
     Source/DSP/AmpEnvelope.cpp
     Source/DSP/PitchEnvelope.cpp
-    Source/DSP/LowpassFilter.cpp
+    Source/DSP/Filter.cpp
     Source/DSP/Bitcrush.cpp
     Source/DSP/Distortion.cpp
     Source/DSP/Voice.cpp

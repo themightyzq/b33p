@@ -23,7 +23,11 @@ namespace B33p
         //       APVTS supplies the parameter defaults for the missing IDs
         //   v5: Ring modulator (new ring_ratio + ring_mix parameters per lane);
         //       same default-fallback migration as v4
-        inline constexpr int kCurrentVersion = 5;
+        //   v6: multi-mode filter (new filter_type choice + filter_vowel float
+        //       per lane); same default-fallback migration. v5 files load with
+        //       filter_type defaulting to Lowpass — the existing cutoff / Q
+        //       behaviour — so they sound identical.
+        inline constexpr int kCurrentVersion = 6;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

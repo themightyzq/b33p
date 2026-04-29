@@ -81,8 +81,10 @@ namespace B33p
         pitchEnvelope.setCurve(points);
     }
 
+    void Voice::setFilterType(Filter::Type t) { filter.setType(t);        }
     void Voice::setFilterCutoff(float hz)     { filter.setCutoff(hz);     }
     void Voice::setFilterResonance(float q)   { filter.setResonance(q);   }
+    void Voice::setFilterVowel(float v01)     { filter.setVowel(v01);     }
 
     void Voice::setBitcrushBitDepth(float bits)        { bitcrush.setBitDepth(bits);         }
     void Voice::setBitcrushSampleRate(float targetHz)  { bitcrush.setTargetSampleRate(targetHz); }

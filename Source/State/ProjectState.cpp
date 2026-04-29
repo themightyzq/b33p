@@ -292,6 +292,17 @@ namespace B33p::ProjectState
             version = 5;
         }
 
+        if (version == 5)
+        {
+            // v5 → v6: filter_type (Choice) + filter_vowel (Float)
+            // were added. Same default-fallback story — the new
+            // filter_type defaults to Lowpass (= 0), which matches
+            // the only filter shape v5 binaries could produce, so
+            // a v5 file sounds identical when reloaded.
+            tree.setProperty(kVersion, 6, nullptr);
+            version = 6;
+        }
+
         return tree;
     }
 

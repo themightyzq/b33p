@@ -113,6 +113,16 @@ namespace B33p
                                  skewedRange(0.0f, 5.0f, 0.1f),
                                  0.1f, "s"));
 
+            // Filter type chooses among the five filter modes the
+            // Filter class implements. The cutoff / resonance /
+            // vowel parameters carry different meanings per type;
+            // see Filter.h for the mapping.
+            layout.add(std::make_unique<juce::AudioParameterChoice>(
+                juce::ParameterID { ParameterIDs::filterType(lane), kParameterVersionHint },
+                prefix + "Filter Type",
+                juce::StringArray { "Lowpass", "Highpass", "Bandpass", "Comb", "Formant" },
+                0));
+
             // 200 Hz lower bound: a randomised cutoff can't drop
             // below the fundamental of the lowest pitch and silence
             // the voice.
@@ -125,6 +135,14 @@ namespace B33p
                                  prefix + "Filter Resonance",
                                  juce::NormalisableRange<float> { 0.1f, 20.0f },
                                  0.707f));
+
+            // Vowel position used by Formant mode only. 0 = A,
+            // 1 = U with E / I / O at 0.25 / 0.5 / 0.75. Adjacent
+            // vowels' formant frequencies are linearly interpolated.
+            layout.add(makeFloat(ParameterIDs::filterVowel(lane),
+                                 prefix + "Filter Vowel",
+                                 juce::NormalisableRange<float> { 0.0f, 1.0f },
+                                 0.0f));
 
             layout.add(makeFloat(ParameterIDs::bitcrushBitDepth(lane),
                                  prefix + "Bit Depth",

@@ -43,8 +43,10 @@ namespace B33p::ParameterIDs
     inline juce::String ampSustain          (int lane) { return detail::prefixed(lane, "amp_sustain");            }
     inline juce::String ampRelease          (int lane) { return detail::prefixed(lane, "amp_release");            }
 
+    inline juce::String filterType          (int lane) { return detail::prefixed(lane, "filter_type");            }
     inline juce::String filterCutoffHz      (int lane) { return detail::prefixed(lane, "filter_cutoff_hz");       }
     inline juce::String filterResonanceQ    (int lane) { return detail::prefixed(lane, "filter_resonance_q");     }
+    inline juce::String filterVowel         (int lane) { return detail::prefixed(lane, "filter_vowel");           }
 
     inline juce::String bitcrushBitDepth    (int lane) { return detail::prefixed(lane, "bitcrush_bit_depth");     }
     inline juce::String bitcrushSampleRateHz(int lane) { return detail::prefixed(lane, "bitcrush_sample_rate_hz"); }
@@ -64,7 +66,9 @@ namespace B33p::ParameterIDs
             ringRatio(lane),           ringMix(lane),
             ampAttack(lane),           ampDecay(lane),
             ampSustain(lane),          ampRelease(lane),
+            filterType(lane),
             filterCutoffHz(lane),      filterResonanceQ(lane),
+            filterVowel(lane),
             bitcrushBitDepth(lane),    bitcrushSampleRateHz(lane),
             distortionDrive(lane),     voiceGain(lane)
         };
