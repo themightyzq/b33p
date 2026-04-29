@@ -41,6 +41,9 @@ namespace B33p::ProjectState
         const juce::Identifier kEventDuration         { "duration_seconds" };
         const juce::Identifier kEventPitch            { "pitch_offset_semitones" };
         const juce::Identifier kEventVelocity         { "velocity" };
+        const juce::Identifier kEventProbability      { "probability" };
+        const juce::Identifier kEventRatchets         { "ratchets" };
+        const juce::Identifier kEventHumanize         { "humanize" };
         const juce::Identifier kEventOverride         { "OVERRIDE" };
         const juce::Identifier kOverrideDest          { "dest" };
         const juce::Identifier kOverrideValue         { "value" };
@@ -118,10 +121,13 @@ namespace B33p::ProjectState
             for (const auto& e : pattern.getEvents(laneIdx))
             {
                 juce::ValueTree eventNode { kEvent };
-                eventNode.setProperty(kEventStart,    e.startSeconds,                       nullptr);
-                eventNode.setProperty(kEventDuration, e.durationSeconds,                    nullptr);
-                eventNode.setProperty(kEventPitch,    static_cast<double>(e.pitchOffsetSemitones), nullptr);
-                eventNode.setProperty(kEventVelocity, static_cast<double>(e.velocity),             nullptr);
+                eventNode.setProperty(kEventStart,       e.startSeconds,                              nullptr);
+                eventNode.setProperty(kEventDuration,    e.durationSeconds,                           nullptr);
+                eventNode.setProperty(kEventPitch,       static_cast<double>(e.pitchOffsetSemitones), nullptr);
+                eventNode.setProperty(kEventVelocity,    static_cast<double>(e.velocity),             nullptr);
+                eventNode.setProperty(kEventProbability, static_cast<double>(e.probability),          nullptr);
+                eventNode.setProperty(kEventRatchets,    e.ratchets,                                  nullptr);
+                eventNode.setProperty(kEventHumanize,    static_cast<double>(e.humanizeAmount),       nullptr);
 
                 // Per-event overrides — only emit slots whose
                 // destination is non-None, so events without
@@ -354,6 +360,16 @@ namespace B33p::ProjectState
             version = 9;
         }
 
+        if (version == 9)
+        {
+            // v9 → v10: per-event probability / ratchets / humanize.
+            // Missing attributes default to (1.0, 1, 0.0) — every
+            // event fires every loop, no ratcheting, no jitter —
+            // which is exactly the v9 trigger semantics.
+            tree.setProperty(kVersion, 10, nullptr);
+            version = 10;
+        }
+
         return tree;
     }
 
@@ -446,6 +462,13 @@ namespace B33p::ProjectState
                 e.pitchOffsetSemitones = static_cast<float> (static_cast<double>(eventNode.getProperty(kEventPitch,    0.0)));
                 // velocity defaults to 1.0 for v1 files that pre-date this field.
                 e.velocity             = static_cast<float> (static_cast<double>(eventNode.getProperty(kEventVelocity, 1.0)));
+                // probability / ratchets / humanize default to inert
+                // values when missing — matches pre-v10 semantics
+                // (every event always fires, no ratcheting, no jitter).
+                e.probability          = static_cast<float> (static_cast<double>(eventNode.getProperty(kEventProbability, 1.0)));
+                e.ratchets             = juce::jlimit(1, kMaxRatchets,
+                                                       static_cast<int>(eventNode.getProperty(kEventRatchets, 1)));
+                e.humanizeAmount       = static_cast<float> (static_cast<double>(eventNode.getProperty(kEventHumanize,    0.0)));
 
                 // Walk OVERRIDE children, populating override slots
                 // in encounter order. Excess children (more than

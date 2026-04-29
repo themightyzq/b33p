@@ -11,23 +11,31 @@
 
 namespace B33p
 {
-    // Modal-ish popup that edits the four EventOverride slots on a
-    // single Pattern Event. Reads the event's current overrides on
-    // open, lets the user pick a destination (combo) and value
-    // (linear horizontal slider 0..1) per slot, and fires the
-    // OnApply callback with the edited overrides when the user
-    // clicks Apply. Cancel / closing the window dismisses without
-    // applying.
+    // Bundles every per-event field the dialog edits: the array of
+    // override slots plus probability / ratchets / humanize. Lets
+    // the OnApply callback apply all edits in one Pattern mutation.
+    struct EventDialogEdits
+    {
+        std::array<EventOverride, kNumEventOverrides> overrides;
+        float probability    { 1.0f };
+        int   ratchets       { 1 };
+        float humanizeAmount { 0.0f };
+    };
+
+    // Modal-ish popup that edits an Event's per-hit properties:
+    // the four override slots (destination + amount), plus
+    // probability, ratcheting, and humanize. Reads the event on
+    // open, fires the OnApply callback with the edited values when
+    // the user clicks Apply. Cancel / closing the window dismisses
+    // without applying.
     //
     // The dialog does not own the pattern — it simply produces an
-    // edited overrides array and hands it to the caller, who is
-    // expected to wrap any pattern mutation in their existing
-    // undo machinery.
+    // edited bundle and hands it to the caller, who is expected to
+    // wrap any pattern mutation in their existing undo machinery.
     class EventOverridesDialog : public juce::Component
     {
     public:
-        using OnApply = std::function<void(const std::array<EventOverride,
-                                                            kNumEventOverrides>&)>;
+        using OnApply = std::function<void(const EventDialogEdits&)>;
 
         EventOverridesDialog(const Event& event,
                              OnApply onApply,
@@ -44,8 +52,15 @@ namespace B33p
             juce::Slider   amount;
         };
 
-        std::array<EventOverride,  kNumEventOverrides> editing;
-        std::array<SlotControls,   kNumEventOverrides> slotControls;
+        EventDialogEdits                          editing;
+        std::array<SlotControls, kNumEventOverrides> slotControls;
+
+        juce::Label  probabilityLabel { {}, "Probability" };
+        juce::Slider probabilitySlider;
+        juce::Label  ratchetsLabel    { {}, "Ratchets" };
+        juce::Slider ratchetsSlider;
+        juce::Label  humanizeLabel    { {}, "Humanize" };
+        juce::Slider humanizeSlider;
 
         juce::TextButton applyButton  { "Apply"  };
         juce::TextButton cancelButton { "Cancel" };

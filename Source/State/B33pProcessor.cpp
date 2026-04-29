@@ -207,7 +207,7 @@ namespace B33p
         // playing happens-before the audio thread's acquire; the
         // shared_ptr atomic_store provides its own ordering for
         // pointer reads.
-        auto snapshot = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern));
+        auto snapshot = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern, snapshotRng));
         std::atomic_store(&snapshotSlot, snapshot);
         playheadSeconds.store(0.0);
         playing.store(true, std::memory_order_release);
@@ -226,7 +226,7 @@ namespace B33p
 
     void B33pProcessor::refreshPatternSnapshot()
     {
-        auto snap = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern));
+        auto snap = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern, snapshotRng));
         std::atomic_store(&snapshotSlot, snap);
     }
 

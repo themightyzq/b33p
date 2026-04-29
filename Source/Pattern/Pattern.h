@@ -36,6 +36,12 @@ namespace B33p
     }
     inline bool operator!=(const EventOverride& a, const EventOverride& b) { return ! (a == b); }
 
+    // Maximum ratchet count per event. 8 is plenty for the
+    // "buzzing snare" and "16th-note flam" cases users typically
+    // want; higher counts begin to crash into the amp envelope's
+    // attack/release tails and stop sounding like rhythmic ratchet.
+    constexpr int kMaxRatchets = 8;
+
     // A single triggered beep inside a Pattern lane. startSeconds is
     // the absolute time from the start of the pattern (not relative to
     // anything else); durationSeconds is how long the note holds before
@@ -45,12 +51,25 @@ namespace B33p
     // (1.0 = unchanged, 0.5 = -6 dB, 0.0 = silent). overrides is a
     // small fixed-size set of per-event parameter pins — see
     // EventOverride for semantics.
+    //
+    // probability: 0..1 chance the event fires when its loop slot
+    // arrives. Rolled at snapshot time, so a roll-out skips the
+    // entire event (and any ratchets) until the next snapshot.
+    // ratchets:    1..kMaxRatchets retriggers within the event's
+    // duration. ratchets = 1 disables. Higher counts split the
+    // event into N evenly-spaced shorter hits at snapshot time.
+    // humanizeAmount: 0..1 random jitter applied to start time
+    // and velocity at snapshot time. Re-randomises each time the
+    // snapshot is rebuilt.
     struct Event
     {
         double startSeconds         { 0.0 };
         double durationSeconds      { 0.1 };
         float  pitchOffsetSemitones { 0.0f };
         float  velocity             { 1.0f };
+        float  probability          { 1.0f };
+        int    ratchets             { 1   };
+        float  humanizeAmount       { 0.0f };
         std::array<EventOverride, kNumEventOverrides> overrides {};
     };
 
@@ -63,6 +82,9 @@ namespace B33p
             && juce::exactlyEqual(a.durationSeconds,      b.durationSeconds)
             && juce::exactlyEqual(a.pitchOffsetSemitones, b.pitchOffsetSemitones)
             && juce::exactlyEqual(a.velocity,             b.velocity)
+            && juce::exactlyEqual(a.probability,          b.probability)
+            && a.ratchets == b.ratchets
+            && juce::exactlyEqual(a.humanizeAmount,       b.humanizeAmount)
             && a.overrides == b.overrides;
     }
     inline bool operator!=(const Event& a, const Event& b) { return ! (a == b); }
