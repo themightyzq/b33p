@@ -8,10 +8,15 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased] — post-v0.1.0 development
 
-A single 24-commit session on 2026-04-29 worked top-to-bottom through the post-MVP
-roadmap. The synth grew from "monophonic 4-lane sketchpad" into a full-featured
-instrument with VST3 / AU plugin builds, a modulation engine, presets, MIDI input,
-and polyphonic playback.
+A 28-commit session on 2026-04-29 worked top-to-bottom through the post-MVP
+roadmap, then closed it out. The synth grew from "monophonic 4-lane sketchpad"
+into a full-featured instrument with VST3 / AU plugin builds, host transport
+sync, a modulation engine, presets, MIDI input, polyphonic playback, and a
+multi-format renderer.
+
+CMake project version bumped from `0.0.1` to `0.2.0` to reflect the scale of
+post-v0.1.0 work — propagates into the plugin manifest, About dialog, and
+`B33P_VERSION_STRING`.
 
 ### Added — sound design
 
@@ -47,6 +52,11 @@ and polyphonic playback.
   BPM. Lives alongside the existing time-based snap entries.
 - **Dual-time ruler + playhead readout** — seconds along the top, bar / beat
   ticks along the bottom. Playhead reads `Bar 2.3 — 0.95 / 5.00s`.
+- **DAW transport sync** — opt-in "Follow" toggle in PatternSection. When on
+  (and a host playhead is available), pattern playback mirrors host play /
+  stop and snaps the playhead to `host_time mod pattern_length` at the top of
+  every block. Pattern BPM stays independent — sound-design users routinely
+  want their pattern at a different tempo than the host session.
 
 ### Added — workflow
 
@@ -85,12 +95,12 @@ and polyphonic playback.
 
 ### Changed
 
-- **`.beep` file format bumped from v2 to v11** with explicit forward-only
+- **`.beep` file format bumped from v2 to v12** with explicit forward-only
   migrations for every step (v2 → v3 wavetable, v3 → v4 FM, v4 → v5 Ring,
   v5 → v6 multi-mode filter, v6 → v7 mod-FX, v7 → v8 LFO + matrix, v8 → v9
   per-event overrides, v9 → v10 probability / ratchets / humanize, v10 → v11
-  BPM + time signature). Every prior version still loads — no breaking
-  migrations.
+  BPM + time signature, v11 → v12 follow-host-transport flag). Every prior
+  version still loads — no breaking migrations.
 - **Build target switched from `juce_add_gui_app` to `juce_add_plugin`.** The
   standalone `b33p.app` is now produced by JUCE's `StandaloneFilterApp` wrapper
   alongside the VST3 / AU bundles. The custom Application class with single-
@@ -120,6 +130,36 @@ and polyphonic playback.
 - **`Source/Main.cpp` shrank** from 145 lines (custom Application class) to a
   4-line `createPluginFilter` factory. JUCE's plugin client wrappers replace
   the previous custom event-handling code.
+- **AAX plugin format** dropped from the post-MVP roadmap — gated behind the
+  (non-free) Avid SDK and serving an audience too narrow for an indie sound-
+  design tool. `juce_add_plugin` is unchanged; AAX can be added later behind
+  an opt-in CMake option if the SDK ever becomes available.
+- **IMA-ADPCM WAV export** dropped from the post-MVP roadmap — JUCE doesn't
+  ship a writer and the format's audience (legacy game-console pipelines)
+  doesn't justify a from-scratch encoder.
+- **Release installers** dropped from the post-MVP roadmap — binaries are
+  distributed via the existing CI artifacts on each green push to `main`,
+  which is plenty for the audience b33p targets. CPack + signed `.dmg` /
+  installer pipelines aren't planned.
+
+### Deferred regressions
+
+These features were lost when the build target switched from `juce_add_gui_app`
+to `juce_add_plugin`. JUCE's `StandaloneFilterApp` wrapper produces the
+standalone `b33p.app` now and replaces our custom Application class. Restoring
+each one means subclassing JUCE's wrapper via
+`JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP` and carrying the original behaviour
+into the override.
+
+- **Single-instance enforcement** — second copies of the standalone .app no
+  longer route to the running instance; each launches independently.
+- **Quit-confirm-on-dirty** — closing the standalone window with unsaved
+  changes no longer prompts Save / Discard / Cancel. Quit-prompt for the
+  in-app File ▸ New / File ▸ Open paths still works (those run inside
+  MainComponent, not the wrapper).
+- **Command-line `.beep` file open** — double-clicking a `.beep` from Finder
+  / dragging onto the dock no longer routes the file to the running standalone
+  instance.
 
 ### Fixed
 

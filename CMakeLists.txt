@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(B33p
-    VERSION 0.0.1
+    VERSION 0.2.0
     DESCRIPTION "Sound design tool for short synthesized beeps, blips, alarms, and droid chatter"
     HOMEPAGE_URL "https://github.com/themightyzq/b33p"
     LANGUAGES CXX C

@@ -213,6 +213,16 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 
 ---
 
+## Deferred regressions
+
+Features that were lost when the build target switched from `juce_add_gui_app` to `juce_add_plugin`. JUCE's `StandaloneFilterApp` wrapper produces the standalone `b33p.app` now and replaced our custom Application class; restoring each one means subclassing the wrapper via `JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP` and carrying the original behaviour into the override.
+
+- [ ] **Single-instance enforcement** — second copies of the standalone .app no longer route to the running instance.
+- [ ] **Quit-confirm-on-dirty for the standalone window** — closing the wrapper window with unsaved changes doesn't prompt. (File ▸ New / Open paths still confirm — those run inside MainComponent, not the wrapper.)
+- [ ] **Command-line `.beep` file open** — double-clicking a `.beep` in Finder / dragging onto the dock no longer routes into the running standalone instance.
+
+---
+
 ## Post-MVP roadmap
 
 Ordered roughly by priority, not commitment. Each item becomes its own phase when prioritized.
