@@ -273,12 +273,11 @@ Inside a host, b33p is a synth instrument:
 - **The pattern still plays** — you can run b33p's internal sequencer alongside the host's MIDI track if you want layered material.
 - **Project state round-trips** through the host's session save — the host serialises the APVTS + ValueTree contents the same way b33p's `.beep` files do.
 
-DAW transport sync (host play / stop / tempo following) is on the post-MVP roadmap — the plugin doesn't currently follow host transport, so the pattern plays on its own internal timeline.
+**DAW transport sync** is opt-in via the **Follow** toggle next to Play / Loop in the pattern controls. When on (and a host playhead is available), b33p's pattern playback mirrors host transport: host play / stop drives `playing`, and the playhead snaps to `host_time mod pattern_length` at the top of every block. Pattern BPM stays independent of host BPM — sound-design users routinely want a beep pattern at a different tempo than the host session. The toggle is inert in standalone mode (no host = no playhead) but its state is preserved in the `.beep` so a project saved standalone keeps its choice when reopened in a DAW.
 
 ## Things that are intentionally not here (yet)
 
 See the post-MVP roadmap in [TODO.md](../TODO.md) for the canonical list. Briefly:
 
-- **No DAW transport sync** — the pattern plays on its own timeline regardless of host transport. Adding sync is its own follow-up commit.
 - **No per-lane pitch envelopes** — one pitch envelope is shared across all four voices.
 - **No release installers / signed binaries** — binaries are distributed via the CI artifacts on each green push to `main`; signed installers aren't on the roadmap.

@@ -2,7 +2,7 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: post-MVP roadmap — Distribution closed; only DAW transport sync remains as a deferred post-MVP item. Binary distribution stays on git via the existing CI artifacts.**
+> **Current focus: post-MVP roadmap fully closed. Binary distribution stays on git via the existing CI artifacts; the only deferred / out-of-scope items are the explicitly-rejected ones (AAX, IMA-ADPCM, signed installers).**
 
 ---
 
@@ -240,7 +240,7 @@ Explicitly out of MVP scope — the standalone app is the priority and the "musi
 - [x] **Tempo (BPM) + time signature** as pattern attributes — Pattern gains BPM (20..999) + time-sig (numerator 1..32, denominator 2/4/8/16); v11 .beep schema; UI controls in PatternSection
 - [x] **Musical snap values** (1/4, 1/8, 1/16, 1/32) derived from BPM — grid combo extended with note-value entries (1/32 .. Whole) that recompute when BPM changes
 - [x] **Dual time display** in the pattern ruler (bars/beats + seconds) — ruler now shows seconds along the top half + bar/beat labels along the bottom; playhead readout includes "Bar N.M"
-- [ ] **DAW transport sync** — when running as VST/AU, follow host tempo, play/stop, and bar position
+- [x] **DAW transport sync** — when running as VST/AU, follow host tempo, play/stop, and bar position — opt-in "Follow" toggle in PatternSection. Plugin-mode-only by nature (no host = no playhead). Mirrors host play / stop and snaps the playhead to (host_time mod pattern_length); pattern BPM stays independent of host BPM (sound-design users typically want their pattern at a different tempo than the host session). v12 .beep schema persists the toggle.
 
 ### Workflow
 

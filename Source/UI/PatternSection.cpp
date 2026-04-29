@@ -151,6 +151,20 @@ namespace B33p
         };
         addAndMakeVisible(loopToggle);
 
+        // Host-transport-follow toggle. Inert when running as the
+        // standalone .app (no host playhead); the toggle still
+        // works (state is preserved) so a project saved in
+        // standalone mode keeps its host-follow choice when
+        // reopened in a DAW.
+        followToggle.setClickingTogglesState(true);
+        followToggle.setToggleState(processor.getFollowHostTransport(),
+                                     juce::dontSendNotification);
+        followToggle.onClick = [this]
+        {
+            processor.setFollowHostTransport(followToggle.getToggleState());
+        };
+        addAndMakeVisible(followToggle);
+
         // Playhead readout. Updates from the same 30 Hz timer as
         // the grid; shows "0.00 / 5.00s" at rest so the user can
         // see the pattern's total length without playing it.
@@ -257,6 +271,7 @@ namespace B33p
 
         playButton        .setTooltip("Play the pattern from the start (Space)");
         loopToggle        .setTooltip("Loop playback when the end is reached");
+        followToggle      .setTooltip("Plugin mode: follow host transport. Pattern playback mirrors host play / stop and the playhead snaps to (host_time mod pattern_length). Pattern BPM stays independent of host BPM.");
         lengthCombo       .setTooltip("Total length of the pattern");
         gridCombo         .setTooltip("Snap event positions to this grid (Off = free). Musical entries follow the pattern's BPM.");
         bpmSlider         .setTooltip("Pattern tempo in beats per minute. Drives the musical grid + the bars/beats time display.");
@@ -296,6 +311,8 @@ namespace B33p
         applyGridPreset();
         loopToggle.setToggleState(processor.getLooping(),
                                    juce::dontSendNotification);
+        followToggle.setToggleState(processor.getFollowHostTransport(),
+                                     juce::dontSendNotification);
         grid.refreshLaneMetaFromPattern();
         grid.repaint();
     }
@@ -465,6 +482,8 @@ namespace B33p
         playButton.setBounds(controlsRow.removeFromLeft(kButtonWidth));
         controlsRow.removeFromLeft(kControlsGap);
         loopToggle.setBounds(controlsRow.removeFromLeft(kButtonWidth));
+        controlsRow.removeFromLeft(kControlsGap);
+        followToggle.setBounds(controlsRow.removeFromLeft(kButtonWidth));
         controlsRow.removeFromLeft(kControlsGap);
 
         timeLabel.setBounds(controlsRow.removeFromLeft(kTimeWidth));

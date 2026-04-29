@@ -266,6 +266,12 @@ namespace B33p
             markDirty();
     }
 
+    void B33pProcessor::setFollowHostTransport(bool shouldFollow)
+    {
+        if (followHostTransport.exchange(shouldFollow) != shouldFollow)
+            markDirty();
+    }
+
     void B33pProcessor::markDirty()
     {
         if (! dirty.exchange(true))
@@ -413,6 +419,7 @@ namespace B33p
         pattern.setTimeSignature(Pattern::kDefaultTimeSigNum,
                                   Pattern::kDefaultTimeSigDen);
         looping.store(true);
+        followHostTransport.store(false);
 
         randomizer.clearAllLocks();
 
@@ -740,13 +747,50 @@ namespace B33p
         }
         midi.clear();   // we never produce MIDI
 
+        // ---- Host transport sync (plugin contexts) -----------------
+        // When the user has enabled "Follow host transport" AND a
+        // host playhead is available, we override the local play
+        // flag and the playhead position with what the host
+        // reports. Pattern BPM is intentionally NOT synced —
+        // sound-design users routinely want a beep pattern at a
+        // different tempo than the host session.
+        bool   hostPlaying           = false;
+        double hostPlayheadOverride  = -1.0;
+        const bool followHost        = followHostTransport.load();
+        if (followHost)
+        {
+            if (auto* ph = getPlayHead())
+            {
+                if (const auto pos = ph->getPosition())
+                {
+                    hostPlaying = pos->getIsPlaying();
+                    if (const auto hostTime = pos->getTimeInSeconds())
+                    {
+                        const double len = pattern.getLengthSeconds();
+                        if (len > 0.0)
+                        {
+                            double wrapped = std::fmod(*hostTime, len);
+                            if (wrapped < 0.0) wrapped += len;
+                            hostPlayheadOverride = wrapped;
+                        }
+                    }
+                }
+            }
+        }
+
         // ---- Detect playback start / stop transitions -------------
-        const bool nowPlaying = playing.load(std::memory_order_acquire);
+        const bool nowPlaying = followHost
+                                    ? hostPlaying
+                                    : playing.load(std::memory_order_acquire);
         if (nowPlaying && ! audioThreadPlaying)
         {
             activeSnapshot      = std::atomic_load(&snapshotSlot);
             nextEventIndex      = 0;
-            playheadSeconds.store(0.0);
+            // Internal play starts the pattern at zero; host-follow
+            // honours wherever the host's playhead lands.
+            playheadSeconds.store(hostPlayheadOverride >= 0.0
+                                      ? hostPlayheadOverride
+                                      : 0.0);
         }
         else if (! nowPlaying && audioThreadPlaying)
         {
@@ -798,6 +842,26 @@ namespace B33p
                                           ? 1.0 / currentSampleRate
                                           : 0.0;
         double playhead = playheadSeconds.load();
+
+        // Host follow: snap playhead to the host's reported
+        // position at the start of every block. The per-sample
+        // loop below then advances by sampleDuration as usual,
+        // which keeps us sample-accurate within the block — the
+        // next block re-snaps. Re-seed nextEventIndex so events
+        // that land at the new position fire and ones we've
+        // already passed don't.
+        if (audioThreadPlaying && hostPlayheadOverride >= 0.0)
+        {
+            playhead = hostPlayheadOverride;
+            if (activeSnapshot != nullptr)
+            {
+                nextEventIndex = 0;
+                const auto& evs = activeSnapshot->events;
+                while (nextEventIndex < static_cast<int>(evs.size())
+                       && evs[static_cast<size_t>(nextEventIndex)].event.startSeconds < playhead)
+                    ++nextEventIndex;
+            }
+        }
 
         for (int i = 0; i < numSamples; ++i)
         {

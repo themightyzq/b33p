@@ -29,6 +29,7 @@ namespace B33p::ProjectState
         const juce::Identifier kPatternBpm            { "bpm" };
         const juce::Identifier kPatternTimeSigNum     { "time_sig_num" };
         const juce::Identifier kPatternTimeSigDen     { "time_sig_den" };
+        const juce::Identifier kPatternFollowHost     { "follow_host_transport" };
         const juce::Identifier kLane                  { "LANE" };
         const juce::Identifier kLaneIndex             { "index" };
         const juce::Identifier kLaneName              { "name" };
@@ -88,6 +89,7 @@ namespace B33p::ProjectState
         patternNode.setProperty(kPatternBpm,        pattern.getBpm(),                   nullptr);
         patternNode.setProperty(kPatternTimeSigNum, pattern.getTimeSigNumerator(),      nullptr);
         patternNode.setProperty(kPatternTimeSigDen, pattern.getTimeSigDenominator(),    nullptr);
+        patternNode.setProperty(kPatternFollowHost, processor.getFollowHostTransport(), nullptr);
 
         for (int laneIdx = 0; laneIdx < Pattern::kNumLanes; ++laneIdx)
         {
@@ -386,6 +388,16 @@ namespace B33p::ProjectState
             version = 11;
         }
 
+        if (version == 11)
+        {
+            // v11 → v12: follow_host_transport boolean. Missing
+            // attribute defaults to false — matching v11's
+            // implicit behaviour where pattern playback always
+            // used the internal transport.
+            tree.setProperty(kVersion, 12, nullptr);
+            version = 12;
+        }
+
         return tree;
     }
 
@@ -436,6 +448,8 @@ namespace B33p::ProjectState
                                                       Pattern::kDefaultTimeSigNum)),
             static_cast<int>(patternNode.getProperty(kPatternTimeSigDen,
                                                       Pattern::kDefaultTimeSigDen)));
+        processor.setFollowHostTransport(
+            static_cast<bool>(patternNode.getProperty(kPatternFollowHost, false)));
 
         for (auto laneNode : patternNode)
         {

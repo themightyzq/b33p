@@ -45,7 +45,11 @@ namespace B33p
         //  v11: pattern tempo + time signature — PATTERN node grows bpm and
         //       time_sig_num / time_sig_den attributes. v10 patterns without
         //       these load at the defaults (120 BPM, 4/4).
-        inline constexpr int kCurrentVersion = 11;
+        //  v12: host-transport-follow flag — PATTERN node grows a single
+        //       follow_host_transport boolean attribute. v11 patterns load
+        //       with the default (false) so existing projects continue to
+        //       use the internal transport.
+        inline constexpr int kCurrentVersion = 12;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

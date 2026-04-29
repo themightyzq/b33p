@@ -43,8 +43,9 @@ namespace B33p
         PatternGrid      grid;
         InspectorStrip   inspector;
 
-        juce::TextButton playButton   { "Play" };
-        juce::TextButton loopToggle   { "Loop" };
+        juce::TextButton playButton    { "Play"   };
+        juce::TextButton loopToggle    { "Loop"   };
+        juce::TextButton followToggle  { "Follow" };
 
         juce::Label      timeLabel;
 
