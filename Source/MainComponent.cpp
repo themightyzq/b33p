@@ -8,8 +8,9 @@ namespace B33p
         constexpr int kGap            = 8;
         constexpr int kTopRowHeight   = 260;
         constexpr int kMidRowHeight   = 180;
-        constexpr int kModRowHeight   = 130;
-        constexpr int kPitchRowHeight = 180;
+        constexpr int kModRowHeight       = 130;
+        constexpr int kModulationRowHeight = 220;
+        constexpr int kPitchRowHeight     = 180;
         constexpr int kMenuBarHeight  = 24;
 
         // Menu item IDs. Kept in one enum so the dispatch in
@@ -55,6 +56,7 @@ namespace B33p
           filterSection       (processor),
           effectsSection      (processor),
           modEffectsSection   (processor),
+          modulationSection   (processor),
           masterSection       (processor),
           pitchEnvelopeSection(processor),
           patternSection      (processor)
@@ -65,6 +67,7 @@ namespace B33p
         addAndMakeVisible(filterSection);
         addAndMakeVisible(effectsSection);
         addAndMakeVisible(modEffectsSection);
+        addAndMakeVisible(modulationSection);
         addAndMakeVisible(masterSection);
         addAndMakeVisible(pitchEnvelopeSection);
         addAndMakeVisible(patternSection);
@@ -87,6 +90,7 @@ namespace B33p
             filterSection     .retargetLane(lane);
             effectsSection    .retargetLane(lane);
             modEffectsSection .retargetLane(lane);
+            modulationSection .retargetLane(lane);
             masterSection     .retargetLane(lane);
         });
 
@@ -100,13 +104,14 @@ namespace B33p
             filterSection     .retargetLane(lane);
             effectsSection    .retargetLane(lane);
             modEffectsSection .retargetLane(lane);
+            modulationSection .retargetLane(lane);
             masterSection     .retargetLane(lane);
             patternSection    .refreshFromState();   // repaint grid for tint
         });
 
         setWantsKeyboardFocus(true);
 
-        setSize(900, 920 + kMenuBarHeight + kModRowHeight + kGap);
+        setSize(900, 920 + kMenuBarHeight + kModRowHeight + kGap + kModulationRowHeight + kGap);
     }
 
     void MainComponent::paint(juce::Graphics& g)
@@ -127,6 +132,8 @@ namespace B33p
         bounds.removeFromTop(kGap);
         auto modRow = bounds.removeFromTop(kModRowHeight);
         bounds.removeFromTop(kGap);
+        auto modulationRow = bounds.removeFromTop(kModulationRowHeight);
+        bounds.removeFromTop(kGap);
         auto pitchRow = bounds.removeFromTop(kPitchRowHeight);
         bounds.removeFromTop(kGap);
         auto patternRow = bounds;
@@ -144,6 +151,7 @@ namespace B33p
         masterSection.setBounds(midRow);
 
         modEffectsSection.setBounds(modRow);
+        modulationSection.setBounds(modulationRow);
 
         pitchEnvelopeSection.setBounds(pitchRow);
         patternSection.setBounds(patternRow);
