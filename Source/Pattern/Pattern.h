@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DSP/ModulationMatrix.h"
+
 #include <juce_core/juce_core.h>
 
 #include <array>
@@ -9,19 +11,47 @@
 
 namespace B33p
 {
+    // Number of per-event override slots. Four matches the
+    // modulation matrix slot count — a single event can pin any
+    // four voice parameters to specific values for that hit only,
+    // overriding both the lane's APVTS base values and the LFO
+    // matrix contribution.
+    constexpr int kNumEventOverrides = 4;
+
+    // A single per-event parameter override. value is in normalised
+    // [0, 1] (the same convention the modulation matrix uses for
+    // contributions); B33pProcessor converts it to the destination
+    // parameter's natural range via convertFrom0to1 before pushing
+    // to the Voice. destination = None disables the slot.
+    struct EventOverride
+    {
+        ModDestination destination { ModDestination::None };
+        float          value       { 0.0f };
+    };
+
+    inline bool operator==(const EventOverride& a, const EventOverride& b)
+    {
+        return a.destination == b.destination
+            && juce::exactlyEqual(a.value, b.value);
+    }
+    inline bool operator!=(const EventOverride& a, const EventOverride& b) { return ! (a == b); }
+
     // A single triggered beep inside a Pattern lane. startSeconds is
     // the absolute time from the start of the pattern (not relative to
     // anything else); durationSeconds is how long the note holds before
     // the voice's amp-envelope release kicks in; pitchOffsetSemitones
     // is applied on top of the voice's base pitch at trigger time;
     // velocity is a 0..1 scalar applied on top of the voice's gain
-    // (1.0 = unchanged, 0.5 = -6 dB, 0.0 = silent).
+    // (1.0 = unchanged, 0.5 = -6 dB, 0.0 = silent). overrides is a
+    // small fixed-size set of per-event parameter pins — see
+    // EventOverride for semantics.
     struct Event
     {
         double startSeconds         { 0.0 };
         double durationSeconds      { 0.1 };
         float  pitchOffsetSemitones { 0.0f };
         float  velocity             { 1.0f };
+        std::array<EventOverride, kNumEventOverrides> overrides {};
     };
 
     // Bit-exact comparison — used for snapshot equality in undo,
@@ -32,7 +62,8 @@ namespace B33p
         return juce::exactlyEqual(a.startSeconds,         b.startSeconds)
             && juce::exactlyEqual(a.durationSeconds,      b.durationSeconds)
             && juce::exactlyEqual(a.pitchOffsetSemitones, b.pitchOffsetSemitones)
-            && juce::exactlyEqual(a.velocity,             b.velocity);
+            && juce::exactlyEqual(a.velocity,             b.velocity)
+            && a.overrides == b.overrides;
     }
     inline bool operator!=(const Event& a, const Event& b) { return ! (a == b); }
 
