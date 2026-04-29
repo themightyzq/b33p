@@ -40,10 +40,23 @@ namespace B33p
         void run() override;
         void threadComplete(bool userPressedCancel) override;
 
+        // Generates the actual destination path for variation N.
+        // settings.variationCount == 1 returns the user's chosen
+        // path verbatim; > 1 inserts a 3-digit suffix before the
+        // extension so a directory of variations sorts naturally.
+        juce::File destinationForVariation(int variationIndex) const;
+
+        // Snapshots / restores the APVTS state around a batch
+        // render so the user's patch survives the dice rolls.
+        std::unique_ptr<juce::XmlElement> snapshotApvtsState() const;
+        void                              restoreApvtsState(
+            const juce::XmlElement& snapshot);
+
         B33pProcessor&        processor;
         ExportDialog::Result  settings;
 
         bool         exportSucceeded { false };
+        int          successfulRenders { 0 };
         juce::String errorMessage;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ExportTask)

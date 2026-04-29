@@ -30,6 +30,13 @@ namespace B33p
             double       sampleRate  { 48000.0 };
             BitDepth     bitDepth    { BitDepth::Sixteen };
             ChannelMode  channelMode { ChannelMode::Mono };
+            // 1 = single render (legacy behaviour). 2+ = render
+            // that many dice-rolled variations into numbered
+            // siblings (Filename_001.wav, Filename_002.wav, ...);
+            // unlocked parameters get re-rolled between each
+            // variation, then the original parameter values are
+            // restored when the batch finishes.
+            int          variationCount { 1 };
         };
 
         using OnClose = std::function<void(Result)>;
@@ -68,6 +75,9 @@ namespace B33p
 
         juce::Label      channelLabel;
         juce::ComboBox   channelCombo;
+
+        juce::Label      variationsLabel;
+        juce::Slider     variationsSlider;
 
         juce::TextButton cancelButton { "Cancel" };
         juce::TextButton exportButton { "Export" };
