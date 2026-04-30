@@ -1,0 +1,202 @@
+name: release
+
+# Triggered by a tag push (`git tag v0.2.0 && git push origin v0.2.0`).
+# Builds Standalone + VST3 + AU bundles for every supported OS, packs
+# each per-platform set into a versioned, architecture-named archive,
+# and attaches the archives to a draft GitHub Release. The release
+# starts as a draft so the maintainer can review the artifacts before
+# publishing — the URL ends up at
+#   https://github.com/themightyzq/b33p/releases/tag/<tag>
+# and the artefacts attached to that page are the canonical
+# distribution channel.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  # softprops/action-gh-release uploads to the Releases API; minimum
+  # required scope. No other write access needed.
+  contents: write
+
+jobs:
+  build:
+    name: build / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Failing one OS shouldn't cancel the others — a maintainer
+      # reviewing a partial draft can decide to publish what worked
+      # while the failing platform is fixed and re-run.
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            archive_name_suffix: macos-universal
+            archive_format: zip
+          - os: windows-latest
+            archive_name_suffix: windows-x64
+            archive_format: zip
+          - os: ubuntu-latest
+            archive_name_suffix: linux-x86_64
+            archive_format: tar.gz
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm_cache
+      CMAKE_BUILD_TYPE: Release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Cache CPM sources (JUCE and friends)
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-${{ matrix.os }}-juce-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            cpm-${{ matrix.os }}-
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            libjack-jackd2-dev \
+            libcurl4-openssl-dev \
+            libfreetype6-dev \
+            libfontconfig1-dev \
+            libx11-dev \
+            libxcomposite-dev \
+            libxcursor-dev \
+            libxext-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxrender-dev \
+            libglu1-mesa-dev \
+            mesa-common-dev
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
+
+      - name: Build
+        # --parallel 2 caps concurrent compile jobs so the runner does
+        # not OOM. Same constraint as the CI workflow on main.
+        run: cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel 2
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure --build-config ${{ env.CMAKE_BUILD_TYPE }}
+
+      # Derive the version from the tag so artefact names embed it.
+      # GitHub gives us refs/tags/v0.2.0 -> we want 0.2.0.
+      - name: Extract version
+        id: ver
+        shell: bash
+        run: |
+          tag="${GITHUB_REF##*/}"
+          version="${tag#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag"          >> "$GITHUB_OUTPUT"
+
+      # Stage every shipping bundle into a single
+      # b33p-<version>-<platform> directory ready for archiving.
+      # On Linux, only Standalone + VST3 ship (no AU). On Windows
+      # likewise. macOS gets all three.
+      - name: Stage release directory
+        shell: bash
+        run: |
+          stage="b33p-${{ steps.ver.outputs.version }}-${{ matrix.archive_name_suffix }}"
+          mkdir -p "$stage"
+          cp -R build/B33p_artefacts/Release/Standalone "$stage/"
+          cp -R build/B33p_artefacts/Release/VST3       "$stage/"
+          if [ -d build/B33p_artefacts/Release/AU ]; then
+            cp -R build/B33p_artefacts/Release/AU "$stage/"
+          fi
+          # Bundle the README + LICENSE + CHANGELOG so users have
+          # everything they need from a single download.
+          cp README.md LICENSE CHANGELOG.md "$stage/" || true
+          echo "stage=$stage" >> "$GITHUB_ENV"
+
+      - name: Pack archive (zip)
+        if: matrix.archive_format == 'zip' && runner.os != 'Windows'
+        run: |
+          zip -r -q "$stage.zip" "$stage"
+          echo "archive=$stage.zip" >> "$GITHUB_ENV"
+
+      - name: Pack archive (zip, Windows)
+        if: matrix.archive_format == 'zip' && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "$env:stage" -DestinationPath "$env:stage.zip"
+          echo "archive=$env:stage.zip" >> $env:GITHUB_ENV
+
+      - name: Pack archive (tar.gz)
+        if: matrix.archive_format == 'tar.gz'
+        run: |
+          tar -czf "$stage.tar.gz" "$stage"
+          echo "archive=$stage.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Upload artifact for release job
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.os }}
+          path: ${{ env.archive }}
+          if-no-files-found: error
+
+  publish:
+    name: publish draft release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout (for CHANGELOG body)
+        uses: actions/checkout@v5
+
+      - name: Download all per-OS archives
+        uses: actions/download-artifact@v4
+        with:
+          # No `name:` filter — pulls every artifact uploaded by the
+          # build job (release-macos-latest, release-ubuntu-latest,
+          # release-windows-latest).
+          path: dist
+
+      - name: Flatten archives into one directory
+        run: |
+          mkdir -p staged
+          find dist -type f -exec cp {} staged/ \;
+          ls -la staged/
+
+      - name: Extract changelog section for tag
+        id: changelog
+        shell: bash
+        run: |
+          tag="${GITHUB_REF##*/}"
+          version="${tag#v}"
+          # Pull the section between `## [<version>]` and the next
+          # `## [` header. If we miss (older tags, off-by-one), fall
+          # back to a generic message so the release still publishes.
+          body=$(awk "/^## \\[${version}\\]/{flag=1; next} /^## \\[/{flag=0} flag" CHANGELOG.md || true)
+          if [ -z "$body" ]; then
+            body="Release ${tag}. See CHANGELOG.md for details."
+          fi
+          {
+            echo 'body<<__EOF__'
+            echo "$body"
+            echo '__EOF__'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          # Draft so the maintainer reviews artefacts before
+          # publishing. Flip to false to auto-publish.
+          draft: true
+          # Mark pre-1.0 releases as pre-releases so installers /
+          # auto-updaters don't promote them by default. Drop this
+          # line for v1.0.0 onward.
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/v0.') }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.body }}
+          files: staged/*
+          fail_on_unmatched_files: true

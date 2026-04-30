@@ -14,7 +14,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 BUILD_DIR="build"
 BUILD_TYPE="${B33P_BUILD_TYPE:-Debug}"
-APP_BUNDLE="${BUILD_DIR}/B33p_artefacts/${BUILD_TYPE}/b33p.app"
+APP_BUNDLE="${BUILD_DIR}/B33p_artefacts/${BUILD_TYPE}/Standalone/b33p.app"
 
 echo "=============================="
 echo " b33p — Build and Launch"

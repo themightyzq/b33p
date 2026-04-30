@@ -660,8 +660,8 @@ namespace B33p
 
         // Try to refresh the voice's pitch curve before triggering;
         // if the lock is contended we keep whatever curve the voice
-        // already has. The pitch curve is shared across all lanes for
-        // this MVP — per-lane curves are post-MVP polish.
+        // already has. The pitch curve is shared across all lanes —
+        // per-lane curves are tracked as a deferred item in TODO.md.
         {
             const juce::ScopedTryLock tryLock(pitchCurveLock);
             if (tryLock.isLocked())
