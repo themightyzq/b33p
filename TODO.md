@@ -213,7 +213,6 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [ ] Add `.gitattributes` (`* text=auto eol=lf` plus binary marks for `*.png`, `*.icns`, `*.ico`, `*.wav`).
 - [ ] Add `NOTICE` crediting JUCE 8.0.12 (GPL-3) and Catch2 v3.14.0 (BSL-1.0).
 - [ ] Set the GitHub repository's social preview image (Settings → Social preview).
-- [ ] Re-shoot `docs/images/hero.png` against the current UI (currently flagged as v0.1.0-stale in the README).
 - [ ] Wire sanitizer / static-analysis CI rails (asan, ubsan, clang-tidy) — none today.
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
