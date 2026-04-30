@@ -220,7 +220,7 @@ Existing files are NEVER overwritten on subsequent launches — once a user twea
 
 ## Saving and loading
 
-Projects save as `.beep` files. The format is versioned (currently v11) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions and are upgraded silently on load. The migration chain covers v1 (single-voice MVP) through v11 (per-pattern BPM + time signature) — see `Source/State/ProjectState.h` for the full version history.
+Projects save as `.beep` files. The format is versioned (currently v12) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions and are upgraded silently on load. The migration chain covers v1 (single-voice MVP) through v12 (host-transport-follow flag) — see `Source/State/ProjectState.h` for the full version history.
 
 Closing the app or starting a New project while you have unsaved changes prompts Save / Discard / Cancel. Cancel keeps the current project open; Discard wipes; Save runs the normal save flow (and only proceeds if the save succeeds).
 

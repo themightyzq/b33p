@@ -42,7 +42,7 @@ Built for sound designers, game developers, and synth hobbyists who want a tight
 ### Presets + project state
 - **Preset browser** — Save Preset / Browse Presets in the File menu. Per-user presets directory under `~/Library/Application Support/b33p/Presets` (or platform equivalent).
 - **Factory presets** — 4 starter patches ship with the app and seed the presets directory on first launch (FM Bell, Resonant Stab, Delay Pad, Ring Mod Robot).
-- **Project save / load** — `.beep` files carry the full project state. Format is versioned (currently v11) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions.
+- **Project save / load** — `.beep` files carry the full project state. Format is versioned (currently v12) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions.
 - **Recent Files submenu** in File.
 - **Full undo / redo** through every editing surface.
 
@@ -61,7 +61,29 @@ The full editor at default state: per-lane voice editor (Oscillator / Amp Envelo
 
 ## Installation
 
-Prebuilt binaries: grab the latest green CI run from [GitHub Actions](https://github.com/themightyzq/b33p/actions/workflows/build.yml) and download the `b33p-macos-latest`, `b33p-ubuntu-latest`, or `b33p-windows-latest` artifact. Or build from source:
+Prebuilt binaries:
+
+- **Tagged releases** — go to the [Releases page](https://github.com/themightyzq/b33p/releases) and download the archive for your OS (`b33p-<version>-macos-universal.zip`, `b33p-<version>-windows-x64.zip`, or `b33p-<version>-linux-x86_64.tar.gz`). Each archive bundles the Standalone app, VST3, and (macOS) AU plugins along with the README, LICENSE, and CHANGELOG.
+- **Bleeding-edge `main` builds** — every green push to `main` produces per-OS artifacts on the [GitHub Actions page](https://github.com/themightyzq/b33p/actions/workflows/build.yml). Useful when a fix has landed on `main` but isn't tagged yet.
+
+### First-launch (unsigned binary)
+
+b33p is unsigned, so each OS will gate the first launch. Once-per-install bypass:
+
+- **macOS** — right-click the app → **Open** (the regular double-click path shows a "cannot be opened because the developer cannot be verified" dialog with no Open button). Or, from the terminal, strip the quarantine attribute:
+  ```sh
+  xattr -dr com.apple.quarantine /path/to/b33p.app
+  ```
+- **Windows** — SmartScreen shows "Windows protected your PC". Click **More info → Run anyway**.
+- **Linux** — make the binary executable, then run it:
+  ```sh
+  chmod +x b33p
+  ./b33p
+  ```
+
+After the first successful launch on each OS, b33p runs normally without the prompt.
+
+Or build from source:
 
 ### Prerequisites (all platforms)
 
@@ -117,6 +139,17 @@ The output bundles land at:
 
 - Standalone : `build/B33p_artefacts/Release/Standalone/b33p`
 - VST3       : `build/B33p_artefacts/Release/VST3/b33p.vst3`
+
+### Cross-platform helper script
+
+`build_and_launch.py` at the repo root configures, builds, and launches the standalone app on whichever OS you're on. Override the build type via `B33P_BUILD_TYPE` (defaults to Debug for fastest iteration):
+
+```sh
+python3 build_and_launch.py
+B33P_BUILD_TYPE=Release python3 build_and_launch.py
+```
+
+Picks Ninja when available; falls back to the platform default generator otherwise.
 
 ### Installing the plugin formats
 
@@ -191,7 +224,7 @@ On Windows / Linux, swap `Cmd` for `Ctrl`.
 
 Projects save as `.beep` files. A `.beep` is a versioned `ValueTree` serialization of the full project: per-lane voice parameters (oscillator + envelopes + filter + effects + modulation + LFOs + matrix), pitch-envelope curve, pattern (lanes, events, BPM, time signature, lane meta — names / mute / solo, custom waveforms, per-event overrides, probability / ratchets / humanize), and randomizer locks. It's self-contained — no external sample files — so a `.beep` is portable and small.
 
-The format is versioned (currently v11) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions and are upgraded silently on load.
+The format is versioned (currently v12) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions and are upgraded silently on load.
 
 ## Contributing
 

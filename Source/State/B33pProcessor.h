@@ -324,7 +324,7 @@ namespace B33p
         // Curve writes lock on the message thread; audio-thread reads
         // use a ScopedTryLock and fall back to whatever curve each
         // voice already has. One curve is shared across all four
-        // voices for now — per-lane pitch curves are post-MVP.
+        // voices — per-lane pitch curves are a deferred item.
         mutable juce::CriticalSection pitchCurveLock;
         std::vector<PitchEnvelopePoint> pitchCurve { { 0.0f, 0.0f }, { 1.0f, 0.0f } };
 

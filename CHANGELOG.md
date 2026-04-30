@@ -6,13 +6,20 @@ b33p adheres to [Semantic Versioning](https://semver.org/).
 
 For the full per-commit history, see [`git log`](https://github.com/themightyzq/b33p/commits/main); for the active roadmap and per-task status, see [`TODO.md`](TODO.md).
 
-## [Unreleased] — post-v0.1.0 development
+## [Unreleased]
+
+_Nothing yet — `main` is at v0.2.0._
+
+## [0.2.0] — 2026-04-30
 
 A 28-commit session on 2026-04-29 worked top-to-bottom through the post-MVP
 roadmap, then closed it out. The synth grew from "monophonic 4-lane sketchpad"
 into a full-featured instrument with VST3 / AU plugin builds, host transport
 sync, a modulation engine, presets, MIDI input, polyphonic playback, and a
-multi-format renderer.
+multi-format renderer. Final release-prep work on 2026-04-30 added the
+release workflow, made the macOS build Universal, regenerated the .icns at
+the full Apple-recommended size set, and brought the docs in line with what
+ships.
 
 CMake project version bumped from `0.0.1` to `0.2.0` to reflect the scale of
 post-v0.1.0 work — propagates into the plugin manifest, About dialog, and
@@ -178,5 +185,6 @@ design (Sine / Square / Triangle / Saw / Noise / Custom oscillator), ADSR,
 LP filter, bitcrush + distortion, master gain, and WAV export. See the
 git history before the v0.1.0 tag for the per-feature commits.
 
-[Unreleased]: https://github.com/themightyzq/b33p/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/themightyzq/b33p/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/themightyzq/b33p/releases/tag/v0.2.0
 [0.1.0]: https://github.com/themightyzq/b33p/releases/tag/v0.1.0
