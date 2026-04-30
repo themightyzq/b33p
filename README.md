@@ -57,8 +57,6 @@ Built for sound designers, game developers, and synth hobbyists who want a tight
 
 The full editor at default state: per-lane voice editor (Oscillator / Amp Envelope / Filter / Effects / Modulation Effects / Modulation / Master) with a "(Lane N)" suffix telling you which lane you're editing, the shared drawable pitch envelope, and the pattern sequencer with per-lane name + mute + solo, snap grid, BPM + time-signature controls, and Randomize-All / Export controls.
 
-> *Screenshot is from v0.1.0 — a refresh covering today's UI is pending.*
-
 ## Installation
 
 Prebuilt binaries:
