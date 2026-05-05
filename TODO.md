@@ -2,7 +2,29 @@
 
 b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the current phase**. Check items off when done; do not delete them.
 
-> **Current focus: post-MVP roadmap fully closed. Binary distribution stays on git via the existing CI artifacts; the only deferred / out-of-scope items are the explicitly-rejected ones (AAX, IMA-ADPCM, signed installers).**
+> **Current focus: v0.2.0 release is staged as a *draft pre-release* on GitHub. Publishing is gated on per-OS smoke tests of the artefact bundles attached to that draft (see "Release in flight" below). After publish, work resumes on the chores list.**
+
+---
+
+## Release in flight — v0.2.0
+
+**Status:** Tag `v0.2.0` is on the remote (commit `6876f4b`). The release workflow built and attached three archives to a **draft pre-release** at <https://github.com/themightyzq/b33p/releases/tag/v0.2.0>. **Publish has not happened yet.**
+
+### Smoke tests required before clicking Publish
+
+For each archive (download from the Releases page, **not** from a local build):
+
+- [ ] **`b33p-0.2.0-macos-universal.zip`** — extract; right-click → Open (or `xattr -dr com.apple.quarantine /path/to/b33p.app`); confirm the standalone launches, the audition button works, a factory preset loads, a quick WAV exports. Drop `b33p.vst3` into `~/Library/Audio/Plug-Ins/VST3/` and `b33p.component` into `~/Library/Audio/Plug-Ins/Components/`; confirm both load in Logic / Ableton / Reaper. `auval -v aumu B33p Zqsf` should pass for the AU.
+- [ ] **`b33p-0.2.0-windows-x64.zip`** — extract; SmartScreen → More info → Run anyway; standalone launches, audition + render. VST3 install via host's plugin path; DAW scan picks it up.
+- [ ] **`b33p-0.2.0-linux-x86_64.tar.gz`** — extract; `chmod +x b33p`; standalone launches, audition + render. VST3 install via host's plugin path.
+
+### Decision after smoke tests
+
+- **All three pass:** click **Publish release** on the draft page (the pre-1.0 pre-release flag is correct — leave it on). Then link / announce externally.
+- **Any fail:** **don't publish.** Two paths:
+  1. **Re-tag**: `gh release delete v0.2.0 --yes`, `git tag -d v0.2.0 && git push origin :refs/tags/v0.2.0`, fix on `main`, re-tag `v0.2.0`. Acceptable because nothing is published yet.
+  2. **Fix forward as v0.2.1**: leave v0.2.0 published as broken, ship a quick patch tag.
+  Re-tag is cleaner pre-publish; fix-forward is right post-publish.
 
 ---
 
