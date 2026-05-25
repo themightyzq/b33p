@@ -250,6 +250,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Pitch Envelope empty state — crosshair cursor on hover signals editability, the 0-semitones baseline brightens (and gets a "0 st" axis label) so it reads as a reference axis. Hint rephrased to "Click anywhere to add a pitch point." (REVIEW.md Pass 1 Critical #9.)
 - [x] Drop the repeated `(Lane N)` suffix from six of the seven voice sections — Oscillator (the topmost) keeps it as the single lane indicator. AmpEnv / Filter / Effects / Mod FX / Modulation / Master no longer repeat the same context six times. The full lane-header-strip enhancement REVIEW.md prescribed stays a follow-up. (REVIEW.md Pass 1 Critical #10.)
 - [x] Refresh two stale `v0.2 polish & doc sweep` entries (Audio settings menu, custom-waveform footer) to match what actually shipped. Wording-only fix; the code was already correct on both. (REVIEW.md Pass 1 HI #11.)
+- [x] Help ▸ Audio Settings... dialog — points the user at the standalone wrapper's gear icon (standalone path) or the DAW's I/O routing (plugin path). Documentation-as-recovery; programmatic launch of the wrapper dialog requires custom-standalone-app plumbing tied to the deferred-regressions block. (REVIEW.md Pass 1 HI #12.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---

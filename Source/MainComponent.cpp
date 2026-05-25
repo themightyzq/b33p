@@ -42,6 +42,7 @@ namespace B33p
             LaneClear,
             HelpAbout,
             HelpKeyboardShortcuts,
+            HelpAudioSettings,
 
             FileOpenRecentBase = 1000,   // [1000, 1000 + N) reserved for MRU slots
             FileOpenRecentMax  = 1099,
@@ -431,6 +432,7 @@ namespace B33p
                 break;
             case 2: // Help
                 m.addItem(withShortcut(MenuId::HelpKeyboardShortcuts, "Keyboard Shortcuts...", ""));
+                m.addItem(withShortcut(MenuId::HelpAudioSettings,    "Audio Settings...",     ""));
                 m.addSeparator();
                 m.addItem(withShortcut(MenuId::HelpAbout, "About b33p", ""));
                 break;
@@ -524,8 +526,9 @@ namespace B33p
                     });
                 break;
             }
-            case MenuId::HelpAbout:              showAboutDialog();             break;
-            case MenuId::HelpKeyboardShortcuts:  showKeyboardShortcutsDialog(); break;
+            case MenuId::HelpAbout:              showAboutDialog();              break;
+            case MenuId::HelpKeyboardShortcuts:  showKeyboardShortcutsDialog();  break;
+            case MenuId::HelpAudioSettings:      showAudioSettingsHelpDialog();  break;
             default:                                                            break;
         }
     }
@@ -682,6 +685,34 @@ namespace B33p
                 if (result == 2)
                     juce::URL("https://github.com/themightyzq/b33p").launchInDefaultBrowser();
             });
+    }
+
+    void MainComponent::showAudioSettingsHelpDialog()
+    {
+        // Static informational dialog rather than programmatic launch of
+        // the wrapper's settings dialog — that would need access to
+        // juce::StandalonePluginHolder::getInstance(), which requires
+        // standalone-specific compilation that the shared editor TU
+        // doesn't have. A custom standalone wrapper (the same plumbing
+        // listed under TODO's "Deferred regressions") would let us open
+        // it directly; until then, a sign pointing at the door is
+        // strictly better than no door at all.
+        const juce::String body =
+            juce::String("Standalone b33p:\n")
+          + "Click the small Options gear icon at the top-left of the window. "
+            "It opens JUCE's audio device settings (output device, sample rate, "
+            "buffer size).\n\n"
+          + "Plugin mode (VST3 / AU):\n"
+          + "Your DAW manages the audio device. If b33p is silent, check the "
+            "track's I/O routing and the master output bus in the host.";
+
+        juce::AlertWindow::showAsync(
+            juce::MessageBoxOptions()
+                .withIconType(juce::MessageBoxIconType::InfoIcon)
+                .withTitle("Audio Settings")
+                .withMessage(body)
+                .withButton("OK"),
+            nullptr);
     }
 
     void MainComponent::showKeyboardShortcutsDialog()
