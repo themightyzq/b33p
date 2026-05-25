@@ -41,6 +41,7 @@ namespace B33p
             LaneGenerate,
             LaneClear,
             HelpAbout,
+            HelpKeyboardShortcuts,
 
             FileOpenRecentBase = 1000,   // [1000, 1000 + N) reserved for MRU slots
             FileOpenRecentMax  = 1099,
@@ -413,6 +414,8 @@ namespace B33p
                 }
                 break;
             case 2: // Help
+                m.addItem(withShortcut(MenuId::HelpKeyboardShortcuts, "Keyboard Shortcuts...", ""));
+                m.addSeparator();
                 m.addItem(withShortcut(MenuId::HelpAbout, "About b33p", ""));
                 break;
             default:
@@ -471,7 +474,8 @@ namespace B33p
                 patternSection.getGrid().clearAllEventsInLane(
                     processor.getSelectedLane());
                 break;
-            case MenuId::HelpAbout:  showAboutDialog();                         break;
+            case MenuId::HelpAbout:              showAboutDialog();             break;
+            case MenuId::HelpKeyboardShortcuts:  showKeyboardShortcutsDialog(); break;
             default:                                                            break;
         }
     }
@@ -628,5 +632,39 @@ namespace B33p
                 if (result == 2)
                     juce::URL("https://github.com/themightyzq/b33p").launchInDefaultBrowser();
             });
+    }
+
+    void MainComponent::showKeyboardShortcutsDialog()
+    {
+        // Mirrors the README's shortcut table grouping (Transport,
+        // File / Edit, Pattern editing) so users see the same shape
+        // whether they're reading docs or the in-app reference.
+        const juce::String body =
+            juce::String("Transport\n")
+          + "  Space               play / stop\n"
+          + "  Shift+Space         audition the selected lane's voice\n\n"
+          + "File / Edit\n"
+          + "  Cmd+N               new project\n"
+          + "  Cmd+O               open project\n"
+          + "  Cmd+S               save\n"
+          + "  Cmd+Shift+S         save as...\n"
+          + "  Cmd+Z / Cmd+Shift+Z undo / redo\n\n"
+          + "Pattern editing (when the pattern grid has focus)\n"
+          + "  Cmd+A               select every event\n"
+          + "  Cmd+C               copy the selected events\n"
+          + "  Cmd+V               paste the clipboard at the playhead\n"
+          + "  Delete / Backspace  delete the selected events\n"
+          + "  Arrow keys          nudge selected events by one grid step\n"
+          + "  Shift+Arrow keys    nudge by ten grid steps\n"
+          + "  Esc                 deselect everything\n\n"
+          + "On Windows / Linux, swap Cmd for Ctrl.";
+
+        juce::AlertWindow::showAsync(
+            juce::MessageBoxOptions()
+                .withIconType(juce::MessageBoxIconType::InfoIcon)
+                .withTitle("Keyboard Shortcuts")
+                .withMessage(body)
+                .withButton("Close"),
+            nullptr);
     }
 }
