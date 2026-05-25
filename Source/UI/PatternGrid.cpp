@@ -68,8 +68,18 @@ namespace B33p
             muteBtn.setButtonText("M");
             muteBtn.setClickingTogglesState(true);
             muteBtn.setTooltip("Mute lane");
+            // Off vs on differentiates by *luminance* (dark→bright) and
+            // *text contrast* (dim grey→white), not just by hue. Color-
+            // blind users see the state change via the brightness shift,
+            // not the red/yellow distinction.
+            muteBtn.setColour(juce::TextButton::buttonColourId,
+                                juce::Colour::fromRGB(30, 30, 30));
             muteBtn.setColour(juce::TextButton::buttonOnColourId,
                                 juce::Colour::fromRGB(190, 60, 60));
+            muteBtn.setColour(juce::TextButton::textColourOffId,
+                                juce::Colour::fromRGB(110, 110, 110));
+            muteBtn.setColour(juce::TextButton::textColourOnId,
+                                juce::Colour::fromRGB(255, 255, 255));
             muteBtn.onClick = [this, i]
             {
                 processor.setSelectedLane(i);
@@ -93,8 +103,16 @@ namespace B33p
             soloBtn.setButtonText("S");
             soloBtn.setClickingTogglesState(true);
             soloBtn.setTooltip("Solo lane (only soloed lanes play)");
+            // Same off/on contrast logic as mute — see the comment
+            // above the muteBtn setColour block.
+            soloBtn.setColour(juce::TextButton::buttonColourId,
+                                juce::Colour::fromRGB(30, 30, 30));
             soloBtn.setColour(juce::TextButton::buttonOnColourId,
                                 juce::Colour::fromRGB(220, 200, 60));
+            soloBtn.setColour(juce::TextButton::textColourOffId,
+                                juce::Colour::fromRGB(110, 110, 110));
+            soloBtn.setColour(juce::TextButton::textColourOnId,
+                                juce::Colour::fromRGB(40, 40, 40));   // dark on yellow for contrast
             soloBtn.onClick = [this, i]
             {
                 processor.setSelectedLane(i);
