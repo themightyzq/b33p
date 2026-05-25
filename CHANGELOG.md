@@ -21,6 +21,10 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Pattern toolbar now wraps to a second row when the editor is laid out below 1440 pt — Length / Grid / BPM / Time-sig drop beneath the transport + actions clusters so every control stays reachable in narrow plugin-host panels. Wide-layout behaviour unchanged.
 - New `B33P_ENABLE_SANITIZERS` CMake option wires AddressSanitizer + UndefinedBehaviorSanitizer compile/link flags (GCC/Clang only). A dedicated `sanitizers` CI job on Ubuntu runs the full test suite under asan + ubsan on every push.
 
+### Fixed
+
+- `Build and Launch.command` and `build_and_launch.py` now reconfigure the CMake build directory when its cached `CMAKE_BUILD_TYPE` differs from the requested one. Single-config generators (Make, Ninja) silently ignore `cmake --build --config <X>`, so switching between Debug and Release used to build the cached type and then fail to find the artefact at the requested path.
+
 ## [0.2.0] — 2026-04-30
 
 A 28-commit session on 2026-04-29 worked top-to-bottom through the post-MVP

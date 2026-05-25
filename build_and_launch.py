@@ -48,14 +48,31 @@ def pick_generator() -> str | None:
     return None   # CMake's platform default (Make, Visual Studio, etc.)
 
 
+def cached_build_type() -> str | None:
+    """Read CMAKE_BUILD_TYPE from the existing CMake cache, if present."""
+    cache = BUILD_DIR / "CMakeCache.txt"
+    if not cache.exists():
+        return None
+    for line in cache.read_text().splitlines():
+        if line.startswith("CMAKE_BUILD_TYPE:STRING="):
+            return line.split("=", 1)[1]
+    return None
+
+
 def configure(cmake: str) -> None:
-    if (BUILD_DIR / "CMakeCache.txt").exists():
+    # Reconfigure when the cache is missing OR when its cached build type
+    # differs from what we're being asked for. Single-config generators
+    # (Make, Ninja) bake the build type at configure time and silently
+    # ignore `cmake --build --config <X>`, so without this check a switch
+    # between Debug and Release just rebuilds the wrong type and the
+    # standalone path resolution below points at an empty directory.
+    if cached_build_type() == BUILD_TYPE:
         return
     args = [cmake, "-B", str(BUILD_DIR), f"-DCMAKE_BUILD_TYPE={BUILD_TYPE}"]
     gen = pick_generator()
     if gen is not None:
         args.extend(["-G", gen])
-    print(f"--> Configuring (generator: {gen or 'default'})")
+    print(f"--> Configuring (generator: {gen or 'default'}, {BUILD_TYPE})")
     subprocess.run(args, cwd=REPO_ROOT, check=True)
 
 
