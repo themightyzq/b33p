@@ -110,7 +110,6 @@ namespace B33p
                     processor.getApvts(), ParameterIDs::modSlotAmount(lane, i), slot.amount);
         }
 
-        setTitleSuffix(processor.laneTitleSuffix(lane));
         setAccentColour(processor.laneAccentColour(lane));
     }
 

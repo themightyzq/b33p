@@ -248,6 +248,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Mute / Solo lane buttons now differentiate by luminance + text contrast — off state is dark with dim grey text; on state is bright fill (red / yellow) with high-contrast text. Color-blind users get the state via brightness shift, not red vs yellow. (REVIEW.md Pass 1 Critical #7.)
 - [x] Empty pattern hint split into two stacked lines instead of one 137-character run-on. Splits at the natural period so the first-run gesture-teach reads as instructions, not a wall of text. (REVIEW.md Pass 1 Critical #8 — minimum sufficient fix; ghost-clip onboarding flourish stays a follow-up.)
 - [x] Pitch Envelope empty state — crosshair cursor on hover signals editability, the 0-semitones baseline brightens (and gets a "0 st" axis label) so it reads as a reference axis. Hint rephrased to "Click anywhere to add a pitch point." (REVIEW.md Pass 1 Critical #9.)
+- [x] Drop the repeated `(Lane N)` suffix from six of the seven voice sections — Oscillator (the topmost) keeps it as the single lane indicator. AmpEnv / Filter / Effects / Mod FX / Modulation / Master no longer repeat the same context six times. The full lane-header-strip enhancement REVIEW.md prescribed stays a follow-up. (REVIEW.md Pass 1 Critical #10.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
