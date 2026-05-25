@@ -332,7 +332,12 @@ namespace B33p
 
     juce::StringArray MainComponent::getMenuBarNames()
     {
-        return { "File", "Edit", "Lane", "Help" };
+        // "Lane" used to be a top-level menu — demoted to Edit ▸ Lane
+        // because everything inside it scoped to "the currently selected
+        // lane," which is context-menu territory rather than a peer of
+        // File/Edit. The same actions also live on the lane right-click
+        // menu in PatternGrid.
+        return { "File", "Edit", "Help" };
     }
 
     juce::PopupMenu MainComponent::getMenuForIndex(int topLevelIndex,
@@ -396,21 +401,26 @@ namespace B33p
                     m.addItem(withShortcut(MenuId::EditSelectAll, "Select All Events",        "Cmd+A", grid.hasAnyEvents()));
                     m.addItem(withShortcut(MenuId::EditDeselect,  "Deselect",                 "Esc",   grid.hasSelection()));
                 }
-                break;
-            case 2: // Lane (the currently-selected one)
-            {
-                const int lane = processor.getSelectedLane();
-                const juce::String tag = "Lane " + juce::String(lane + 1);
-                m.addItem(MenuId::LaneCopyToAll,  "Copy " + tag + " voice to all lanes");
-                m.addItem(MenuId::LaneResetVoice, "Reset " + tag + " voice to defaults");
                 m.addSeparator();
-                m.addItem(MenuId::LaneGenerate,   "Generate Random Pattern in " + tag);
-                m.addItem(MenuId::LaneClear,      "Clear All Events in " + tag);
-                m.addSeparator();
-                m.addItem(MenuId::LaneDiceAll,    "Randomize All Lanes (every unlocked param)");
+                {
+                    // Lane submenu (formerly a top-level menu). All items
+                    // scope to the currently-selected lane; the label
+                    // regenerates with the lane tag so it's clear which
+                    // one each action will affect.
+                    const int lane = processor.getSelectedLane();
+                    const juce::String tag = "Lane " + juce::String(lane + 1);
+                    juce::PopupMenu laneMenu;
+                    laneMenu.addItem(MenuId::LaneCopyToAll,  "Copy " + tag + " voice to all lanes");
+                    laneMenu.addItem(MenuId::LaneResetVoice, "Reset " + tag + " voice to defaults");
+                    laneMenu.addSeparator();
+                    laneMenu.addItem(MenuId::LaneGenerate,   "Generate Random Pattern in " + tag);
+                    laneMenu.addItem(MenuId::LaneClear,      "Clear All Events in " + tag);
+                    laneMenu.addSeparator();
+                    laneMenu.addItem(MenuId::LaneDiceAll,    "Randomize All Lanes (every unlocked param)");
+                    m.addSubMenu("Lane", laneMenu);
+                }
                 break;
-            }
-            case 3: // Help
+            case 2: // Help
                 m.addItem(withShortcut(MenuId::HelpAbout, "About b33p", "Cmd+/"));
                 break;
             default:

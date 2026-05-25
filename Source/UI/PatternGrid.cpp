@@ -811,14 +811,35 @@ namespace B33p
 
                 processor.setSelectedLane(lane);
 
+                // Right-click context for the lane. Mirrors the
+                // Edit ▸ Lane submenu so the user has the same actions
+                // regardless of which surface they reach for.
+                const juce::String tag = "Lane " + juce::String(lane + 1);
                 juce::PopupMenu laneMenu;
-                laneMenu.addItem(1, "Generate random pattern in this lane");
-                laneMenu.addItem(2, "Clear all events in this lane");
+                laneMenu.addItem(1, "Generate random pattern in " + tag);
+                laneMenu.addItem(2, "Clear all events in " + tag);
+                laneMenu.addSeparator();
+                laneMenu.addItem(3, "Copy " + tag + " voice to all lanes");
+                laneMenu.addItem(4, "Reset " + tag + " voice to defaults");
+                laneMenu.addSeparator();
+                laneMenu.addItem(5, "Randomize All Lanes (every unlocked param)");
                 laneMenu.showMenuAsync(juce::PopupMenu::Options{},
                     [this, lane](int result)
                     {
-                        if (result == 1)      generateRandomPatternInLane(lane);
-                        else if (result == 2) clearAllEventsInLane(lane);
+                        switch (result)
+                        {
+                            case 1: generateRandomPatternInLane(lane); break;
+                            case 2: clearAllEventsInLane(lane);        break;
+                            case 3: processor.copyLaneSettingsToAll(lane); break;
+                            case 4: processor.resetLaneVoice(lane);        break;
+                            case 5:
+                            {
+                                juce::Random rng;
+                                processor.getRandomizer().rollAllUnlocked(rng);
+                                break;
+                            }
+                            default: break;
+                        }
                     });
                 return;
             }
