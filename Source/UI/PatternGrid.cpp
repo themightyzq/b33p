@@ -832,17 +832,21 @@ namespace B33p
                        dragClampedAtWall ? 1.6f : 1.0f);
         }
 
-        // Playhead — orange while playing, dimmer grey when parked
-        // (so the user can see where Cmd+V will paste). Hidden only
-        // when stopped at exactly 0, which is the no-op resting state.
+        // Playhead — orange while playing, cool grey when parked.
+        // Parked acts as the paste-anchor for Cmd+V, so it needs to
+        // be the *most* prominent vertical line in the pattern, not
+        // dimmer than the surrounding bar ticks. Bumped from (140)
+        // to (230) so it tops the bar-tick layer (200) decisively.
+        // Hidden only when stopped at exactly 0 (the no-op resting
+        // state).
         {
             const double headSec = processor.getPlayheadSeconds();
             if (processor.isPlaying() || headSec > 0.0)
             {
                 const float x = secondsToX(headSec);
                 g.setColour(processor.isPlaying()
-                                ? juce::Colour::fromRGB(255, 165, 60)
-                                : juce::Colour::fromRGB(140, 140, 140));
+                                ? juce::Colour::fromRGB(255, 165,  60)
+                                : juce::Colour::fromRGB(230, 230, 240));
                 g.drawLine(x, frame.getY() + kRulerHeight,
                            x, frame.getBottom(),
                            1.5f);
