@@ -31,6 +31,13 @@ namespace B33p
         explicit MainComponent(B33pProcessor& processor);
         ~MainComponent() override;
 
+        // Two-button confirmation dialog (Cancel / Proceed). Invokes
+        // the proceed callback only on Proceed. Used by destructive
+        // Lane menu actions — gives the user a moment to recover from
+        // a misclick even though every action is undoable from Edit.
+        void confirmActionThen(const juce::String& message,
+                               std::function<void()> proceed);
+
         void paint(juce::Graphics& g) override;
         void resized() override;
 
