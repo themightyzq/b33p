@@ -12,7 +12,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 - `.gitattributes` declares cross-platform line-ending normalization (LF for text) and binary markers for `*.png`, `*.icns`, `*.ico`, `*.wav`.
 - `docs/RELEASE_SMOKE.md` — per-OS smoke-test runbook for `v*` draft releases, covering install commands, host-DAW checks, the `auval` AU validation, and the publish / re-tag / fix-forward decision tree.
-- `docs/REVIEW.md` — 2026-05-25 design review capturing 40 prioritized UX findings (10 Critical / 19 High Impact / 11 Nice to Have) as a backlog source for future chore-list entries.
+- `docs/REVIEW.md` — 2026-05-25 design review in two passes. Pass 1 (40 findings) audits the desktop-app surface: window layout, copy, empty states, keyboard. Pass 2 (38 findings) audits the plugin surface against the characterful-synth bar (u-he / Baby Audio / Soundtoys): host integration, knob craft, preset system, A/B compare, state recall, DSP-adjacent feedback. Together: 78 prioritized findings as the backlog source for future chore-list entries.
 - `NOTICE` — third-party attribution for JUCE 8.0.12 (GPL-3.0) and Catch2 v3.14.0 (BSL-1.0).
 
 ### Changed

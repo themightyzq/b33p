@@ -225,3 +225,199 @@ Each of these is worth ten minutes during smoke-testing the v0.2.0 archives.
 B33p has shipped enormous functional surface — a full modulation matrix, polyphony, MIDI, host transport sync, four export formats, twelve versioned schema migrations. The audit found zero correctness issues and zero CLAUDE.md violations. What it didn't get yet is the second pass that takes a fully-built product and makes it feel obviously well-made: the moments when the toolbar should know it's too narrow, when the empty pattern should teach the gesture by showing a ghost, when the user's first instinct ("what does space do?") should land somewhere richer than the About dialog.
 
 The fixes in Critical 1-10 are mostly small in code; their impact is disproportionate because each one removes a daily friction the user doesn't articulate but does feel.
+
+---
+
+# Plugin designer pass — 2026-05-25
+
+Second review of B33p — same date, different lens. The first pass treated B33p as a desktop app: window layout, copy, menus, empty states. This pass treats it as a plugin a working producer is about to drop on a track mid-session and judge against the craft bar set by u-he, Baby Audio, Soundtoys, Goodhertz, Arturia. B33p's lane is **characterful / experimental** — sound-design playground, not surgical tool — so the bar is "playful, immediate, opinionated," not "clinical precision."
+
+Findings are independently actionable. Some items here partially overlap or refine items from the first pass; cross-references are noted.
+
+**Corrections to first-pass claims** (verified during this pass and worth recording before the new findings):
+
+- *The editor IS resizable.* `B33pEditor.cpp:19` calls `setResizable(true, true)`. The wrap-layout shipped in commit `33f8591` therefore benefits standalone users too — not just plugin hosts. The first pass's "Editor stays at fixed 1500 pt default" framing was wrong.
+- *Randomizer locks are persisted.* `ProjectState.cpp:163-170, 539-540` — locks save/load correctly across .beep round-trips and DAW state recall.
+- *Slider text boxes are editable.* `LabeledSlider.cpp:20` — `setTextBoxStyle(..., isReadOnly=false, ...)`. The issue is discoverability (double-click the text box vs right-click), not absence — moved from Critical to High Impact below.
+- *"Randomize All" is properly wrapped in one undo transaction.* `ParameterRandomizer.cpp:125-128`. The first pass implied otherwise in some phrasings — confirmed it's correct.
+
+---
+
+## Critical
+
+### P1. No host-bypass support
+**Where:** `Source/State/B33pProcessor.cpp:processBlock` — no `isBypassed()` check.
+The host's bypass button or automation lane doesn't reach the audio. When a user hits Bypass on the track, B33p keeps generating audio normally. This is a host-contract violation; every shipping plugin honors host bypass. Add an `if (isBypassedByHost()) { buffer.clear(); midi.clear(); return; }` early-exit, ideally with a click-free crossfade.
+
+### P2. No latency reporting to host
+**Where:** `B33pProcessor::prepareToPlay` / `processBlock` — `setLatencySamples(...)` never called.
+Currently the plugin has no introduced latency, so reporting 0 is technically correct — but the plumbing isn't wired at all, so any future addition (oversampling, look-ahead limiter, FFT) will silently throw automation alignment out of sync in DAWs that rely on PDC. The habit of *always* calling `setLatencySamples(0)` explicitly in `prepareToPlay` documents the contract and makes future additions safe.
+
+### P3. No tail-length reporting
+**Where:** `B33pProcessor.h:221` — `getTailLengthSeconds() const override { return 0.0; }`.
+B33p's modulation effect slot includes Reverb (`juce::Reverb`) and Delay (`juce::dsp::DelayLine` with feedback). When the user stops transport, the host cuts the buffer at the stop boundary because the plugin claims zero tail — so the reverb wash and delay echoes vanish mid-decay. Compute a tail from the active mod-effect state (reverb size → ~2-3 s; delay time × max sensible feedback iterations) and return it.
+
+### P4. No A/B compare
+**Where:** Doesn't exist anywhere — no UI control, no state-snapshot logic in `B33pProcessor`.
+Less load-bearing for a sound-design synth than for a mix processor, but still expected at this build level. A user designing a sound iterates: tweak → "is that actually better?" → without A/B they have to commit, audition, undo, audition again. Soundtoys/Sonnox standard is two slots (A and B) with a swap button and a "copy A→B" button. Two snapshots of the APVTS state + a button bar; the existing `ProjectState::toXmlString()` already does the serialization work.
+
+### P5. No in-plugin Undo button
+**Where:** `MainComponent.cpp:256-261` — Cmd+Z routes to `processor.getUndoManager().undo()`, which works in standalone but is captured by the *host* in VST3/AU mode. There's an Edit menu Undo (line 387-390) but menu navigation breaks flow.
+FabFilter, iZotope, Soundtoys all ship a small Undo/Redo button on the plugin surface specifically because hosts capture Cmd+Z. Two icon buttons in the top bar (left of the lane indicator) costs almost nothing visually and rescues the most-used keyboard shortcut.
+
+### P6. Loading a preset destroys undo history
+**Where:** `Source/UI/PresetBrowserDialog.cpp:requestLoadSelected` → `MainComponent::confirmDiscardThen` → `presetManager.loadPreset` → `ProjectState::readFromFile` → APVTS `setStateInformation`. None of the steps in this chain begin an undo transaction.
+User browses presets, picks one, doesn't like it, hits Cmd+Z — nothing happens, the previous patch is gone. Wrap `ProjectState::load` in a single undoable action (snapshot pre-load APVTS state, restore on undo). This is the same pattern `UndoableActions.h` already uses for pattern and pitch-curve edits.
+
+### P7. Selected lane not persisted in plugin state
+**Where:** `B33pProcessor::selectedLane` is an `std::atomic<int>`; `ProjectState.cpp` has zero references to it (verified with `grep`).
+DAW save → close → reopen → user is back on Lane 1 regardless of where they were. Mid-session sound design loses context constantly. Persist as a `selected_lane` property on the root ValueTree.
+
+---
+
+## High Impact
+
+### P8. Plugin is shipping on stock JUCE LookAndFeel_V4
+**Where:** Repo-wide `grep` for `LookAndFeel` / `setLookAndFeel` returns nothing. The default chrome is showing: rotary sliders with the "cricket-leg" line indicator (`LabeledSlider.cpp:19` — `RotaryHorizontalVerticalDrag` with no custom paint), default ComboBox gradient + arrow (every section's type/waveform combo), default TextButton round-rect on most buttons, default AlertWindow on confirms.
+For a clinical EQ this would be defensible. For a synth in the same lane as Baby Audio Tuna Knob, u-he Bazille, or Goodhertz Lossy — where the *interface itself* is part of the sound-design vibe — this telegraphs "JUCE tutorial project" the moment a producer drops it on a track. A custom `LookAndFeel` subclass overriding `drawRotarySlider`, `drawComboBox`, `drawButtonBackground`, and `drawPopupMenu*` is the minimum entry fee for this lane. Pick one accent color and one knob silhouette; ship.
+
+### P9. No fine-adjust modifier on knob drag
+**Where:** `LabeledSlider.cpp:19` — uses JUCE's default rotary drag with no modifier-key sensitivity overrides.
+Shift-drag-to-fine-tune has been a synth standard since Massive in 2007. Currently a user trying to dial in 1.5 ms attack vs. 1.2 ms either gets it on the first drag or doesn't. Add `slider.setVelocityModeParameters(...)` or override `mouseDrag` to detect `ModifierKeys::shiftModifier` and scale the drag delta down 10×.
+
+### P10. No right-click context menu on knobs
+**Where:** Default JUCE Slider behavior + no override. The pattern grid has right-click context (clip → Delete / Duplicate / Edit overrides; empty grid → Generate / Clear) but the knobs have nothing.
+Reach-for-the-mouse moments that should be one click: "set to default" (currently double-click works but isn't signaled), "enter value..." (currently double-click on the text box works but isn't signaled), "copy parameter value", "paste parameter value", "MIDI learn", "host automate". JUCE's `ModalPopupMenu` is one method; the LookAndFeel work in P8 absorbs the styling.
+
+### P11. Editor size not persisted in plugin state
+**Where:** `B33pProcessor::getStateInformation` (per code structure) writes the `ProjectState` XML; no editor-bounds storage. The editor *is* resizable (P-correction above), so users will resize — and lose it on the next DAW reopen.
+Save `editor_width` and `editor_height` properties on the root ValueTree at editor destruction; restore in the editor constructor. Or use the host-provided editor-bounds mechanism if the JUCE wrapper exposes it cleanly.
+
+### P12. No min/max resize constraints
+**Where:** `B33pEditor.cpp:19` — `setResizable(true, true)` is called, but no `setResizeLimits` or `ComponentBoundsConstrainer` is installed.
+A user can shrink the window to where every section header is unreadable, or balloon it past 4K. The wrap-toolbar path handles 1200-1440 pt gracefully; below ~900 the voice sections themselves break. Set a sensible minimum (probably 1200×900) and a generous maximum (3000×2000).
+
+### P13. Filter response visualizer doesn't animate during slider drag
+**Where:** `Source/UI/FilterResponseVisualizer.cpp` — repaints on `parameterChanged` callback only. In some hosts that callback fires on slider *release*, not during drag — making the visualizer a "result preview," not a control hint. (First-pass item #17 flagged this for `AmpEnvelopeVisualizer`; same root cause and same impact applies here.)
+The fix is the same: attach a Slider::Listener that calls `repaint()` on `valueChanged`, regardless of whether the host already fired the parameter callback.
+
+### P14. Modulation matrix shows no active modulation
+**Where:** `Source/UI/ModulationSection.cpp` — slot rows are static `(source combo)(destination combo)(amount slider)`. Nothing animates when a slot is live.
+The whole point of a mod matrix is "see this knob move because of that LFO." Currently you set up a routing and… stare at static sliders. Two cheap wins: (a) when a slot's destination resolves to a real parameter, glow that parameter's knob ring during pattern playback at the modulated value, or (b) draw a small moving indicator on the matrix-amount slider showing where the modulated value currently sits. Either gets the "the patch is alive" feeling that u-he Bazille / Massive X earn.
+
+### P15. Stock JUCE ComboBox chrome on every dropdown
+**Where:** Every `OscillatorSection`, `FilterSection`, `ModEffectsSection`, `ModulationSection`, `PatternSection`, `ExportDialog`, `PresetBrowserDialog` uses `juce::ComboBox` with no styling.
+The dropdown chrome doesn't match the rest of the (dark, minimal) palette. The arrow looks legacy. Fix bundles with P8 — once a `LookAndFeel` is in place, override `drawComboBox` once and everything inherits.
+
+### P16. No CPU display
+**Where:** Nowhere. The plugin runs ~22 modulation parameters per lane × 4 lanes + mod-fx chain, but the user has no visibility into actual cost. u-he plugins put a tiny `CPU 4%` readout in the corner so a user nailing complex patches knows when they're about to redline.
+Lowest-effort version: a `juce::AudioProcessor::getProcessingTimeStats()`-derived percentage, painted in the bottom-right of the master section.
+
+### P17. Distortion has no oversampling option
+**Where:** `Source/DSP/Distortion.cpp:28` — `tanh()` waveshaper, no oversampling.
+At high drive on transient material, this aliases audibly. Bitcrush is intentionally aliased (lo-fi is the point — fine), but Distortion is a *creative* effect that benefits from a clean version. A 2×/4× oversampling toggle on the master gives users the choice. `juce::dsp::Oversampling` is a one-class drop-in.
+
+### P18. Master level meter has no clip indicator and no headroom marks
+**Where:** `Source/UI/MasterSection.cpp:113-128` — three-zone green/amber/red bar but no separate clip badge, no headroom reference lines.
+A user can't tell whether the red zone means "+0.5 dBFS, about to clip" or "+6 dBFS, clipping hard." Add: a separate `CLIP` indicator (small red square that latches on for ~2 s after any sample > 0 dBFS), tick marks at -12 / -6 / -3 / 0 dBFS, and peak-hold ticks that decay over ~1.5 s.
+
+### P19. No preset metadata (author / description / tags / category / BPM)
+**Where:** `PresetManager.{h,cpp}` saves only the filename + raw `.beep` state.
+Browser is a flat alphabetical list. At 50+ user presets it becomes unmaintainable. Add a minimal metadata layer: tags array, author string, one-line description. Surface in the browser as a right-hand info pane. Adds one ValueTree node (`<Meta>...</Meta>`) to the preset format — back-compat is trivial.
+
+### P20. No audition-while-browsing in the preset browser
+**Where:** `PresetBrowserDialog.cpp:requestLoadSelected` — load only on explicit button click.
+u-he, Arturia, NI Komplete Kontrol: select a preset in the list → it auto-loads with a brief audition trigger. Currently a user can't preview without committing — every preset audition is a Cmd+Z risk (and per P6, the undo doesn't even work).
+Easiest path: on list-selection change, load the preset temporarily and trigger an audition. On dialog cancel, restore the snapshot.
+
+### P21. No init / default preset
+**Where:** No UI button. Lane menu has "Reset Lane voice to defaults" but only per-lane.
+A "global init" — restore every lane to APVTS defaults + clear pattern — is missing. A user wanting to start over has to: New project → confirm discard → new instance opens. Three clicks for what should be one.
+
+### P22. Factory presets not visually distinguished
+**Where:** `PresetBrowserDialog.cpp:80` — list shows filename only.
+Factory and user presets are indistinguishable. Once a user accidentally overwrites "FM Bell" with their own patch, the factory version is gone (and `seedFactoryPresetsIfMissing` won't restore it because the file already exists — per `GeneratorPresets.h:56-59`).
+Tag factory presets with a different color/icon in the list, and add a "Restore Factory Presets" option in the Lane or File menu.
+
+### P23. No next/previous preset arrows in the main UI
+**Where:** No control on the main editor surface — only via the modal browser dialog.
+The Massive X / Diva pattern: small `‹ Preset Name ›` widget at the top, click arrows to step through the user/factory list. Costs ~80 pt of horizontal space and saves four clicks per preset audition.
+
+### P24. No copy-voice between plugin instances
+**Where:** No menu action, no clipboard surface for voice patches.
+A producer who has Lane 1 of an instance dialed in can't quickly grab that voice into a different instance. The pattern grid has Cmd+C/V for events; voice patches don't. Add `Lane ▸ Copy voice to clipboard` / `Lane ▸ Paste voice from clipboard` — serialize the single-lane subtree of `ProjectState` to the system clipboard.
+
+### P25. Slider value entry exists but is undiscoverable
+**Where:** `LabeledSlider.cpp:20` — text box is editable (`false` = not-read-only), but there's no visible affordance.
+Double-clicking the text box does enable typing — but no one will guess this without docs. The standard signal is either: (a) right-click → "Enter value..." in the context menu (also doesn't exist — see P10), or (b) hover the text box → cursor changes to text I-beam, faint underline appears. Cheap: change the text box cursor on hover.
+
+### P26. Save Preset has no overwrite confirmation
+**Where:** `MainComponent.cpp:539` calls `presetManager.savePreset(name)` without checking name collisions. `PresetManager.cpp:76-78` comment says "caller is expected to confirm" — the caller doesn't.
+User saves a preset, types a name that matches an existing factory or user preset, hits OK — silent overwrite, no warning. Standard convention is an `AlertWindow` asking "A preset named 'FM Bell' already exists. Overwrite?".
+
+### P27. VST3 / AU category not explicitly declared
+**Where:** `CMakeLists.txt:62-77` — `juce_add_plugin` block has no `VST3_CATEGORY` or `AU_MAIN_TYPE`.
+Defaults to "Instrument | Synth" via `IS_SYNTH TRUE`, which works, but explicit `VST3_CATEGORY "Instrument|Synth|Sampler"` improves discoverability in host plugin pickers that filter by subcategory. AU's `AU_MAIN_TYPE` defaults to `kAudioUnitType_MusicDevice` correctly — explicit declaration documents intent.
+
+---
+
+## Nice to Have
+
+### P28. Numeric readouts aren't tabular
+**Where:** Most labels and slider readouts use `juce::FontOptions(11.0f)` or the JUCE default proportional font. Numerals are proportional-spaced, so during knob drag a value like "1.234" → "1.245" can visibly shift left/right because `2` and `3` aren't the same width.
+Use a tabular-figures variant (most system fonts have it, accessible via `juce::Font::withExtraKerning` or by switching to a monospaced font for readouts). Or just hand-pick a font like JetBrains Mono or IBM Plex Mono for numeric cells.
+
+### P29. Button styling inconsistency
+**Where:** Play button has custom green (`PatternSection.cpp:142` ~`(60,140,70)`); Audition has an amber flash (`MasterSection.cpp:72-73`); Mute/Solo have per-lane colors; most other buttons (Loop, Follow, Export, Randomize, file dialog buttons) use stock TextButton chrome.
+The custom-colored buttons stand out, but the inconsistency reads as "some buttons got attention, most didn't" rather than a deliberate hierarchy. After the LookAndFeel work in P8, decide on a hierarchy: primary action (green/accent), secondary action (subtle), and let mute/solo/follow remain their own state-toggle visual. Then apply consistently.
+
+### P30. Modulation amount uses LinearHorizontal instead of rotary
+**Where:** `Source/UI/ModulationSection.cpp:259-261` — `slider.setSliderStyle(juce::Slider::LinearHorizontal)` for amount; rest of the plugin is rotary.
+Breaks the synth's visual rhythm. Switch to bipolar rotary (centered at zero with the indicator sweeping ±) to match the rest of the editor and signal "this is a bipolar mod amount" with one glance.
+
+### P31. AmpEnvelope visualizer has no playhead
+**Where:** `Source/UI/AmpEnvelopeVisualizer.cpp` — static ADSR curve.
+Painting a vertical line moving through the curve during note playback (or pattern event playback on the selected lane) makes the visualizer *active* rather than decorative — see P14's general "show what's happening to the audio" principle. Combine with velocity-sensitive height for extra signal.
+
+### P32. PitchEnvelope canvas has no axis labels
+**Where:** `Source/UI/PitchEnvelopeEditor.cpp` — no time tick marks (0s, 0.5s, 1s) along the X-axis, no semitone marks (+12, 0, −12) along the Y-axis.
+Currently the user is drawing a curve in unitless space. Adding subtle tick marks with labels (8 pt grey, near the axes only) gives the curve concrete meaning. Pair with the playhead from P31.
+
+### P33. Per-event overrides have no indicator in the grid
+**Where:** `Source/UI/PatternGrid.cpp:498-535` — clip rendering checks selection state but not whether the event has any non-default overrides set.
+A user setting up "every 3rd event drops filter cutoff" can't see at a glance which events are special. A small ⏵ or `▪` glyph in the clip corner (only drawn when `event.overrides.any() || event.probability < 1 || event.ratchets > 1 || event.humanizeAmount > 0`) makes the per-event work visible.
+
+### P34. Mute / solo state not echoed in voice editor sections
+**Where:** Lane label in the grid shows the M/S toggle state visually; the voice editor sections above (Oscillator (Lane 2), Filter (Lane 2), etc.) show no indication when Lane 2 is muted or soloed.
+A faint overlay or a `MUTED` chip in the section header tells the user "you're editing a voice that's currently silent."
+
+### P35. Randomize is silent and instant
+**Where:** `MasterSection.cpp:Randomize Lane button` triggers ParameterRandomizer → APVTS attachments → knobs pop to new values.
+No transition, no flourish, no toast confirming the action. A 60 ms tween from old to new value on every affected knob (driven by `juce::ValueAnimator` or the simpler `Component::animateComponent` style) sells "the dice rolled" in a way an instant pop doesn't.
+
+### P36. No mousewheel scroll on knobs
+**Where:** `LabeledSlider.cpp` — no `mouseWheelMove` override; JUCE Slider's default scroll wheel behavior on rotary depends on the host platform and is often inert.
+Vertical mouse-wheel = +/- one step is standard ergonomic baseline. Trackpad two-finger scroll inherits this on macOS for free if the override is sane.
+
+### P37. No keyboard navigation in the preset browser
+**Where:** `PresetBrowserDialog.cpp` — the list responds to clicks, no Up/Down/Enter handling.
+A producer doing rapid preset auditioning should be able to focus the list, tap Down arrow to walk the list with auto-load (per P20), and hit Enter or Esc to commit/dismiss. `juce::ListBox` supports this with the right keyboard listener.
+
+### P38. Bus configuration is stereo-only with no I/O flexibility
+**Where:** `B33pProcessor::BusesProperties()` declares stereo output only.
+B33p is a mono-character instrument (pitched beeps); a `mono` bus might suit some hosts (Logic surround, Ableton mono channels) better. Adding `withOutput("Mono", AudioChannelSet::mono(), false)` lets hosts pick. Low priority — most producers will accept stereo-duplicated.
+
+---
+
+## Cross-cutting observation: characterful synths sell the *feeling* of the patch
+
+The first pass found B33p had built almost everything functional and just needed the second-pass craft work. This pass finds the same thing one level deeper. The DSP works. The state recall mostly works. The plugin loads. What's missing is the *vibe layer* — the parts of u-he and Baby Audio that make you want to keep the plugin in your template:
+
+- Custom rotary that *looks* like b33p when you spot it on a strip.
+- Mod matrix that visibly modulates.
+- Preset browser that audits while you browse.
+- A/B button for "is that actually better?"
+- Knobs that respond to shift-drag like every other synth made since 2010.
+
+None of these are big DSP work. They're craft work. They're also the difference between "indie plugin" and "the plugin a producer keeps."
+
