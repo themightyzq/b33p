@@ -28,6 +28,11 @@ namespace B33p
     PitchEnvelopeEditor::PitchEnvelopeEditor(B33pProcessor& processorRef)
         : processor(processorRef)
     {
+        // Crosshair telegraphs "click here to add a point" on hover.
+        // Without it the canvas reads as a passive display, not an
+        // editable surface — and the empty-state hint becomes the
+        // only signal that the area is interactive.
+        setMouseCursor(juce::MouseCursor::CrosshairCursor);
     }
 
     juce::Rectangle<float> PitchEnvelopeEditor::plotArea() const
@@ -81,18 +86,35 @@ namespace B33p
         g.drawRoundedRectangle(frame, kCornerRadius, 1.0f);
 
         const auto area = plotArea();
+        const auto& curve = processor.getPitchCurve();
 
-        g.setColour(juce::Colour::fromRGB(55, 55, 55));
+        // Zero-semitones baseline. Brighter when empty (acts as the
+        // visible reference axis the user will be drawing relative to);
+        // dimmer when there's an actual curve to avoid competing with
+        // the orange path.
+        const auto baselineColour = curve.empty()
+            ? juce::Colour::fromRGB(85, 85, 85)
+            : juce::Colour::fromRGB(55, 55, 55);
+        g.setColour(baselineColour);
         g.drawHorizontalLine(static_cast<int>(area.getCentreY()),
                              area.getX(), area.getRight());
 
-        const auto& curve = processor.getPitchCurve();
         if (curve.empty())
         {
+            // Axis hint on the left edge so the baseline reads as a
+            // reference, not a decoration.
+            g.setColour(juce::Colour::fromRGB(120, 120, 120));
+            g.setFont(juce::FontOptions(10.0f));
+            g.drawText("0 st",
+                       juce::Rectangle<float>(area.getX(),
+                                              area.getCentreY() - 14.0f,
+                                              28.0f, 12.0f),
+                       juce::Justification::centredLeft);
+
             // First-run hint — fades the moment a single point is added.
-            g.setColour(juce::Colour::fromRGB(110, 110, 110));
+            g.setColour(juce::Colour::fromRGB(140, 140, 140));
             g.setFont(juce::FontOptions(12.0f));
-            g.drawText("Click to add pitch points. Drag to shape, right-click to delete.",
+            g.drawText("Click anywhere to add a pitch point. Drag to shape; right-click a point to delete.",
                        area, juce::Justification::centred);
             return;
         }
