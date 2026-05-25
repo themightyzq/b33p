@@ -54,6 +54,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Unsaved-changes prompt now names the file ("Save changes to MyPatch.beep before closing?") instead of the abstract "This project has unsaved changes. Save before closing?" — the filename is what the user is mentally tracking.
 - Host bypass is now honored — when the DAW engages bypass (button or automation), b33p outputs silence instead of letting voices play through. New `host_bypass` APVTS parameter is exposed via `getBypassParameter()` so VST3 / AU hosts route their bypass automation to it; processBlock checks the value and early-returns with a cleared buffer.
 - Latency reporting wired — `setLatencySamples(0)` is called explicitly in `prepareToPlay` so the host's plugin delay compensation contract is in place even though we don't introduce latency today.
+- Tail length reporting — `getTailLengthSeconds()` now returns 4 seconds (was 0). Covers worst-case audible tail from amp-envelope release + reverb decay + delay feedback so DAWs don't cut off reverb wash or delay echoes mid-decay when transport stops.
 
 ### Removed
 
