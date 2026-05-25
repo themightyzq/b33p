@@ -118,6 +118,15 @@ namespace B33p
     void B33pProcessor::prepareToPlay(double sampleRate, int /*blockSize*/)
     {
         currentSampleRate = sampleRate;
+
+        // Explicitly declare zero latency so the host's PDC (plugin
+        // delay compensation) has the contract wired even though we
+        // don't introduce any latency today. When something that
+        // does (oversampling, look-ahead limiter, FFT) lands, this
+        // becomes the line to update — much harder to debug a silent
+        // PDC mis-alignment when the call doesn't exist at all.
+        setLatencySamples(0);
+
         for (auto& n : samplesUntilNoteOff) n = 0;
         playheadSeconds.store(0.0);
         for (auto& v : voices)

@@ -280,6 +280,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] About body's "Keys" block now points at Help ▸ Keyboard Shortcuts… instead of duplicating the shortcut table — single source of truth in the dedicated dialog, no drift risk. (REVIEW.md Pass 1 NTH #39.)
 - [x] Unsaved-changes prompt now names the file ("Save changes to MyPatch.beep before closing?" or "Save changes to Untitled before closing?") instead of the abstract "This project has unsaved changes. Save before closing?" (REVIEW.md Pass 1 NTH #40.)
 - [x] Host bypass — added `host_bypass` APVTS parameter + `getBypassParameter()` override + `processBlock` early-return that clears buffer + MIDI. DAW bypass buttons / automation now produce silence as the host contract requires. (REVIEW.md Pass 2 Critical P1.)
+- [x] Latency reporting — `setLatencySamples(0)` called explicitly in `prepareToPlay`. The plumbing for PDC is now wired even though we don't introduce latency today; the future addition of oversampling / look-ahead / FFT becomes a one-line update instead of a debugging mystery. (REVIEW.md Pass 2 Critical P2.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
