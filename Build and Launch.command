@@ -35,8 +35,19 @@ else
     GENERATOR="Unix Makefiles"
 fi
 
-if [ ! -f "${BUILD_DIR}/CMakeCache.txt" ]; then
-    echo "--> Configuring with ${GENERATOR}"
+# Reconfigure when the cache is missing OR when its cached build type
+# differs from what we're being asked for. Single-config generators like
+# Unix Makefiles bake the build type at configure time and silently ignore
+# `cmake --build --config <X>`, so without this check a switch from
+# Release to Debug (or vice versa) just rebuilds the wrong type and the
+# artefact-path lookup below fails.
+CACHED_TYPE=""
+if [ -f "${BUILD_DIR}/CMakeCache.txt" ]; then
+    CACHED_TYPE=$(grep '^CMAKE_BUILD_TYPE:STRING=' "${BUILD_DIR}/CMakeCache.txt" | cut -d= -f2)
+fi
+
+if [ "${CACHED_TYPE}" != "${BUILD_TYPE}" ]; then
+    echo "--> Configuring with ${GENERATOR} (${BUILD_TYPE})"
     cmake -B "${BUILD_DIR}" -G "${GENERATOR}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
     echo
 fi
