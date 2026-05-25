@@ -260,14 +260,6 @@ namespace B33p
         if (cmd && shift && code == 'Z')   { processor.getUndoManager().redo(); return true; }
         if (cmd && code == 'Z')            { processor.getUndoManager().undo(); return true; }
 
-        // Cmd+/ — About box. Slash is rarely used by JUCE controls
-        // for anything else, so it bubbles up reliably.
-        if (cmd && (code == '/' || key.getTextCharacter() == '/'))
-        {
-            showAboutDialog();
-            return true;
-        }
-
         return false;
     }
 
@@ -421,7 +413,7 @@ namespace B33p
                 }
                 break;
             case 2: // Help
-                m.addItem(withShortcut(MenuId::HelpAbout, "About b33p", "Cmd+/"));
+                m.addItem(withShortcut(MenuId::HelpAbout, "About b33p", ""));
                 break;
             default:
                 break;
