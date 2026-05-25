@@ -683,17 +683,34 @@ namespace B33p
                                     rulerRow.getBottom());
             }
 
-            // Bar labels — one per bar boundary.
+            // Bar labels — one per bar boundary, with a power-of-two
+            // skip when bars get too close to read. At standard tempos
+            // (120 BPM / 4/4) inside a 1000 px-wide grid this is a
+            // no-op (skip=1). At high BPM in narrow plugin hosts the
+            // skip factor doubles until adjacent labels have
+            // breathing room.
+            constexpr float kLabelWidth   = 46.0f;
+            constexpr float kLabelPadding = 8.0f;
+            const float barSpacingPx = secondsToX(secPerBar)
+                                       - secondsToX(0.0);
+            int labelSkip = 1;
+            while (labelSkip * barSpacingPx < kLabelWidth + kLabelPadding)
+                labelSkip *= 2;
+
             g.setColour(juce::Colour::fromRGB(190, 190, 190));
             g.setFont(juce::FontOptions(9.0f));
             int barNum = 1;
-            for (double t = 0.0; t <= length + 1e-9; t += secPerBar, ++barNum)
+            int barCount = 0;
+            for (double t = 0.0; t <= length + 1e-9; t += secPerBar, ++barNum, ++barCount)
             {
+                if (barCount % labelSkip != 0)
+                    continue;
+
                 const float x = secondsToX(t);
                 g.drawText("Bar " + juce::String(barNum),
                            juce::Rectangle<float>(x + 2.0f,
                                                   rulerRow.getCentreY(),
-                                                  46.0f,
+                                                  kLabelWidth,
                                                   kRulerHeight * 0.5f),
                            juce::Justification::centredLeft);
             }
