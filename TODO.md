@@ -260,6 +260,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] OscillatorSection + FilterSection cell width is now capped at 180 pt with the cell group centered. Switching between modes (Sine → FM → Wavetable, or Lowpass → Formant) no longer makes unchanged knobs visibly resize — Pitch / Cutoff / Resonance stay the same size whatever the mode reveals. Tight modes (3+ visible sliders) fall back to the previous proportional layout. (REVIEW.md Pass 1 HI #19.)
 - [x] ModulationSection has a small italic hint line above the matrix rows: "Route a Source (LFO 1 or LFO 2) to a Destination, then dial the Amount to start modulating." Always visible — short enough to be quiet in full flight, prominent enough that a first-time user has a starting point. (REVIEW.md Pass 1 HI #20.)
 - [x] ModEffects slider labels read "—" when type=None (was misleading "Rate / Depth / Mix" from the Chorus placeholder). Pairs with the existing disabled state to say "nothing meaningful here yet." (REVIEW.md Pass 1 HI #21.)
+- [x] Snap-target preview line alpha bumped from 0.55 → 0.85 so the valid-snap guide is reliably visible during drag. Wall-clamp variant (red, thicker stroke) stays distinguishable. (REVIEW.md Pass 1 HI #22.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
