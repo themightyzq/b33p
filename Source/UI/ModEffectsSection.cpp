@@ -14,7 +14,15 @@ namespace B33p
         // bypass.
         struct TypeLabels { const char* p1; const char* p2; const char* mix; };
         constexpr TypeLabels kTypeLabels[] = {
-            { "Rate",   "Depth",  "Mix" },   // None (placeholder; sliders disabled)
+            { "—",      "—",      "—"   },   // None — neutral labels rather
+                                              // than the misleading "Rate /
+                                              // Depth / Mix" placeholder.
+                                              // The dashes pair with the
+                                              // disabled slider state to say
+                                              // "nothing meaningful here yet"
+                                              // without advertising
+                                              // functionality that isn't
+                                              // active.
             { "Rate",   "Depth",  "Mix" },   // Chorus
             { "Size",   "Damp",   "Mix" },   // Reverb
             { "Time",   "Fback",  "Mix" },   // Delay
