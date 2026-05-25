@@ -51,6 +51,12 @@ namespace B33p
         std::array<LfoControls,  kNumLfosPerLane> lfoControls;
         std::array<SlotControls, kNumModSlots>    slotControls;
 
+        // Empty-state hint sitting between the LFO row and the matrix
+        // rows. Always visible — short enough not to distract a power
+        // user with the section in full flight, prominent enough to
+        // give a first-time user a starting point.
+        juce::Label hintLabel;
+
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModulationSection)
     };
 }
