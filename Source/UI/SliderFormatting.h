@@ -88,6 +88,31 @@ namespace B33p::SliderFormatting
         slider.updateText();
     }
 
+    // Linear-gain → dB display. Slider value is linear amplitude
+    // (e.g. 1.0 = unity, 2.0 = +6 dB). Display reads as dB because
+    // audio users speak dB. Round-trips via valueFromTextFunction so
+    // a typed "+3 dB" parses back to 10^(3/20) ≈ 1.41 linear.
+    inline void applyLinearGainAsDb(juce::Slider& slider)
+    {
+        slider.textFromValueFunction = [](double v)
+        {
+            if (v <= 1.0e-4)   // ~-80 dB; clamp to display "-inf"
+                return juce::String("-inf dB");
+            const double db = 20.0 * std::log10(v);
+            const auto sign = db >= 0.0 ? juce::String("+") : juce::String();
+            return sign + juce::String(db, 1) + " dB";
+        };
+        slider.valueFromTextFunction = [](const juce::String& s)
+        {
+            const auto trimmed = s.trim();
+            if (trimmed.containsIgnoreCase("inf"))
+                return 0.0;
+            const double db = trimmed.getDoubleValue();
+            return std::pow(10.0, db / 20.0);
+        };
+        slider.updateText();
+    }
+
     // Wires double-click on the knob to snap back to the parameter's
     // default value (DAW convention). Pulls the default from the
     // APVTS parameter's normalised range so this stays in sync if
