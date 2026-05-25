@@ -87,3 +87,70 @@ jobs:
             build/B33p_artefacts/Release/VST3
             build/B33p_artefacts/Release/AU
           if-no-files-found: error
+
+  # ASAN + UBSAN run on Linux only. Sanitizers add ~30% runtime overhead
+  # but catch heap bugs, use-after-free, and signed-overflow-style UB the
+  # unit suite can't surface on its own. Only the test target is built —
+  # instrumenting Standalone/VST3/AU adds CI time without catching bugs
+  # the test suite already exercises. Apple Clang on a Universal binary
+  # cannot enable sanitizers, so macOS is intentionally excluded.
+  sanitizers:
+    name: ubuntu-latest (asan + ubsan)
+    runs-on: ubuntu-latest
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm_cache
+      # RelWithDebInfo keeps optimizations but ships debug info so
+      # sanitizer stack traces point at the right line.
+      CMAKE_BUILD_TYPE: RelWithDebInfo
+      # Fail fast on the first finding so CI surfaces the actual issue
+      # instead of cascading follow-on errors.
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:strict_string_checks=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Cache CPM sources (JUCE and friends)
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          # Shared key with the main build job's ubuntu-latest entry —
+          # CPM_SOURCE_CACHE stores JUCE source only; instrumented vs
+          # non-instrumented compile artefacts don't live here.
+          key: cpm-ubuntu-latest-juce-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            cpm-ubuntu-latest-
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            libjack-jackd2-dev \
+            libcurl4-openssl-dev \
+            libfreetype6-dev \
+            libfontconfig1-dev \
+            libx11-dev \
+            libxcomposite-dev \
+            libxcursor-dev \
+            libxext-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxrender-dev \
+            libglu1-mesa-dev \
+            mesa-common-dev
+
+      - name: Configure (asan + ubsan)
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} -DB33P_ENABLE_SANITIZERS=ON
+
+      - name: Build tests
+        # Only B33pTests + its dependencies. The plugin/standalone
+        # targets aren't shipped from this job; building them under
+        # sanitizers wastes CI time without extra bug coverage.
+        run: cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --target B33pTests --parallel 2
+
+      - name: Run sanitized test suite
+        working-directory: build
+        run: ctest --output-on-failure --build-config ${{ env.CMAKE_BUILD_TYPE }}

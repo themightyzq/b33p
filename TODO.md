@@ -239,7 +239,8 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Wrap the Pattern toolbar at narrow widths so plugin hosts with constrained UI panels don't lose access to BPM / Time-sig / Length / Grid. Wide-width fit is in; narrow-width graceful degradation is still TODO. (REVIEW.md Critical #1, remaining half.) — Below 1440 pt the settings cluster (Length / Grid / BPM / Time-sig) drops to a second toolbar row. Verified at 1500 (single row) and 1200 (wrapped) widths.
 - [x] Add `NOTICE` crediting JUCE 8.0.12 (GPL-3) and Catch2 v3.14.0 (BSL-1.0).
 - [ ] Set the GitHub repository's social preview image (Settings → Social preview).
-- [ ] Wire sanitizer / static-analysis CI rails (asan, ubsan, clang-tidy) — none today.
+- [x] Wire **sanitizer** CI rails — `B33P_ENABLE_SANITIZERS` CMake option enables `-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer` on GCC/Clang; new `sanitizers` job on Ubuntu builds B33pTests under asan + ubsan with fail-fast halt-on-error. Apple Universal builds warn-and-skip (multi-arch + asan is incompatible). **clang-tidy** stays a follow-up.
+- [ ] Wire **clang-tidy** static-analysis CI rail — `.clang-tidy` config + GitHub Actions job. Deferred from the sanitizer-CI pass because a first run on a v0.2.0 codebase that has never been clang-tidied will surface dozens of triage items; scoping it separately keeps that effort bounded.
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
