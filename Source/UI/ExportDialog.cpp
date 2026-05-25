@@ -89,6 +89,27 @@ namespace B33p
             formatCombo.addItem(kFormats[i].label,
                                 idForIndex(static_cast<int>(i)));
         formatCombo.setSelectedId(idForIndex(0), juce::dontSendNotification); // WAV
+
+        // Live-rewrite the displayed filename extension when the user
+        // changes format. Without this, the dialog shows e.g.
+        // "b33p_export.wav" even after picking FLAC — the actual
+        // submit-time rewrite (below) eventually fixes it, but the
+        // visible filename desyncs from the chosen format in the
+        // meantime, which reads as a bug.
+        formatCombo.onChange = [this]
+        {
+            const auto current = destinationField.getText().trim();
+            if (current.isEmpty()) return;
+
+            const int fmtIdx = indexForId(formatCombo.getSelectedId());
+            if (fmtIdx < 0) return;
+
+            const auto format = kFormats[static_cast<size_t>(fmtIdx)].value;
+            const auto rewritten = juce::File(current).withFileExtension(extensionFor(format));
+            destinationField.setText(rewritten.getFullPathName(),
+                                      juce::dontSendNotification);
+        };
+
         addAndMakeVisible(formatCombo);
 
         styleLabel(sampleRateLabel, "Sample Rate:");

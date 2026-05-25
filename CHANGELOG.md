@@ -29,6 +29,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Voice section titles no longer repeat `(Lane N)` six times — only the topmost section (Oscillator) carries the lane suffix as the single editor-wide lane indicator. Amp Envelope, Filter, Effects, Mod FX, Modulation, and Master drop the suffix.
 - New `Help ▸ Audio Settings...` dialog explains where audio device settings live: the standalone wrapper's top-left Options gear icon in standalone, or host I/O routing under VST3 / AU. A user landing on a silent first launch now has a documented path to the recovery, even though the dialog itself doesn't yet open the wrapper's settings programmatically.
 - Export dialog now defaults to 44.1 kHz instead of 48 kHz. Matches b33p's primary distribution context (music / web / games), where 44.1 kHz is the de-facto standard.
+- Export dialog filename extension updates live when the user changes the format combo. Previously the rewrite happened only at submit time, so a user who picked FLAC mid-session still saw `b33p_export.wav` in the destination field until they clicked Export.
 
 ### Removed
 
