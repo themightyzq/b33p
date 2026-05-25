@@ -241,6 +241,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [ ] Set the GitHub repository's social preview image (Settings → Social preview).
 - [x] Wire **sanitizer** CI rails — `B33P_ENABLE_SANITIZERS` CMake option enables `-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer` on GCC/Clang; new `sanitizers` job on Ubuntu builds B33pTests under asan + ubsan with fail-fast halt-on-error. Apple Universal builds warn-and-skip (multi-arch + asan is incompatible). **clang-tidy** stays a follow-up.
 - [ ] Wire **clang-tidy** static-analysis CI rail — `.clang-tidy` config + GitHub Actions job. Deferred from the sanitizer-CI pass because a first run on a v0.2.0 codebase that has never been clang-tidied will surface dozens of triage items; scoping it separately keeps that effort bounded.
+- [x] Demote the top-level `Lane` menu — move its five items to `Edit ▸ Lane`, drop `Lane` from the menu bar (`File · Edit · Help`), and extend the lane right-click context with Copy voice / Reset voice / Randomize all so it carries the same actions. (REVIEW.md Pass 1 Critical #3.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
