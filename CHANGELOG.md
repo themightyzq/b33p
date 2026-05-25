@@ -26,6 +26,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Per-lane Mute / Solo buttons now differentiate state by luminance (dark off → bright on) and text contrast (dim grey off → white / dark on), not by color tint alone. Color-blind users see the state change via the brightness shift instead of relying on red vs yellow.
 - Empty pattern hint is now two stacked lines instead of one cramped 137-character run-on — splits at the natural period so the first-run gesture-teach reads as instructions.
 - Pitch Envelope shows a crosshair cursor on hover so it reads as an editable surface (was previously the default arrow). The zero-semitones baseline brightens when the curve is empty and gets a small "0 st" axis label so the empty canvas reads as a reference axis to draw against, not a passive display.
+- Voice section titles no longer repeat `(Lane N)` six times — only the topmost section (Oscillator) carries the lane suffix as the single editor-wide lane indicator. Amp Envelope, Filter, Effects, Mod FX, Modulation, and Master drop the suffix.
 
 ### Removed
 

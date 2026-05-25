@@ -60,7 +60,6 @@ namespace B33p
                                                 processor.getApvts(),
                                                 ParameterIDs::voiceGain(lane));
 
-        setTitleSuffix(processor.laneTitleSuffix(lane));
         setAccentColour(processor.laneAccentColour(lane));
     }
 

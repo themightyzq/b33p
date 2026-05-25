@@ -58,7 +58,6 @@ namespace B33p
         SliderFormatting::applyDoubleClickReset(releaseSlider.getSlider(), processor.getApvts(), ParameterIDs::ampRelease(lane));
 
         visualizer.retargetLane(lane);
-        setTitleSuffix(processor.laneTitleSuffix(lane));
         setAccentColour(processor.laneAccentColour(lane));
     }
 

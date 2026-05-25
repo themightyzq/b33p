@@ -81,7 +81,6 @@ namespace B33p
         SliderFormatting::applyDoubleClickReset(vowelSlider    .getSlider(), processor.getApvts(), ParameterIDs::filterVowel(lane));
 
         visualizer.retargetLane(lane);
-        setTitleSuffix(processor.laneTitleSuffix(lane));
         setAccentColour(processor.laneAccentColour(lane));
 
         // Re-hook onChange after attachment swap so the listener
