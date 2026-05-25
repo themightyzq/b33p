@@ -40,6 +40,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Lane name labels show an I-beam cursor on hover so the double-click rename affordance is discoverable without having to hover for the tooltip or read the docs.
 - Master Gain knob now reads in dB (e.g. `0.0 dB` at unity, `+6.0 dB` at 2.0 linear) instead of the raw linear value. Audio users speak dB; typing `+3 dB` parses back to the right linear value.
 - Save-Preset failure dialog is now actionable: it names the invalid characters to avoid (`/ \ : * ? " |`) and prints the full on-disk path to the presets folder so the user can fix permissions if that's the cause.
+- Preset browser shows an empty-state hint ("No presets yet. Use File ▸ Save Preset…") when the directory is empty, and renders factory presets (those whose name starts with `Factory - `) in italic with a slightly cooler tint so they're visually distinct from user-saved presets at a glance.
 
 ### Removed
 

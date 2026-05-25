@@ -41,6 +41,17 @@ namespace B33p
         loadButton.setEnabled(false);
         deleteButton.setEnabled(false);
 
+        // Empty-state hint overlay (visibility toggled in refresh()).
+        emptyStateLabel.setText(
+            "No presets yet.\n\nUse File ▸ Save Preset… to save the current patch.",
+            juce::dontSendNotification);
+        emptyStateLabel.setJustificationType(juce::Justification::centred);
+        emptyStateLabel.setFont(juce::FontOptions(12.0f).withStyle("Italic"));
+        emptyStateLabel.setColour(juce::Label::textColourId,
+                                    juce::Colour::fromRGB(140, 140, 140));
+        emptyStateLabel.setInterceptsMouseClicks(false, false);
+        addAndMakeVisible(emptyStateLabel);
+
         refresh();
         setSize(420, 360);
     }
@@ -52,6 +63,7 @@ namespace B33p
         list.deselectAllRows();
         loadButton.setEnabled(false);
         deleteButton.setEnabled(false);
+        emptyStateLabel.setVisible(presets.empty());
     }
 
     int PresetBrowserDialog::getNumRows()
@@ -73,11 +85,27 @@ namespace B33p
             g.fillRect(0, 0, width, height);
         }
 
-        g.setColour(juce::Colour::fromRGB(220, 220, 220));
-        g.setFont(juce::FontOptions(13.0f));
-
         const auto& f = presets[static_cast<size_t>(rowNumber)];
-        g.drawText(f.getFileNameWithoutExtension(),
+        const auto displayName = f.getFileNameWithoutExtension();
+
+        // Factory presets ship with a "Factory - " prefix (see
+        // GeneratorPresets.cpp). Render them italic + slightly cooler
+        // tint so the user can scan factory vs user presets at a
+        // glance — keeps the factory set from disappearing into the
+        // user-saved list as the directory grows.
+        const bool isFactory = displayName.startsWith("Factory - ");
+        if (isFactory)
+        {
+            g.setColour(juce::Colour::fromRGB(170, 185, 215));
+            g.setFont(juce::FontOptions(13.0f).withStyle("Italic"));
+        }
+        else
+        {
+            g.setColour(juce::Colour::fromRGB(220, 220, 220));
+            g.setFont(juce::FontOptions(13.0f));
+        }
+
+        g.drawText(displayName,
                    juce::Rectangle<int>(8, 0, width - 16, height),
                    juce::Justification::centredLeft);
     }
@@ -148,6 +176,10 @@ namespace B33p
         auto buttonRow = bounds.removeFromBottom(kButtonRowHeight);
         bounds.removeFromBottom(kButtonGap);
         list.setBounds(bounds);
+        // Empty-state label sits over the same area as the list.
+        // setInterceptsMouseClicks(false) was set on construction, so
+        // it never blocks clicks even when visible.
+        emptyStateLabel.setBounds(bounds);
 
         // Right-aligned: Close on the far right, Delete left of it,
         // Load at the far left so the primary action sits where the

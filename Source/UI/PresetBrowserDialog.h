@@ -58,6 +58,10 @@ namespace B33p
         juce::TextButton deleteButton { "Delete" };
         juce::TextButton closeButton  { "Close"  };
 
+        // Shown when presets is empty so the user knows where to
+        // start instead of staring at a blank list.
+        juce::Label emptyStateLabel;
+
         std::vector<juce::File> presets;
 
         OnLoad                onLoadCallback;
