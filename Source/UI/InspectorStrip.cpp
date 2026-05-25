@@ -170,7 +170,11 @@ namespace B33p
                                   + " events selected   ·   Delete · ←/→ nudge · Cmd+C / Cmd+V",
                                  juce::dontSendNotification);
         else
-            placeholder.setText("Click an event to edit it.",
+            // Names what the inspector can edit so a first-time user
+            // knows there's something here worth selecting an event
+            // for, rather than just learning "yes, this is where edit
+            // happens" via trial and error.
+            placeholder.setText("Select a clip to edit lane, start, duration, pitch, and velocity.",
                                  juce::dontSendNotification);
 
         for (auto* c : { (juce::Component*) &laneLabel,
