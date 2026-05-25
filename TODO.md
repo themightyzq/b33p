@@ -252,6 +252,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Refresh two stale `v0.2 polish & doc sweep` entries (Audio settings menu, custom-waveform footer) to match what actually shipped. Wording-only fix; the code was already correct on both. (REVIEW.md Pass 1 HI #11.)
 - [x] Help ▸ Audio Settings... dialog — points the user at the standalone wrapper's gear icon (standalone path) or the DAW's I/O routing (plugin path). Documentation-as-recovery; programmatic launch of the wrapper dialog requires custom-standalone-app plumbing tied to the deferred-regressions block. (REVIEW.md Pass 1 HI #12.)
 - [x] Export dialog default sample rate is now 44.1 kHz (was 48 kHz). Matches b33p's music / web / games distribution context; the 8 / 11.025 / 16 / 22.05 kHz lo-fi options ahead of it stay as deliberate retro choices. (REVIEW.md Pass 1 HI #13.)
+- [x] Export dialog filename extension now updates live when the user changes the format combo (was previously only rewritten at submit-time, so a user picking FLAC would still see `…wav` in the destination field until they clicked Export). (REVIEW.md Pass 1 HI #14.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
