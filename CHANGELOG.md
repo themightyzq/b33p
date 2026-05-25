@@ -8,7 +8,10 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
-_Nothing yet — `main` is at v0.2.0._
+### Added
+
+- `.gitattributes` declares cross-platform line-ending normalization (LF for text) and binary markers for `*.png`, `*.icns`, `*.ico`, `*.wav`.
+- `docs/RELEASE_SMOKE.md` — per-OS smoke-test runbook for `v*` draft releases, covering install commands, host-DAW checks, the `auval` AU validation, and the publish / re-tag / fix-forward decision tree.
 
 ## [0.2.0] — 2026-04-30
 

@@ -232,7 +232,8 @@ End-user review surfaced a stack of items that all amount to "the README and the
 Cross-cutting work that isn't tied to any single phase. Review at the start of every session — if any item has a time-sensitive deadline approaching, flag it to the user before starting feature work.
 
 - [x] Bump `actions/checkout` and `actions/cache` to `@v5` before June 2, 2026 (Node 20 deprecation — GitHub Actions warning surfaced on every run)
-- [ ] Add `.gitattributes` (`* text=auto eol=lf` plus binary marks for `*.png`, `*.icns`, `*.ico`, `*.wav`).
+- [x] Add `.gitattributes` (`* text=auto eol=lf` plus binary marks for `*.png`, `*.icns`, `*.ico`, `*.wav`).
+- [x] Add `docs/RELEASE_SMOKE.md` — per-OS smoke-test runbook + failure-mode triage + publish / re-tag / fix-forward decision tree for any `v*` draft release.
 - [ ] Add `NOTICE` crediting JUCE 8.0.12 (GPL-3) and Catch2 v3.14.0 (BSL-1.0).
 - [ ] Set the GitHub repository's social preview image (Settings → Social preview).
 - [ ] Wire sanitizer / static-analysis CI rails (asan, ubsan, clang-tidy) — none today.
