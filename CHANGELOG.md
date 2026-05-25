@@ -49,6 +49,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Inspector strip in multi-select mode now lists the applicable shortcuts (Delete, arrow-key nudge, Cmd+C / Cmd+V) instead of just the count, so users know what they can do with the selection.
 - Pattern grid lanes now show a subtle hover tint (alpha 0.07) when the cursor is over them — sitting visually between the default 0.04 and the selected-lane 0.10. Tells the user which lane will receive a click / drag-create before they commit.
 - Parked playhead is now bright (230,230,240) instead of dim (140,140,140), so it sits above the brighter bar-tick layer. The playhead is the paste-anchor for Cmd+V — it should be the most prominent vertical line in the pattern, not blend into the ruler.
+- Inspector empty-state copy now names what the inspector edits ("Select a clip to edit lane, start, duration, pitch, and velocity.") instead of the previous "Click an event to edit it.", so first-time users know there's something worth selecting an event for.
 
 ### Removed
 
