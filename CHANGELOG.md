@@ -52,6 +52,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Inspector empty-state copy now names what the inspector edits ("Select a clip to edit lane, start, duration, pitch, and velocity.") instead of the previous "Click an event to edit it.", so first-time users know there's something worth selecting an event for.
 - About dialog's "Keys" section now points at Help ▸ Keyboard Shortcuts… instead of duplicating the shortcut table. Single source of truth in the dedicated dialog; no drift when shortcuts change.
 - Unsaved-changes prompt now names the file ("Save changes to MyPatch.beep before closing?") instead of the abstract "This project has unsaved changes. Save before closing?" — the filename is what the user is mentally tracking.
+- Host bypass is now honored — when the DAW engages bypass (button or automation), b33p outputs silence instead of letting voices play through. New `host_bypass` APVTS parameter is exposed via `getBypassParameter()` so VST3 / AU hosts route their bypass automation to it; processBlock checks the value and early-returns with a cleared buffer.
 
 ### Removed
 

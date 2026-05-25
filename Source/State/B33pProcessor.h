@@ -220,6 +220,13 @@ namespace B33p
         bool  producesMidi() const override                                      { return false; }
         double getTailLengthSeconds() const override                             { return 0.0; }
 
+        // Host bypass — DAWs use this to route their bypass automation
+        // to a parameter we own. processBlock checks bypassParam and
+        // clears the buffer when set, so bypass actually does what the
+        // user expects (silence) instead of letting voices play
+        // through.
+        juce::AudioProcessorParameter* getBypassParameter() const override;
+
         int   getNumPrograms() override                                          { return 1; }
         int   getCurrentProgram() override                                       { return 0; }
         void  setCurrentProgram(int) override                                    {}
@@ -341,6 +348,11 @@ namespace B33p
         // Pattern snapshot lives behind atomic_load/store — see
         // class-level comment for the threading model.
         std::shared_ptr<const PatternSnapshot> snapshotSlot;
+
+        // Cached raw-parameter pointer for host bypass. Set once in
+        // the constructor from apvts.getRawParameterValue(); checked
+        // every processBlock to decide whether to clear and bail.
+        std::atomic<float>*                    bypassParam { nullptr };
 
         // Audio-thread mutable state (touched only from processBlock).
         bool                                   audioThreadPlaying { false };

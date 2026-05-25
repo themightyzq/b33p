@@ -272,6 +272,14 @@ namespace B33p
             juce::NormalisableRange<float> { 0.05f, 1.0f },
             1.0f));
 
+        // Host bypass — exposed via getBypassParameter() so DAWs
+        // route their bypass automation here. processBlock checks
+        // this value and clears the buffer if set. Defaults OFF.
+        layout.add(std::make_unique<juce::AudioParameterBool>(
+            juce::ParameterID { ParameterIDs::bypass(), kParameterVersionHint },
+            "Bypass",
+            false));
+
         return layout;
     }
 }

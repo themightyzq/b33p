@@ -40,7 +40,16 @@ namespace B33p
         , apvts(*this, &undoManager, "B33pParameters", createParameterLayout())
         , randomizer(apvts)
     {
+        // Cache the bypass parameter pointer once — processBlock
+        // reads it every block.
+        bypassParam = apvts.getRawParameterValue(ParameterIDs::bypass());
+
         registerAsApvtsListener();
+    }
+
+    juce::AudioProcessorParameter* B33pProcessor::getBypassParameter() const
+    {
+        return apvts.getParameter(ParameterIDs::bypass());
     }
 
     B33pProcessor::~B33pProcessor()
@@ -682,6 +691,22 @@ namespace B33p
 
         const int numSamples  = buffer.getNumSamples();
         const int numChannels = buffer.getNumChannels();
+
+        // Host bypass — JUCE 8 routes bypass through the parameter
+        // returned by getBypassParameter(). For an instrument plugin
+        // "bypass" means stop generating audio: clear the buffer and
+        // the MIDI through-pass. We don't bother crossfading — voices
+        // stop being triggered immediately, and their internal
+        // envelopes will quietly tail any sample already in flight on
+        // next un-bypass. Skipping the rest of the block also avoids
+        // advancing the pattern playhead and wasting CPU on muted
+        // voices.
+        if (bypassParam != nullptr && bypassParam->load() > 0.5f)
+        {
+            buffer.clear();
+            midi.clear();
+            return;
+        }
 
         pushParametersToVoices();
 
