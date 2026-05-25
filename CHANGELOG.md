@@ -46,6 +46,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - WaveformEditor footer is now two stacked lines instead of one run-on. Line 1 names the gesture; Line 2 explains Custom vs Wavetable slot semantics. Easier to scan.
 - Pattern ruler bar labels now skip in powers of two when bars get too close to read (high BPM + narrow grid). No change at standard 120 BPM / 4/4 / wide grid; just kicks in when labels would collide.
 - Pattern ruler tick hierarchy is now visually separable at a glance: grid lines dim further (RGB 40 → 32), bar ticks pop (150 → 200), beats stay where they were. The grid → beat → bar layers no longer blur into one another.
+- Inspector strip in multi-select mode now lists the applicable shortcuts (Delete, arrow-key nudge, Cmd+C / Cmd+V) instead of just the count, so users know what they can do with the selection.
 
 ### Removed
 
