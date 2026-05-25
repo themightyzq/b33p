@@ -162,7 +162,12 @@ namespace B33p
         // nudge / paste happen from the grid's keyboard shortcuts.
         placeholder.setVisible(! single);
         if (multi)
-            placeholder.setText(juce::String(totalCount) + " events selected.",
+            // Multi-select inspector also tells the user which actions
+            // apply to the whole selection — the inspector itself
+            // can't edit multi-event values, but the grid's keyboard
+            // shortcuts can.
+            placeholder.setText(juce::String(totalCount)
+                                  + " events selected   ·   Delete · ←/→ nudge · Cmd+C / Cmd+V",
                                  juce::dontSendNotification);
         else
             placeholder.setText("Click an event to edit it.",
