@@ -65,6 +65,16 @@ namespace B33p
             slot.amount.setTooltip("Modulation amount: -1 = full inverse, 0 = off, +1 = full positive");
         }
 
+        hintLabel.setText(
+            "Route a Source (LFO 1 or LFO 2) to a Destination, then dial the Amount to start modulating.",
+            juce::dontSendNotification);
+        hintLabel.setJustificationType(juce::Justification::centred);
+        hintLabel.setFont(juce::FontOptions(10.5f).withStyle("Italic"));
+        hintLabel.setColour(juce::Label::textColourId,
+                             juce::Colour::fromRGB(120, 120, 120));
+        hintLabel.setInterceptsMouseClicks(false, false);
+        addAndMakeVisible(hintLabel);
+
         retargetLane(processor.getSelectedLane());
     }
 
@@ -142,6 +152,14 @@ namespace B33p
             lfo.shape.setBounds(shapeRow);
             lfo.rate .setBounds(cell);
         }
+
+        // ---- Empty-state / orientation hint -------------------------
+        // Slim italic line above the matrix rows so a first-time user
+        // sees a starting point. Always visible — quiet enough that a
+        // power user with the section in full flight reads past it.
+        constexpr int kHintHeight = 16;
+        hintLabel.setBounds(bounds.removeFromTop(kHintHeight));
+        bounds.removeFromTop(kRowGap);
 
         // ---- Matrix rows --------------------------------------------
         for (int i = 0; i < kNumModSlots; ++i)

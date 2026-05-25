@@ -33,6 +33,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Batch export of 10+ variations now goes through a Cancel / Render confirmation dialog so the user knows how many files are about to be written and that the UI will lock during the batch. Below 10 variations the render starts directly — fast enough that confirming would be friction.
 - Parameter labels above every knob (`LabeledSlider`) now render bold instead of regular weight. Restores the param-name → value → control → randomizer hierarchy that the dice + lock buttons had been flattening.
 - OscillatorSection and FilterSection cell width is capped at 180 pt with the cell group centered. Switching waveform mode (Sine → FM → Wavetable) or filter mode (Lowpass → Comb → Formant) no longer makes unchanged knobs like Pitch and Cutoff visibly resize to fill the new layout — they stay the same size regardless of how many siblings appear.
+- Modulation section gains a small italic hint above the matrix rows: "Route a Source (LFO 1 or LFO 2) to a Destination, then dial the Amount to start modulating." Removes the "what do I do with this" cliff a first-time user used to face when opening the most powerful section in the editor.
 
 ### Removed
 
