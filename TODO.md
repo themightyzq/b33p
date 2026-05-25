@@ -268,6 +268,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Preset browser empty state ("No presets yet. Use File ▸ Save Preset…") + factory presets render italic + slightly cooler tint so they're visually distinct from user-saved presets at a glance. Restore-factory-presets action stays a follow-up. (REVIEW.md Pass 1 HI #27.)
 - [x] REVIEW.md Pass 1 HI #28 (plugin vs standalone title identical) — false positive, verified at `MainComponent.cpp:331-333`. `updateWindowTitle()` returns early when no `juce::DocumentWindow` ancestor exists, which is exactly the plugin case — so the host's own title (DAW track + plugin name) remains. Standalone shows `b33p - <file>`. Titles are NOT identical between modes. No code change.
 - [x] Open Recent submenu now stays enabled when the MRU is empty and shows a disabled "No recent files" placeholder inside, instead of disabling the whole submenu (which read as "feature broken"). (REVIEW.md Pass 1 HI #29.)
+- [x] Section accent strip bumped from 2 px / α 0.85 to 4 px / α 1.0 so the per-lane color carries across the editor without becoming heavy. (REVIEW.md Pass 1 NTH #30.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
