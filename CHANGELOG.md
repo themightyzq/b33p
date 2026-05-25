@@ -18,6 +18,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 ### Changed
 
 - Default editor width bumped from 900 to 1500 pt so the Pattern toolbar's full control set (Play / Loop / Follow / time / Length / Grid / BPM / Time-sig / Randomize All / Scope / Export) is visible without clipping. Hero screenshot refreshed against the new build.
+- Pattern toolbar now wraps to a second row when the editor is laid out below 1440 pt — Length / Grid / BPM / Time-sig drop beneath the transport + actions clusters so every control stays reachable in narrow plugin-host panels. Wide-layout behaviour unchanged.
 
 ## [0.2.0] — 2026-04-30
 
