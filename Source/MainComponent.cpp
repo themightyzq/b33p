@@ -374,22 +374,32 @@ namespace B33p
                 m.addItem(withShortcut(MenuId::FileNew,    "New",        "Cmd+N"));
                 m.addItem(withShortcut(MenuId::FileOpen,   "Open...",    "Cmd+O"));
                 {
-                    // Persistent MRU. Disabled when empty so the user
-                    // gets a visual hint that the list will populate
-                    // as they open / save projects.
+                    // Persistent MRU. When empty, the submenu stays
+                    // enabled and contains a single disabled "No
+                    // recent files" placeholder — a greyed-out parent
+                    // with no children reads as "feature broken,"
+                    // whereas an enabled submenu with a disabled
+                    // placeholder reads as "feature inactive."
                     const auto& recents = fileManager.getRecentFiles();
                     const int n = juce::jmin(recents.getNumFiles(),
                                              MenuId::FileOpenRecentMax - MenuId::FileOpenRecentBase);
                     juce::PopupMenu recentMenu;
-                    for (int i = 0; i < n; ++i)
-                        recentMenu.addItem(MenuId::FileOpenRecentBase + i,
-                                           recents.getFile(i).getFileName());
-                    if (n > 0)
+                    if (n == 0)
                     {
+                        juce::PopupMenu::Item placeholder;
+                        placeholder.text      = "No recent files";
+                        placeholder.isEnabled = false;
+                        recentMenu.addItem(placeholder);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < n; ++i)
+                            recentMenu.addItem(MenuId::FileOpenRecentBase + i,
+                                               recents.getFile(i).getFileName());
                         recentMenu.addSeparator();
                         recentMenu.addItem(MenuId::FileClearRecent, "Clear Menu");
                     }
-                    m.addSubMenu("Open Recent", recentMenu, n > 0);
+                    m.addSubMenu("Open Recent", recentMenu);
                 }
                 m.addSeparator();
                 m.addItem(withShortcut(MenuId::FileSave,   "Save",       "Cmd+S"));
