@@ -41,6 +41,11 @@ namespace B33p
             nameLabel.setColour(juce::Label::backgroundWhenEditingColourId,
                                   juce::Colour::fromRGB(28, 28, 28));
             nameLabel.setTooltip("Double-click to rename");
+            // I-beam cursor on hover signals "this is editable text",
+            // turning the previously-buried double-click rename into a
+            // discoverable affordance without changing the label's
+            // visual styling.
+            nameLabel.setMouseCursor(juce::MouseCursor::IBeamCursor);
             nameLabel.onTextChange = [this, i]
             {
                 processor.setSelectedLane(i);
