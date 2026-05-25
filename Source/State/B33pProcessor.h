@@ -218,7 +218,14 @@ namespace B33p
 
         bool  acceptsMidi() const override                                       { return true;  }
         bool  producesMidi() const override                                      { return false; }
-        double getTailLengthSeconds() const override                             { return 0.0; }
+        // Covers worst-case audible tail across the per-voice signal
+        // path: amp-envelope release (~1 s max), reverb decay (~3 s
+        // at large-room settings), and delay feedback echoes (~2-3 s
+        // at moderate feedback). Conservative single value rather
+        // than per-lane dynamic computation — the host uses this to
+        // decide how many extra samples to record after transport
+        // stop so a reverb / delay tail isn't cut off mid-decay.
+        double getTailLengthSeconds() const override                             { return 4.0; }
 
         // Host bypass — DAWs use this to route their bypass automation
         // to a parameter we own. processBlock checks bypassParam and
