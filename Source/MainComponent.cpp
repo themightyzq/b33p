@@ -598,13 +598,21 @@ namespace B33p
                     const auto saved = presetManager.savePreset(name);
                     if (saved == juce::File())
                     {
+                        // Actionable copy: name the two likely causes
+                        // and the on-disk path so the user can fix
+                        // permissions or rename, rather than guessing.
+                        const juce::String message =
+                            "Could not save preset \"" + name + "\".\n\n"
+                            "The name may contain invalid characters "
+                            "(avoid / \\ : * ? \" |), or the presets folder "
+                            "is not writable:\n"
+                          + presetManager.getPresetsDirectory().getFullPathName();
+
                         juce::AlertWindow::showAsync(
                             juce::MessageBoxOptions()
                                 .withIconType(juce::MessageBoxIconType::WarningIcon)
                                 .withTitle("Save Preset failed")
-                                .withMessage("Could not save preset \""
-                                              + name + "\". The name may be invalid "
-                                              + "or the preset directory is unwriteable.")
+                                .withMessage(message)
                                 .withButton("OK"),
                             nullptr);
                         return;
