@@ -39,6 +39,12 @@ namespace B33p::ParameterIDs
     // get without locking parameters individually.
     inline juce::String randomizationScope() { return "randomization_scope"; }
 
+    // Host-bypass parameter exposed to the DAW via
+    // AudioProcessor::getBypassParameter(). Persists with the project
+    // so a saved-while-bypassed patch reloads bypassed; this matches
+    // most DAW conventions.
+    inline juce::String bypass()             { return "host_bypass"; }
+
     inline juce::String oscWaveform         (int lane) { return detail::prefixed(lane, "osc_waveform");           }
     inline juce::String basePitchHz         (int lane) { return detail::prefixed(lane, "base_pitch_hz");          }
     inline juce::String wavetableMorph      (int lane) { return detail::prefixed(lane, "wavetable_morph");        }
