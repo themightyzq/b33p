@@ -27,7 +27,11 @@ namespace B33p
 
         label.setText(name, juce::dontSendNotification);
         label.setJustificationType(juce::Justification::centred);
-        label.setFont(juce::FontOptions(11.0f));
+        // Bold the parameter name so it visually dominates the
+        // dice + lock buttons sitting below the knob. Same 11 pt
+        // size as before for consistency with other small labels;
+        // weight is the differentiator.
+        label.setFont(juce::FontOptions(11.0f).withStyle("Bold"));
         addAndMakeVisible(label);
 
         if (randomizerVisible)

@@ -31,6 +31,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Export dialog now defaults to 44.1 kHz instead of 48 kHz. Matches b33p's primary distribution context (music / web / games), where 44.1 kHz is the de-facto standard.
 - Export dialog filename extension updates live when the user changes the format combo. Previously the rewrite happened only at submit time, so a user who picked FLAC mid-session still saw `b33p_export.wav` in the destination field until they clicked Export.
 - Batch export of 10+ variations now goes through a Cancel / Render confirmation dialog so the user knows how many files are about to be written and that the UI will lock during the batch. Below 10 variations the render starts directly — fast enough that confirming would be friction.
+- Parameter labels above every knob (`LabeledSlider`) now render bold instead of regular weight. Restores the param-name → value → control → randomizer hierarchy that the dice + lock buttons had been flattening.
 
 ### Removed
 
