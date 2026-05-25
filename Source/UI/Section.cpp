@@ -40,15 +40,18 @@ namespace B33p
         g.drawText(title + suffix, titleArea, juce::Justification::centredLeft);
 
         // Per-section accent strip just under the title bar — visual
-        // cue for which lane this section currently edits.
+        // cue for which lane this section currently edits. 4 px at
+        // full alpha so it carries across the editor without becoming
+        // heavy; the 2 px / α 0.85 version was almost invisible at
+        // normal viewing distance.
         if (accentColour.getAlpha() > 0)
         {
             const auto strip = juce::Rectangle<int>(
                 getLocalBounds().getX() + kCornerRadius,
                 kTitleStripHeight,
                 getLocalBounds().getWidth() - 2 * kCornerRadius,
-                2);
-            g.setColour(accentColour.withAlpha(0.85f));
+                4);
+            g.setColour(accentColour);
             g.fillRect(strip);
         }
     }
