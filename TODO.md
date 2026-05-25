@@ -274,6 +274,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Pattern ruler bar labels now use power-of-two skip (1, 2, 4, …) when adjacent labels would overlap. At standard 120 BPM / 4/4 / wide grid → no skip; high BPM in narrow plugin hosts → labels thin out until they fit. (REVIEW.md Pass 1 NTH #33.)
 - [x] Ruler tick hierarchy widened: grid lines 40 → 32 (recede further), bar ticks 150 → 200 (dominate). The grid → beat → bar layer separation now reads pre-attentively instead of all blurring together. (REVIEW.md Pass 1 NTH #34.)
 - [x] Multi-select inspector now tells the user which shortcuts apply to the selection: "N events selected · Delete · ←/→ nudge · Cmd+C / Cmd+V" (was just "N events selected."). (REVIEW.md Pass 1 NTH #35.)
+- [x] Pattern grid lanes get a hover tint (alpha 0.07) when the cursor is over them — three-state layer: selected (0.10) > hovered (0.07) > default (0.04). Drag-create / click previews which lane will receive the action. (REVIEW.md Pass 1 NTH #36.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
