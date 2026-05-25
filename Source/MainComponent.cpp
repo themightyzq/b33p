@@ -184,6 +184,22 @@ namespace B33p
         fileManager.openFile(file);
     }
 
+    void MainComponent::confirmActionThen(const juce::String& message,
+                                           std::function<void()> proceed)
+    {
+        juce::AlertWindow::showAsync(
+            juce::MessageBoxOptions()
+                .withIconType(juce::MessageBoxIconType::WarningIcon)
+                .withTitle("Confirm")
+                .withMessage(message)
+                .withButton("Cancel")     // index 1 — Escape default
+                .withButton("Proceed"),   // index 2
+            [next = std::move(proceed)](int result)
+            {
+                if (result == 2 && next) next();
+            });
+    }
+
     void MainComponent::confirmDiscardThen(std::function<void()> proceed)
     {
         if (! processor.isDirty())
@@ -457,23 +473,57 @@ namespace B33p
             case MenuId::EditDeselect:    patternSection.getGrid().clearSelection();               break;
             case MenuId::EditRedo:   processor.getUndoManager().redo();         break;
             case MenuId::LaneCopyToAll:
-                processor.copyLaneSettingsToAll(processor.getSelectedLane());   break;
-            case MenuId::LaneResetVoice:
-                processor.resetLaneVoice(processor.getSelectedLane());          break;
-            case MenuId::LaneDiceAll:
             {
-                juce::Random rng;
-                processor.getRandomizer().rollAllUnlocked(rng);
+                const int lane = processor.getSelectedLane();
+                confirmActionThen(
+                    "Copy Lane " + juce::String(lane + 1)
+                        + "'s voice to every other lane?\n\n"
+                          "This overwrites the other three lanes' voice parameters.",
+                    [this, lane] { processor.copyLaneSettingsToAll(lane); });
                 break;
             }
+            case MenuId::LaneResetVoice:
+            {
+                const int lane = processor.getSelectedLane();
+                confirmActionThen(
+                    "Reset Lane " + juce::String(lane + 1)
+                        + "'s voice to defaults?",
+                    [this, lane] { processor.resetLaneVoice(lane); });
+                break;
+            }
+            case MenuId::LaneDiceAll:
+                confirmActionThen(
+                    "Randomize every unlocked parameter across all four lanes?",
+                    [this]
+                    {
+                        juce::Random rng;
+                        processor.getRandomizer().rollAllUnlocked(rng);
+                    });
+                break;
             case MenuId::LaneGenerate:
-                patternSection.getGrid().generateRandomPatternInLane(
-                    processor.getSelectedLane());
+            {
+                const int lane = processor.getSelectedLane();
+                confirmActionThen(
+                    "Generate a fresh random pattern in Lane "
+                        + juce::String(lane + 1)
+                        + "?\n\nThis replaces any existing events in that lane.",
+                    [this, lane]
+                    {
+                        patternSection.getGrid().generateRandomPatternInLane(lane);
+                    });
                 break;
+            }
             case MenuId::LaneClear:
-                patternSection.getGrid().clearAllEventsInLane(
-                    processor.getSelectedLane());
+            {
+                const int lane = processor.getSelectedLane();
+                confirmActionThen(
+                    "Clear all events in Lane " + juce::String(lane + 1) + "?",
+                    [this, lane]
+                    {
+                        patternSection.getGrid().clearAllEventsInLane(lane);
+                    });
                 break;
+            }
             case MenuId::HelpAbout:              showAboutDialog();             break;
             case MenuId::HelpKeyboardShortcuts:  showKeyboardShortcutsDialog(); break;
             default:                                                            break;

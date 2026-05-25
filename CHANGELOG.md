@@ -22,6 +22,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Default editor width bumped from 900 to 1500 pt so the Pattern toolbar's full control set (Play / Loop / Follow / time / Length / Grid / BPM / Time-sig / Randomize All / Scope / Export) is visible without clipping. Hero screenshot refreshed against the new build.
 - Pattern toolbar now wraps to a second row when the editor is laid out below 1440 pt — Length / Grid / BPM / Time-sig drop beneath the transport + actions clusters so every control stays reachable in narrow plugin-host panels. Wide-layout behaviour unchanged.
 - Menu bar reorganized: the top-level `Lane` menu is demoted to `Edit ▸ Lane` (its five actions still scope to the currently-selected lane). The lane right-click menu on the pattern grid also gains Copy voice / Reset voice / Randomize All Lanes so the same actions are reachable from either surface.
+- Destructive Lane menu actions — Copy voice to all lanes / Reset voice / Generate Random Pattern / Clear / Randomize All Lanes — now show a Cancel / Proceed confirmation dialog, matching the standard File ▸ New and File ▸ Open use for discarding unsaved work.
 
 ### Removed
 
