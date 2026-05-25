@@ -209,6 +209,15 @@ namespace B33p
             return;
         }
 
+        // Pull the project filename into the question — that's the
+        // anchor the user is mentally tracking, not the abstract
+        // "this project." Falls back to "Untitled" for never-saved
+        // projects.
+        const auto& currentFile = fileManager.getCurrentFile();
+        const auto fileName     = currentFile == juce::File()
+                                    ? juce::String("Untitled")
+                                    : currentFile.getFileName();
+
         // Button index in the result: 1 = Save, 2 = Discard, 0 = Cancel.
         // JUCE assigns 1..N for the order they're added; "Cancel" is
         // mapped to 0 by withButton when it is the last/escape choice.
@@ -216,7 +225,7 @@ namespace B33p
             juce::MessageBoxOptions()
                 .withIconType(juce::MessageBoxIconType::WarningIcon)
                 .withTitle("Unsaved changes")
-                .withMessage("This project has unsaved changes. Save before closing?")
+                .withMessage("Save changes to " + fileName + " before closing?")
                 .withButton("Save")
                 .withButton("Discard")
                 .withButton("Cancel"),
