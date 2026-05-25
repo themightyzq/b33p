@@ -265,6 +265,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Lane name labels show an I-beam cursor on hover, signalling the double-click rename affordance that was previously discoverable only by reading the tooltip or the docs. (REVIEW.md Pass 1 HI #24.)
 - [x] Master Gain knob now displays dB (e.g., `+6.0 dB` for the 2.0 linear value) instead of raw linear `1.00`. Round-trips: typed `+3 dB` parses back to 10^(3/20) ≈ 1.41 linear. New `SliderFormatting::applyLinearGainAsDb` helper. (REVIEW.md Pass 1 HI #25.)
 - [x] Save-Preset failure message is now actionable — names the invalid characters to avoid and shows the on-disk presets path so the user can check permissions. (REVIEW.md Pass 1 HI #26.)
+- [x] Preset browser empty state ("No presets yet. Use File ▸ Save Preset…") + factory presets render italic + slightly cooler tint so they're visually distinct from user-saved presets at a glance. Restore-factory-presets action stays a follow-up. (REVIEW.md Pass 1 HI #27.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
