@@ -209,7 +209,7 @@ End-user review surfaced a stack of items that all amount to "the README and the
 - [x] **`docs/USAGE.md`** — per-lane mental model, every keyboard shortcut, custom-waveform workflow, generate / clear lane via right-click, click-ruler-to-park-playhead. [minor]
 
 ### Missing user-facing features
-- [x] **Audio settings menu** — JUCE `AudioDeviceSelectorComponent` in an Options menu. Without it, a user whose default output isn't usable has no in-app recovery. [major]
+- [x] **Audio settings menu** — delivered via JUCE's standalone wrapper (top-right gear icon → Audio Settings opens an `AudioDeviceSelectorComponent`); `MainComponent` stays decoupled from the device layer. Standalone-only by design; under VST3 / AU the host manages the device. [major]
 - [x] **Edit menu enrichment** — add Copy / Paste / Select All / Deselect entries that show their shortcuts (Cmd+C/V/A, Esc), plus an arrow-nudge note. Half the editing shortcuts are otherwise undiscoverable. [major]
 - [x] **Generate / Clear lane in the Lane menu** — currently right-click only on empty lane area; both are otherwise invisible. [minor]
 - [x] **Tiny output level meter in Master section** — user has no visual feedback that audio is happening. [minor]
@@ -218,7 +218,7 @@ End-user review surfaced a stack of items that all amount to "the README and the
 - [x] **Explain "(Lane N)" in voice section titles** — fresh users have no in-app explanation that each lane has its own voice. Add a help blurb in About, or a one-line banner above the voice editor on first launch. [major]
 - [x] **Pitch Envelope panel needs a "(shared across lanes)" suffix** — current asymmetry implies the curve is per-lane when it's actually shared. [minor]
 - [x] **Visual cue when a Move drag hits the pattern wall** — currently silent clamp. [minor]
-- [x] **Custom oscillator: explain the visual sine is a placeholder** — small footer note in the editor: "Drawing replaces the default sine cycle." [minor]
+- [x] **Custom oscillator: explain the visual sine is a placeholder** — shipped as a footer in the WaveformEditor: "Click + drag to draw. Custom mode plays Slot 1; Wavetable mode blends all four via the Morph slider." [minor]
 
 ### Nice-to-have polish
 - [x] **Per-lane background tint** in the voice editor sections so the "(Lane N)" suffix matches a visual cue and lane switching is obviously different.
@@ -249,6 +249,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Empty pattern hint split into two stacked lines instead of one 137-character run-on. Splits at the natural period so the first-run gesture-teach reads as instructions, not a wall of text. (REVIEW.md Pass 1 Critical #8 — minimum sufficient fix; ghost-clip onboarding flourish stays a follow-up.)
 - [x] Pitch Envelope empty state — crosshair cursor on hover signals editability, the 0-semitones baseline brightens (and gets a "0 st" axis label) so it reads as a reference axis. Hint rephrased to "Click anywhere to add a pitch point." (REVIEW.md Pass 1 Critical #9.)
 - [x] Drop the repeated `(Lane N)` suffix from six of the seven voice sections — Oscillator (the topmost) keeps it as the single lane indicator. AmpEnv / Filter / Effects / Mod FX / Modulation / Master no longer repeat the same context six times. The full lane-header-strip enhancement REVIEW.md prescribed stays a follow-up. (REVIEW.md Pass 1 Critical #10.)
+- [x] Refresh two stale `v0.2 polish & doc sweep` entries (Audio settings menu, custom-waveform footer) to match what actually shipped. Wording-only fix; the code was already correct on both. (REVIEW.md Pass 1 HI #11.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
