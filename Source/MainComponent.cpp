@@ -681,12 +681,7 @@ namespace B33p
           + "  presets directory. Four factory patches ship with the\n"
           + "  app and seed the directory on first launch.\n\n"
           + "------ Keys ------\n"
-          + "  Space               play / stop\n"
-          + "  Shift+Space         audition the selected lane\n"
-          + "  Cmd+A / C / V       select all / copy / paste at playhead\n"
-          + "  Esc                 deselect\n"
-          + "  Arrow / Shift+Arrow nudge by 1 / 10 grid steps\n"
-          + "  Cmd+Z / Shift+Z     undo / redo";
+          + "  See Help > Keyboard Shortcuts... for the full reference.";
 
         // "Close" is added first so it's the default/Enter-key
         // button — clicking the GitHub button should be deliberate,
