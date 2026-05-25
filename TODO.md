@@ -261,6 +261,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] ModulationSection has a small italic hint line above the matrix rows: "Route a Source (LFO 1 or LFO 2) to a Destination, then dial the Amount to start modulating." Always visible — short enough to be quiet in full flight, prominent enough that a first-time user has a starting point. (REVIEW.md Pass 1 HI #20.)
 - [x] ModEffects slider labels read "—" when type=None (was misleading "Rate / Depth / Mix" from the Chorus placeholder). Pairs with the existing disabled state to say "nothing meaningful here yet." (REVIEW.md Pass 1 HI #21.)
 - [x] Snap-target preview line alpha bumped from 0.55 → 0.85 so the valid-snap guide is reliably visible during drag. Wall-clamp variant (red, thicker stroke) stays distinguishable. (REVIEW.md Pass 1 HI #22.)
+- [x] Velocity → clip-height mapping switched from linear to `sqrt(v)`. Low velocities now render with visible differentiation (dead zone where the 8 px floor kicks in shrinks from v≤16% to v≤2.5%). Audio behaviour unchanged. (REVIEW.md Pass 1 HI #23.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---

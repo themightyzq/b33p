@@ -36,6 +36,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Modulation section gains a small italic hint above the matrix rows: "Route a Source (LFO 1 or LFO 2) to a Destination, then dial the Amount to start modulating." Removes the "what do I do with this" cliff a first-time user used to face when opening the most powerful section in the editor.
 - Mod FX slider labels now read "—" when the effect type is None (was misleadingly showing "Rate / Depth / Mix" from the Chorus placeholder). The dashes pair with the existing disabled-slider state to clearly signal "nothing meaningful here yet."
 - Pattern grid snap-preview line is now visible at alpha 0.85 (was 0.55) while dragging clips. The line tells the user where their drag will land on release; the previous opacity was borderline invisible against the pattern background. The red wall-clamp variant stays distinguishable via color + thicker stroke.
+- Pattern clip height now uses a `sqrt(velocity)` visual curve instead of linear. Low-velocity clips no longer collapse onto the 8 px floor at v ≤ 16% — the dead zone shrinks to v ≤ 2.5%, so the top-edge velocity drag stays useful through the bottom of the range. Audio behaviour is unchanged; this is a visual perceptual curve only.
 
 ### Removed
 

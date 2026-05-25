@@ -510,13 +510,18 @@ namespace B33p
         const float x1 = secondsToX(e.startSeconds);
         const float x2 = secondsToX(e.startSeconds + e.durationSeconds);
 
-        // Velocity drives the visible height: a v=1.0 event fills
-        // the whole lane row, v=0.5 is half height. A small floor
-        // keeps even silent (v=0) events visible enough to grab.
+        // Velocity drives the visible height. sqrt(v) instead of a
+        // straight linear map gives low velocities more visual range:
+        // a v=0.1 clip renders at ~32% height (linear: 10%, floored)
+        // and a v=0.5 clip renders at ~70% (linear: 50%). Dead zone
+        // where the minH floor kicks in shrinks from v≤16% to v≤2.5%,
+        // so the top-edge velocity drag stays meaningful through the
+        // bottom of the parameter range. Audio behaviour is unchanged
+        // — this is a *visual* perceptual curve only.
         const float v        = juce::jlimit(0.0f, 1.0f, e.velocity);
         const float fullH    = laneRectF.getHeight();
         const float minH     = std::min(fullH, 8.0f);
-        const float visibleH = std::max(minH, fullH * v);
+        const float visibleH = std::max(minH, fullH * std::sqrt(v));
         const float yCentre  = laneRectF.getCentreY();
 
         return { x1,
