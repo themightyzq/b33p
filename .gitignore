@@ -94,3 +94,7 @@ CLAUDE.md
 .cursorrules
 .aider*
 .github/copilot-*
+
+# Other VCS workspace metadata (Diversion coexisting with git) -------------
+.diversion/
+.dvignore
