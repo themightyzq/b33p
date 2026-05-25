@@ -43,6 +43,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Preset browser shows an empty-state hint ("No presets yet. Use File ▸ Save Preset…") when the directory is empty, and renders factory presets (those whose name starts with `Factory - `) in italic with a slightly cooler tint so they're visually distinct from user-saved presets at a glance.
 - File ▸ Open Recent submenu stays enabled when the MRU list is empty and shows a disabled "No recent files" placeholder inside. Was previously a greyed-out parent submenu with no children, which read like a broken feature instead of an inactive one.
 - Per-section accent strip is now 4 px at full alpha (was 2 px at α 0.85). The lane-identity color carries across the editor at normal viewing distance instead of being almost invisible.
+- WaveformEditor footer is now two stacked lines instead of one run-on. Line 1 names the gesture; Line 2 explains Custom vs Wavetable slot semantics. Easier to scan.
 
 ### Removed
 
