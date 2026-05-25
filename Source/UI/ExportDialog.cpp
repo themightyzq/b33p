@@ -235,6 +235,37 @@ namespace B33p
             return;
         }
 
+        // Pre-flight confirm for large batches so the user knows
+        // they're about to start an N-file render with no in-progress
+        // cancel path. Without this, dragging the variations slider
+        // to 100 and clicking Export looks like the app froze. Below
+        // the threshold, batches are fast enough that the confirm
+        // would just be friction.
+        constexpr int kBatchConfirmThreshold = 10;
+        const int variations = juce::jlimit(1, 100,
+            static_cast<int>(variationsSlider.getValue()));
+
+        if (variations >= kBatchConfirmThreshold)
+        {
+            const juce::String msg =
+                "Render " + juce::String(variations) + " files into the destination folder?\n\n"
+                "Each file is one dice-rolled variation of the current patch, written as "
+                "numbered files (_001, _002, ...). The UI is locked while the batch runs.";
+
+            juce::AlertWindow::showAsync(
+                juce::MessageBoxOptions()
+                    .withIconType(juce::MessageBoxIconType::QuestionIcon)
+                    .withTitle("Confirm batch export")
+                    .withMessage(msg)
+                    .withButton("Cancel")
+                    .withButton("Render"),
+                [this](int result)
+                {
+                    if (result == 2) closeDialog(true);
+                });
+            return;
+        }
+
         closeDialog(true);
     }
 
