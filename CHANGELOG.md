@@ -45,6 +45,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Per-section accent strip is now 4 px at full alpha (was 2 px at α 0.85). The lane-identity color carries across the editor at normal viewing distance instead of being almost invisible.
 - WaveformEditor footer is now two stacked lines instead of one run-on. Line 1 names the gesture; Line 2 explains Custom vs Wavetable slot semantics. Easier to scan.
 - Pattern ruler bar labels now skip in powers of two when bars get too close to read (high BPM + narrow grid). No change at standard 120 BPM / 4/4 / wide grid; just kicks in when labels would collide.
+- Pattern ruler tick hierarchy is now visually separable at a glance: grid lines dim further (RGB 40 → 32), bar ticks pop (150 → 200), beats stay where they were. The grid → beat → bar layers no longer blur into one another.
 
 ### Removed
 
