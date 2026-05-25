@@ -96,8 +96,11 @@ namespace B33p
         for (size_t i = 0; i < kSampleRates.size(); ++i)
             sampleRateCombo.addItem(kSampleRates[i].label,
                                     idForIndex(static_cast<int>(i)));
-        // Default to 48 kHz (sixth preset).
-        sampleRateCombo.setSelectedId(idForIndex(5),
+        // Default to 44.1 kHz (fifth preset). Matches b33p's primary
+        // distribution context (music + web + games), where 44.1 is
+        // the de-facto standard. The 8 / 11.025 / 16 / 22.05 kHz
+        // presets ahead of it are deliberate lo-fi / retro options.
+        sampleRateCombo.setSelectedId(idForIndex(4),
                                       juce::dontSendNotification);
         addAndMakeVisible(sampleRateCombo);
 

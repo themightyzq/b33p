@@ -28,6 +28,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Pitch Envelope shows a crosshair cursor on hover so it reads as an editable surface (was previously the default arrow). The zero-semitones baseline brightens when the curve is empty and gets a small "0 st" axis label so the empty canvas reads as a reference axis to draw against, not a passive display.
 - Voice section titles no longer repeat `(Lane N)` six times — only the topmost section (Oscillator) carries the lane suffix as the single editor-wide lane indicator. Amp Envelope, Filter, Effects, Mod FX, Modulation, and Master drop the suffix.
 - New `Help ▸ Audio Settings...` dialog explains where audio device settings live: the standalone wrapper's top-left Options gear icon in standalone, or host I/O routing under VST3 / AU. A user landing on a silent first launch now has a documented path to the recovery, even though the dialog itself doesn't yet open the wrapper's settings programmatically.
+- Export dialog now defaults to 44.1 kHz instead of 48 kHz. Matches b33p's primary distribution context (music / web / games), where 44.1 kHz is the de-facto standard.
 
 ### Removed
 
