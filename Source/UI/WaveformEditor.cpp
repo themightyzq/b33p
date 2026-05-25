@@ -151,11 +151,20 @@ namespace B33p
         g.strokePath(wave, juce::PathStrokeType(kStroke));
 
         // Footer note — explains slot mechanics so a fresh user
-        // doesn't spend time wondering what the slot tabs do.
+        // doesn't spend time wondering what the slot tabs do. Two
+        // stacked lines instead of one run-on; each line tells one
+        // thing so the eye scans the gesture before the semantics.
         g.setColour(juce::Colour::fromRGB(120, 120, 120));
         g.setFont(juce::FontOptions(11.0f));
-        g.drawText("Click + drag to draw. Custom mode plays Slot 1; Wavetable mode blends all four via the Morph slider.",
-                   bounds.withTop(bounds.getBottom() - 16.0f),
+
+        constexpr float kFooterLineHeight = 14.0f;
+        const float footerTop = bounds.getBottom() - 2.0f * kFooterLineHeight - 2.0f;
+
+        g.drawText("Click + drag to draw.",
+                   bounds.withTop(footerTop).withHeight(kFooterLineHeight),
+                   juce::Justification::centred);
+        g.drawText("Custom plays Slot 1; Wavetable blends all four via Morph.",
+                   bounds.withTop(footerTop + kFooterLineHeight).withHeight(kFooterLineHeight),
                    juce::Justification::centred);
     }
 
