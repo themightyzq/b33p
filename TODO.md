@@ -270,6 +270,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Open Recent submenu now stays enabled when the MRU is empty and shows a disabled "No recent files" placeholder inside, instead of disabling the whole submenu (which read as "feature broken"). (REVIEW.md Pass 1 HI #29.)
 - [x] Section accent strip bumped from 2 px / α 0.85 to 4 px / α 1.0 so the per-lane color carries across the editor without becoming heavy. (REVIEW.md Pass 1 NTH #30.)
 - [x] WaveformEditor footer split into two stacked lines (was a single run-on sentence). Line 1 = gesture, Line 2 = slot semantics. (REVIEW.md Pass 1 NTH #31.)
+- [x] REVIEW.md Pass 1 NTH #32 (slot numbering 1-vs-0 cosmetic) — no action needed. REVIEW.md itself notes this is the "friendly choice" (UI is 1-indexed, code is 0-indexed) and was logged for awareness rather than action. Standard convention; no fix.
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
