@@ -12,6 +12,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 - `.gitattributes` declares cross-platform line-ending normalization (LF for text) and binary markers for `*.png`, `*.icns`, `*.ico`, `*.wav`.
 - `docs/RELEASE_SMOKE.md` — per-OS smoke-test runbook for `v*` draft releases, covering install commands, host-DAW checks, the `auval` AU validation, and the publish / re-tag / fix-forward decision tree.
+- `docs/REVIEW.md` — 2026-05-25 design review capturing 40 prioritized UX findings (10 Critical / 19 High Impact / 11 Nice to Have) as a backlog source for future chore-list entries.
 
 ## [0.2.0] — 2026-04-30
 

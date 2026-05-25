@@ -234,6 +234,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Bump `actions/checkout` and `actions/cache` to `@v5` before June 2, 2026 (Node 20 deprecation — GitHub Actions warning surfaced on every run)
 - [x] Add `.gitattributes` (`* text=auto eol=lf` plus binary marks for `*.png`, `*.icns`, `*.ico`, `*.wav`).
 - [x] Add `docs/RELEASE_SMOKE.md` — per-OS smoke-test runbook + failure-mode triage + publish / re-tag / fix-forward decision tree for any `v*` draft release.
+- [x] Capture the 2026-05-25 design review in `docs/REVIEW.md` — 40 prioritized UX findings (10 Critical / 19 High Impact / 11 Nice to Have). New chore-list entries get extracted from this as they're worked.
 - [ ] Add `NOTICE` crediting JUCE 8.0.12 (GPL-3) and Catch2 v3.14.0 (BSL-1.0).
 - [ ] Set the GitHub repository's social preview image (Settings → Social preview).
 - [ ] Wire sanitizer / static-analysis CI rails (asan, ubsan, clang-tidy) — none today.
