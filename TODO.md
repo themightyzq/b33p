@@ -243,6 +243,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [ ] Wire **clang-tidy** static-analysis CI rail — `.clang-tidy` config + GitHub Actions job. Deferred from the sanitizer-CI pass because a first run on a v0.2.0 codebase that has never been clang-tidied will surface dozens of triage items; scoping it separately keeps that effort bounded.
 - [x] Demote the top-level `Lane` menu — move its five items to `Edit ▸ Lane`, drop `Lane` from the menu bar (`File · Edit · Help`), and extend the lane right-click context with Copy voice / Reset voice / Randomize all so it carries the same actions. (REVIEW.md Pass 1 Critical #3.)
 - [x] Drop `Cmd+/` shortcut for About — the binding is non-standard (Cmd+/ is comment-toggle in most editors) and self-defeating (shortcut was only documented inside the dialog it shortcut). About stays reachable via Help menu. (REVIEW.md Pass 1 Critical #4.)
+- [x] Add `Help ▸ Keyboard Shortcuts...` entry — dedicated dialog mirroring README's keyboard table (Transport / File · Edit / Pattern editing). The shortcut reference is no longer buried inside About. (REVIEW.md Pass 1 Critical #5.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---

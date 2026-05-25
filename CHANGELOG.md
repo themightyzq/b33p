@@ -14,6 +14,8 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - `docs/RELEASE_SMOKE.md` — per-OS smoke-test runbook for `v*` draft releases, covering install commands, host-DAW checks, the `auval` AU validation, and the publish / re-tag / fix-forward decision tree.
 - `docs/REVIEW.md` — 2026-05-25 design review in two passes. Pass 1 (40 findings) audits the desktop-app surface: window layout, copy, empty states, keyboard. Pass 2 (38 findings) audits the plugin surface against the characterful-synth bar (u-he / Baby Audio / Soundtoys): host integration, knob craft, preset system, A/B compare, state recall, DSP-adjacent feedback. Together: 78 prioritized findings as the backlog source for future chore-list entries.
 - `NOTICE` — third-party attribution for JUCE 8.0.12 (GPL-3.0) and Catch2 v3.14.0 (BSL-1.0).
+- New `B33P_ENABLE_SANITIZERS` CMake option wires AddressSanitizer + UndefinedBehaviorSanitizer compile/link flags (GCC/Clang only). A dedicated `sanitizers` CI job on Ubuntu runs the full test suite under asan + ubsan on every push.
+- `Help ▸ Keyboard Shortcuts...` opens a dedicated dialog with the keyboard reference grouped by Transport / File · Edit / Pattern editing — mirroring the README's table. The shortcut reference no longer needs to be hunted inside the About dialog.
 
 ### Changed
 
@@ -24,7 +26,6 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 ### Removed
 
 - `Cmd+/` keyboard shortcut for the About dialog — it was non-standard (Cmd+/ is comment-toggle in most editors) and self-defeating (the shortcut was only documented inside the dialog it opens). About stays reachable via Help menu.
-- New `B33P_ENABLE_SANITIZERS` CMake option wires AddressSanitizer + UndefinedBehaviorSanitizer compile/link flags (GCC/Clang only). A dedicated `sanitizers` CI job on Ubuntu runs the full test suite under asan + ubsan on every push.
 
 ### Fixed
 

@@ -67,6 +67,7 @@ namespace B33p
         void parentHierarchyChanged() override;
         void updateWindowTitle();
         void showAboutDialog();
+        void showKeyboardShortcutsDialog();
         void showPresetBrowser();
         void promptSavePreset();
 
