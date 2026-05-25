@@ -245,6 +245,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Drop `Cmd+/` shortcut for About — the binding is non-standard (Cmd+/ is comment-toggle in most editors) and self-defeating (shortcut was only documented inside the dialog it shortcut). About stays reachable via Help menu. (REVIEW.md Pass 1 Critical #4.)
 - [x] Add `Help ▸ Keyboard Shortcuts...` entry — dedicated dialog mirroring README's keyboard table (Transport / File · Edit / Pattern editing). The shortcut reference is no longer buried inside About. (REVIEW.md Pass 1 Critical #5.)
 - [x] Confirm destructive Lane menu actions — Copy voice / Reset voice / Generate / Clear / Randomize All now route through a Cancel-or-Proceed dialog (the same standard File ▸ New / Open already use via `confirmDiscardThen`). PatternGrid lane right-click still skips the confirm; matching the menu surface is a follow-up. (REVIEW.md Pass 1 Critical #6.)
+- [x] Mute / Solo lane buttons now differentiate by luminance + text contrast — off state is dark with dim grey text; on state is bright fill (red / yellow) with high-contrast text. Color-blind users get the state via brightness shift, not red vs yellow. (REVIEW.md Pass 1 Critical #7.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---

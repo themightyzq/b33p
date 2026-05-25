@@ -23,6 +23,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Pattern toolbar now wraps to a second row when the editor is laid out below 1440 pt — Length / Grid / BPM / Time-sig drop beneath the transport + actions clusters so every control stays reachable in narrow plugin-host panels. Wide-layout behaviour unchanged.
 - Menu bar reorganized: the top-level `Lane` menu is demoted to `Edit ▸ Lane` (its five actions still scope to the currently-selected lane). The lane right-click menu on the pattern grid also gains Copy voice / Reset voice / Randomize All Lanes so the same actions are reachable from either surface.
 - Destructive Lane menu actions — Copy voice to all lanes / Reset voice / Generate Random Pattern / Clear / Randomize All Lanes — now show a Cancel / Proceed confirmation dialog, matching the standard File ▸ New and File ▸ Open use for discarding unsaved work.
+- Per-lane Mute / Solo buttons now differentiate state by luminance (dark off → bright on) and text contrast (dim grey off → white / dark on), not by color tint alone. Color-blind users see the state change via the brightness shift instead of relying on red vs yellow.
 
 ### Removed
 
