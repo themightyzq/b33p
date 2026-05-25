@@ -114,11 +114,23 @@ namespace B33p
             return;
 
         const int n = static_cast<int>(visibleSliders.size());
-        const int cellWidth = (bounds.getWidth() - (n - 1) * kSliderGap) / n;
+
+        // Cap cell width so unchanged sliders (e.g. Cutoff) do not
+        // visibly grow when switching to a filter mode with fewer
+        // visible knobs. See OscillatorSection::resized for the
+        // rationale — same pattern applied here.
+        constexpr int kMaxSliderCellWidth = 180;
+        const int proportionalWidth = (bounds.getWidth() - (n - 1) * kSliderGap) / n;
+        const int cellWidth         = std::min(proportionalWidth, kMaxSliderCellWidth);
+
+        const int totalCellsWidth = n * cellWidth + (n - 1) * kSliderGap;
+        const int leftPadding     = (bounds.getWidth() - totalCellsWidth) / 2;
+        bounds.removeFromLeft(leftPadding);
+
         for (int i = 0; i < n; ++i)
         {
             visibleSliders[static_cast<size_t>(i)]->setBounds(
-                i == n - 1 ? bounds : bounds.removeFromLeft(cellWidth));
+                bounds.removeFromLeft(cellWidth));
             if (i < n - 1)
                 bounds.removeFromLeft(kSliderGap);
         }
