@@ -577,10 +577,13 @@ namespace B33p
         const double length = pattern.getLengthSeconds();
 
         // Grid time lines (skipped entirely when snap is off so the
-        // canvas isn't cluttered).
+        // canvas isn't cluttered). Pulled down slightly from the
+        // previous (40,40,40) so the grid sits clearly *below* the
+        // ruler's beat / bar tick layer in the hierarchy, rather
+        // than competing with it.
         if (gridSeconds > 0.0)
         {
-            g.setColour(juce::Colour::fromRGB(40, 40, 40));
+            g.setColour(juce::Colour::fromRGB(32, 32, 32));
             for (double t = 0.0; t <= length + 1e-6; t += gridSeconds)
             {
                 const float x = secondsToX(t);
@@ -675,8 +678,13 @@ namespace B33p
                 const float x = secondsToX(t);
                 const bool  isBarStart = (beatIdx % numer) == 0;
 
+                // Bar ticks pop to (200) so the bar layer reads as
+                // the strongest element of the ruler hierarchy. Beats
+                // stay at (80) — clearly subordinate, still legible.
+                // Combined with the dimmer grid lines above, the eye
+                // can now pre-attentively separate grid → beat → bar.
                 g.setColour(isBarStart
-                                ? juce::Colour::fromRGB(150, 150, 150)
+                                ? juce::Colour::fromRGB(200, 200, 200)
                                 : juce::Colour::fromRGB( 80,  80,  80));
                 g.drawVerticalLine(static_cast<int>(std::round(x)),
                                     rulerRow.getBottom() - (isBarStart ? 6.0f : 3.0f),
