@@ -1,0 +1,27 @@
+b33p
+Copyright (C) 2026 ZQ SFX <https://github.com/themightyzq>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version. See LICENSE for the full text.
+
+---
+
+This product depends on the following third-party software, fetched at
+build time via CPM (see CMakeLists.txt):
+
+  JUCE — version 8.0.12
+    Cross-platform C++ application framework.
+    https://juce.com/  •  https://github.com/juce-framework/JUCE
+    Copyright (c) Raw Material Software Limited.
+    Licensed under the GNU General Public License v3.0 (GPL-3.0).
+    JUCE is dual-licensed; closed-source distribution requires a
+    commercial license from Raw Material Software Limited.
+
+  Catch2 — version v3.14.0
+    Modern C++ test framework. Test-target only; not present in the
+    shipped Standalone / VST3 / AU binaries.
+    https://github.com/catchorg/Catch2
+    Copyright Catch2 authors.
+    Licensed under the Boost Software License 1.0 (BSL-1.0).
