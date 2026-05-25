@@ -38,6 +38,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Pattern grid snap-preview line is now visible at alpha 0.85 (was 0.55) while dragging clips. The line tells the user where their drag will land on release; the previous opacity was borderline invisible against the pattern background. The red wall-clamp variant stays distinguishable via color + thicker stroke.
 - Pattern clip height now uses a `sqrt(velocity)` visual curve instead of linear. Low-velocity clips no longer collapse onto the 8 px floor at v ≤ 16% — the dead zone shrinks to v ≤ 2.5%, so the top-edge velocity drag stays useful through the bottom of the range. Audio behaviour is unchanged; this is a visual perceptual curve only.
 - Lane name labels show an I-beam cursor on hover so the double-click rename affordance is discoverable without having to hover for the tooltip or read the docs.
+- Master Gain knob now reads in dB (e.g. `0.0 dB` at unity, `+6.0 dB` at 2.0 linear) instead of the raw linear value. Audio users speak dB; typing `+3 dB` parses back to the right linear value.
 
 ### Removed
 

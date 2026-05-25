@@ -263,6 +263,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Snap-target preview line alpha bumped from 0.55 → 0.85 so the valid-snap guide is reliably visible during drag. Wall-clamp variant (red, thicker stroke) stays distinguishable. (REVIEW.md Pass 1 HI #22.)
 - [x] Velocity → clip-height mapping switched from linear to `sqrt(v)`. Low velocities now render with visible differentiation (dead zone where the 8 px floor kicks in shrinks from v≤16% to v≤2.5%). Audio behaviour unchanged. (REVIEW.md Pass 1 HI #23.)
 - [x] Lane name labels show an I-beam cursor on hover, signalling the double-click rename affordance that was previously discoverable only by reading the tooltip or the docs. (REVIEW.md Pass 1 HI #24.)
+- [x] Master Gain knob now displays dB (e.g., `+6.0 dB` for the 2.0 linear value) instead of raw linear `1.00`. Round-trips: typed `+3 dB` parses back to 10^(3/20) ≈ 1.41 linear. New `SliderFormatting::applyLinearGainAsDb` helper. (REVIEW.md Pass 1 HI #25.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---

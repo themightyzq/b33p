@@ -55,7 +55,10 @@ namespace B33p
         // symmetry with the other sections in case the policy ever
         // changes per-lane.
         gainSlider.attachRandomizer(processor, ParameterIDs::voiceGain(lane));
-        SliderFormatting::applyDecimal(gainSlider.getSlider(), 2);
+        // Display the linear parameter value as dB — audio users speak
+        // dB. Round-trips via valueFromTextFunction so a typed
+        // "+6 dB" parses back to ~2.0 linear.
+        SliderFormatting::applyLinearGainAsDb(gainSlider.getSlider());
         SliderFormatting::applyDoubleClickReset(gainSlider.getSlider(),
                                                 processor.getApvts(),
                                                 ParameterIDs::voiceGain(lane));
