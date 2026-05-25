@@ -15,6 +15,10 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - `docs/REVIEW.md` — 2026-05-25 design review capturing 40 prioritized UX findings (10 Critical / 19 High Impact / 11 Nice to Have) as a backlog source for future chore-list entries.
 - `NOTICE` — third-party attribution for JUCE 8.0.12 (GPL-3.0) and Catch2 v3.14.0 (BSL-1.0).
 
+### Changed
+
+- Default editor width bumped from 900 to 1500 pt so the Pattern toolbar's full control set (Play / Loop / Follow / time / Length / Grid / BPM / Time-sig / Randomize All / Scope / Export) is visible without clipping. Hero screenshot refreshed against the new build.
+
 ## [0.2.0] — 2026-04-30
 
 A 28-commit session on 2026-04-29 worked top-to-bottom through the post-MVP

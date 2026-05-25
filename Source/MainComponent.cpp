@@ -126,7 +126,13 @@ namespace B33p
 
         setWantsKeyboardFocus(true);
 
-        setSize(900, 920 + kMenuBarHeight + kModRowHeight + kGap + kModulationRowHeight + kGap);
+        // 1500 wide accommodates the Pattern toolbar's full set of controls
+        // (Play / Loop / Follow / time readout / Length / Grid / BPM / Time-sig
+        // on the left, Randomize All / Scope / Export on the right — see
+        // PatternSection::resized). At the old 900 width, BPM + Time-sig +
+        // the Length label were squeezed into zero-width slivers. A toolbar
+        // that wraps gracefully at narrow widths is the proper long-term fix.
+        setSize(1500, 920 + kMenuBarHeight + kModRowHeight + kGap + kModulationRowHeight + kGap);
     }
 
     void MainComponent::paint(juce::Graphics& g)
