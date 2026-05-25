@@ -166,6 +166,12 @@ namespace B33p
         // event the user is about to click. lane = -1 = no hover.
         Selection hover;
 
+        // Tracks the lane row the cursor is currently over, even when
+        // not over any specific event. Drives a subtle hover tint so
+        // the user gets a preflight signal of which lane a click /
+        // drag-create will land in. -1 = not over any lane.
+        int hoveredLane { -1 };
+
         std::array<juce::Label,      Pattern::kNumLanes> laneNameLabels;
         std::array<juce::TextButton, Pattern::kNumLanes> muteButtons;
         std::array<juce::TextButton, Pattern::kNumLanes> soloButtons;

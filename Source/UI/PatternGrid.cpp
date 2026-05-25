@@ -594,16 +594,20 @@ namespace B33p
         }
 
         // Per-lane tint — every lane gets a subtle base wash in its
-        // accent colour; the selected lane gets a stronger version of
-        // the same colour. This matches the accent strip the voice
-        // editor sections paint, so a fresh user can tell which lane
-        // they're editing without reading the title suffix.
+        // accent colour. Three states layered on top of one another:
+        //   selected: strongest (0.10)
+        //   hovered:  middle    (0.07) — drag-create / click preview
+        //   default:  base      (0.04)
+        // Pre-attentive signal of which lane will receive a click
+        // before the click happens.
         {
             const int sel = processor.getSelectedLane();
             for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
             {
                 auto sl = laneArea(lane);
-                const float alpha = (lane == sel) ? 0.10f : 0.04f;
+                const float alpha = (lane == sel)          ? 0.10f
+                                  : (lane == hoveredLane)  ? 0.07f
+                                                            : 0.04f;
                 g.setColour(processor.laneAccentColour(lane).withAlpha(alpha));
                 g.fillRect(sl);
             }
@@ -1258,9 +1262,14 @@ namespace B33p
         if (hit.kind != HitResult::Kind::None)
             newHover = { hit.lane, hit.index };
 
-        if (newHover.lane != hover.lane || newHover.index != hover.index)
+        const int newHoveredLane = yToLane(e.position.y);
+
+        if (newHover.lane != hover.lane
+            || newHover.index != hover.index
+            || newHoveredLane != hoveredLane)
         {
-            hover = newHover;
+            hover        = newHover;
+            hoveredLane  = newHoveredLane;
             repaint();
         }
 
@@ -1278,9 +1287,12 @@ namespace B33p
 
     void PatternGrid::mouseExit(const juce::MouseEvent&)
     {
-        if (hover.valid())
+        const bool hadHover     = hover.valid();
+        const bool hadLaneHover = hoveredLane >= 0;
+        if (hadHover || hadLaneHover)
         {
-            hover = {};
+            hover       = {};
+            hoveredLane = -1;
             repaint();
         }
     }
