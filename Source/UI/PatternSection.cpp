@@ -465,12 +465,30 @@ namespace B33p
     {
         auto bounds = getContentBounds();
 
+        constexpr int kScopeSliderWidth = 110;
+        constexpr int kBpmWidth         = 100;
+        constexpr int kSigWidth         = 70;
+
+        // The full single-row toolbar needs ~1440 pt to fit every control
+        // without clipping. Below that, wrap the tempo/grid settings onto
+        // a second row so plugin hosts with narrow editor panels keep all
+        // controls reachable.
+        constexpr int kToolbarSingleRowMinWidth = 1440;
+        const bool useNarrowLayout = bounds.getWidth() < kToolbarSingleRowMinWidth;
+
         auto controlsRow = bounds.removeFromTop(kControlsHeight);
         bounds.removeFromTop(kControlsGap);
 
+        juce::Rectangle<int> secondRow;
+        if (useNarrowLayout)
+        {
+            secondRow = bounds.removeFromTop(kControlsHeight);
+            bounds.removeFromTop(kControlsGap);
+        }
+
         // Right-align Export + Randomize All + Scope to separate
         // the action group from the play/edit controls on the left.
-        constexpr int kScopeSliderWidth = 110;
+        // This cluster stays on row 1 in both layouts.
         exportButton      .setBounds(controlsRow.removeFromRight(kExportWidth));
         controlsRow.removeFromRight(kControlsGap);
         scopeSlider       .setBounds(controlsRow.removeFromRight(kScopeSliderWidth));
@@ -479,6 +497,7 @@ namespace B33p
         randomizeAllButton.setBounds(controlsRow.removeFromRight(kRandomizeWidth));
         controlsRow.removeFromRight(kControlsGap);
 
+        // Transport + time readout always lives at the left of row 1.
         playButton.setBounds(controlsRow.removeFromLeft(kButtonWidth));
         controlsRow.removeFromLeft(kControlsGap);
         loopToggle.setBounds(controlsRow.removeFromLeft(kButtonWidth));
@@ -489,21 +508,23 @@ namespace B33p
         timeLabel.setBounds(controlsRow.removeFromLeft(kTimeWidth));
         controlsRow.removeFromLeft(kControlsGap);
 
-        lengthLabel.setBounds(controlsRow.removeFromLeft(kLabelWidth));
-        lengthCombo.setBounds(controlsRow.removeFromLeft(kComboWidth));
-        controlsRow.removeFromLeft(kControlsGap);
+        // The Length / Grid / BPM / Time-sig cluster either stays on row 1
+        // (wide layout) or drops to row 2 (narrow layout).
+        auto& settingsRow = useNarrowLayout ? secondRow : controlsRow;
 
-        gridLabel.setBounds(controlsRow.removeFromLeft(kLabelWidth));
-        gridCombo.setBounds(controlsRow.removeFromLeft(kComboWidth));
-        controlsRow.removeFromLeft(kControlsGap);
+        lengthLabel.setBounds(settingsRow.removeFromLeft(kLabelWidth));
+        lengthCombo.setBounds(settingsRow.removeFromLeft(kComboWidth));
+        settingsRow.removeFromLeft(kControlsGap);
 
-        constexpr int kBpmWidth  = 100;
-        constexpr int kSigWidth  = 70;
-        bpmLabel.setBounds(controlsRow.removeFromLeft(kLabelWidth));
-        bpmSlider.setBounds(controlsRow.removeFromLeft(kBpmWidth));
-        controlsRow.removeFromLeft(kControlsGap);
-        timeSigLabel.setBounds(controlsRow.removeFromLeft(kLabelWidth));
-        timeSigCombo.setBounds(controlsRow.removeFromLeft(kSigWidth));
+        gridLabel.setBounds(settingsRow.removeFromLeft(kLabelWidth));
+        gridCombo.setBounds(settingsRow.removeFromLeft(kComboWidth));
+        settingsRow.removeFromLeft(kControlsGap);
+
+        bpmLabel.setBounds(settingsRow.removeFromLeft(kLabelWidth));
+        bpmSlider.setBounds(settingsRow.removeFromLeft(kBpmWidth));
+        settingsRow.removeFromLeft(kControlsGap);
+        timeSigLabel.setBounds(settingsRow.removeFromLeft(kLabelWidth));
+        timeSigCombo.setBounds(settingsRow.removeFromLeft(kSigWidth));
 
         // Inspector strip docks at the bottom; grid takes the rest.
         inspector.setBounds(bounds.removeFromBottom(kInspectorHeight));
