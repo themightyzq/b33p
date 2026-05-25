@@ -254,6 +254,9 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Export dialog default sample rate is now 44.1 kHz (was 48 kHz). Matches b33p's music / web / games distribution context; the 8 / 11.025 / 16 / 22.05 kHz lo-fi options ahead of it stay as deliberate retro choices. (REVIEW.md Pass 1 HI #13.)
 - [x] Export dialog filename extension now updates live when the user changes the format combo (was previously only rewritten at submit-time, so a user picking FLAC would still see `…wav` in the destination field until they clicked Export). (REVIEW.md Pass 1 HI #14.)
 - [x] Export pre-flight confirm at variations ≥ 10 — Cancel/Render dialog tells the user how many files are about to render, that the UI locks during the batch, and gives them a chance to back out. Below 10, batch is fast enough that the confirm would be friction. Time-estimate + in-progress cancel stay follow-ups (would need calibrated render timing + async task plumbing). (REVIEW.md Pass 1 HI #15.)
+- [x] REVIEW.md Pass 1 HI #16 (ExportTask blocks UI thread) — false positive, verified via `ExportTask.h:28` (already a `juce::ThreadWithProgressWindow` with modal progress dialog + step-boundary cancellation). No code change. Mid-render cancellation is intentionally deferred per the existing design comment.
+- [x] REVIEW.md Pass 1 HI #17 (AmpEnvelopeVisualizer doesn't animate during drag) — false positive, verified via `AmpEnvelopeVisualizer.cpp:46-49` (uses `apvts.addParameterListener` which fires `parameterChanged` on every slider tick during drag). No code change.
+- [x] LabeledSlider parameter label is now bold (was regular 11 pt) — gives the knob name visual weight comparable to or stronger than the dice + lock buttons below the slider, restoring the param-name → value → control → randomizer hierarchy. (REVIEW.md Pass 1 HI #18.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
