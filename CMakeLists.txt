@@ -36,6 +36,51 @@ if(APPLE)
 endif()
 
 # ---------------------------------------------------------------------------
+# Optional runtime sanitizers — AddressSanitizer + UndefinedBehaviorSanitizer.
+#
+# CI runs the test suite with this option ON on Linux to catch heap bugs,
+# use-after-free, signed-overflow-style UB, and other defects the unit suite
+# cannot surface on its own. Local devs can opt in via:
+#     cmake -B build -DB33P_ENABLE_SANITIZERS=ON
+# Apple Universal builds and the asan/ubsan runtimes are incompatible, so the
+# option warns and no-ops when CMAKE_OSX_ARCHITECTURES has more than one
+# entry — pass -DCMAKE_OSX_ARCHITECTURES=arm64 (or x86_64) to enable
+# sanitizers locally on macOS.
+# ---------------------------------------------------------------------------
+option(B33P_ENABLE_SANITIZERS
+    "Enable AddressSanitizer + UndefinedBehaviorSanitizer compile/link flags"
+    OFF)
+
+if(B33P_ENABLE_SANITIZERS)
+    set(_b33p_sanitizer_ok TRUE)
+
+    if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+            OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+            OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
+        message(WARNING
+            "B33P_ENABLE_SANITIZERS=ON but compiler "
+            "${CMAKE_CXX_COMPILER_ID} is not a known asan/ubsan host. Skipping.")
+        set(_b33p_sanitizer_ok FALSE)
+    endif()
+
+    list(LENGTH CMAKE_OSX_ARCHITECTURES _b33p_arch_count)
+    if(_b33p_sanitizer_ok AND _b33p_arch_count GREATER 1)
+        message(WARNING
+            "B33P_ENABLE_SANITIZERS=ON conflicts with a multi-arch "
+            "CMAKE_OSX_ARCHITECTURES (${CMAKE_OSX_ARCHITECTURES}); "
+            "asan cannot instrument a Universal binary. Skipping.")
+        set(_b33p_sanitizer_ok FALSE)
+    endif()
+
+    if(_b33p_sanitizer_ok)
+        add_compile_options(-fsanitize=address -fsanitize=undefined
+                            -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address -fsanitize=undefined)
+        message(STATUS "B33p: sanitizers enabled (asan + ubsan)")
+    endif()
+endif()
+
+# ---------------------------------------------------------------------------
 # Dependencies — CPM only (see CLAUDE.md: no FetchContent, no Projucer)
 # ---------------------------------------------------------------------------
 include(cmake/CPM.cmake)
