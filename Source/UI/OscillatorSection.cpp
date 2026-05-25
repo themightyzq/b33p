@@ -258,11 +258,27 @@ namespace B33p
         if (ringMixSlider.isVisible())   visibleSliders.push_back(&ringMixSlider);
 
         const int n = static_cast<int>(visibleSliders.size());
-        const int sliderCellWidth = (bounds.getWidth() - (n - 1) * kSliderGap) / n;
+
+        // Cap cell width so Pitch (and any other unchanged slider) does
+        // not visibly grow when the active waveform-mode reveals fewer
+        // sliders. Without this cap, switching Sine → FM would shrink
+        // Pitch from full-width to 1/3-width; the user perceives the
+        // unchanged control as resizing, which reads as a layout bug
+        // even though every pixel is technically correct. Cells fill
+        // their natural proportional width up to the cap, then center
+        // as a group in the remaining bounds.
+        constexpr int kMaxSliderCellWidth = 180;
+        const int proportionalWidth = (bounds.getWidth() - (n - 1) * kSliderGap) / n;
+        const int sliderCellWidth   = std::min(proportionalWidth, kMaxSliderCellWidth);
+
+        const int totalCellsWidth = n * sliderCellWidth + (n - 1) * kSliderGap;
+        const int leftPadding     = (bounds.getWidth() - totalCellsWidth) / 2;
+        bounds.removeFromLeft(leftPadding);
+
         for (int i = 0; i < n; ++i)
         {
             visibleSliders[static_cast<size_t>(i)]->setBounds(
-                i == n - 1 ? bounds : bounds.removeFromLeft(sliderCellWidth));
+                bounds.removeFromLeft(sliderCellWidth));
             if (i < n - 1)
                 bounds.removeFromLeft(kSliderGap);
         }

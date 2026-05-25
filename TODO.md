@@ -257,6 +257,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] REVIEW.md Pass 1 HI #16 (ExportTask blocks UI thread) — false positive, verified via `ExportTask.h:28` (already a `juce::ThreadWithProgressWindow` with modal progress dialog + step-boundary cancellation). No code change. Mid-render cancellation is intentionally deferred per the existing design comment.
 - [x] REVIEW.md Pass 1 HI #17 (AmpEnvelopeVisualizer doesn't animate during drag) — false positive, verified via `AmpEnvelopeVisualizer.cpp:46-49` (uses `apvts.addParameterListener` which fires `parameterChanged` on every slider tick during drag). No code change.
 - [x] LabeledSlider parameter label is now bold (was regular 11 pt) — gives the knob name visual weight comparable to or stronger than the dice + lock buttons below the slider, restoring the param-name → value → control → randomizer hierarchy. (REVIEW.md Pass 1 HI #18.)
+- [x] OscillatorSection + FilterSection cell width is now capped at 180 pt with the cell group centered. Switching between modes (Sine → FM → Wavetable, or Lowpass → Formant) no longer makes unchanged knobs visibly resize — Pitch / Cutoff / Resonance stay the same size whatever the mode reveals. Tight modes (3+ visible sliders) fall back to the previous proportional layout. (REVIEW.md Pass 1 HI #19.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
