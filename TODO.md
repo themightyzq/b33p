@@ -278,6 +278,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Parked playhead bumped from (140,140,140) to (230,230,240) so it's the most prominent vertical line — tops the new (200) bar-tick layer. Active (playing) playhead unchanged (still orange). (REVIEW.md Pass 1 NTH #37.)
 - [x] Empty-inspector copy now names what the inspector edits ("Select a clip to edit lane, start, duration, pitch, and velocity.") instead of the laconic "Click an event to edit it." (REVIEW.md Pass 1 NTH #38.)
 - [x] About body's "Keys" block now points at Help ▸ Keyboard Shortcuts… instead of duplicating the shortcut table — single source of truth in the dedicated dialog, no drift risk. (REVIEW.md Pass 1 NTH #39.)
+- [x] Unsaved-changes prompt now names the file ("Save changes to MyPatch.beep before closing?" or "Save changes to Untitled before closing?") instead of the abstract "This project has unsaved changes. Save before closing?" (REVIEW.md Pass 1 NTH #40.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
