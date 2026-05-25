@@ -708,9 +708,20 @@ namespace B33p
 
             g.setColour(juce::Colour::fromRGB(110, 110, 110));
             g.setFont(juce::FontOptions(12.0f));
-            g.drawText("Drag in a lane to draw a beep, or double-click for default size. "
-                       "Drag a beep to move it (vertically to switch lanes), drag its edges to resize.",
-                       hintArea, juce::Justification::centred);
+
+            // Two stacked lines instead of one 137-character run-on so
+            // the first-run gesture-teach reads as instructions, not a
+            // wall of text. Splits at the natural period.
+            constexpr float lineHeight    = 18.0f;
+            const float totalHeight       = lineHeight * 2.0f;
+            const float firstLineY        = hintArea.getCentreY() - totalHeight * 0.5f;
+
+            g.drawText("Drag in a lane to draw a beep — or double-click for default size.",
+                       hintArea.withY(firstLineY).withHeight(lineHeight),
+                       juce::Justification::centred);
+            g.drawText("Drag a beep to move it (vertically across lanes); drag its edges to resize.",
+                       hintArea.withY(firstLineY + lineHeight).withHeight(lineHeight),
+                       juce::Justification::centred);
         }
 
         // Events
