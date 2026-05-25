@@ -29,26 +29,37 @@ if ! command -v cmake >/dev/null 2>&1; then
     exit 1
 fi
 
-if command -v ninja >/dev/null 2>&1; then
-    GENERATOR="Ninja"
-else
-    GENERATOR="Unix Makefiles"
-fi
-
 # Reconfigure when the cache is missing OR when its cached build type
 # differs from what we're being asked for. Single-config generators like
 # Unix Makefiles bake the build type at configure time and silently ignore
 # `cmake --build --config <X>`, so without this check a switch from
 # Release to Debug (or vice versa) just rebuilds the wrong type and the
 # artefact-path lookup below fails.
+#
+# Generators are immutable for a given build dir — CMake errors if `-G`
+# is passed with a different value than the cached one. So we only pick
+# a generator on a *fresh* configure; on reconfigure we omit `-G` and
+# let CMake reuse the cached generator.
 CACHED_TYPE=""
+CACHED_GENERATOR=""
 if [ -f "${BUILD_DIR}/CMakeCache.txt" ]; then
-    CACHED_TYPE=$(grep '^CMAKE_BUILD_TYPE:STRING=' "${BUILD_DIR}/CMakeCache.txt" | cut -d= -f2)
+    CACHED_TYPE=$(grep '^CMAKE_BUILD_TYPE:STRING='        "${BUILD_DIR}/CMakeCache.txt" | cut -d= -f2)
+    CACHED_GENERATOR=$(grep '^CMAKE_GENERATOR:INTERNAL='  "${BUILD_DIR}/CMakeCache.txt" | cut -d= -f2)
 fi
 
 if [ "${CACHED_TYPE}" != "${BUILD_TYPE}" ]; then
-    echo "--> Configuring with ${GENERATOR} (${BUILD_TYPE})"
-    cmake -B "${BUILD_DIR}" -G "${GENERATOR}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
+    if [ -z "${CACHED_TYPE}" ]; then
+        if command -v ninja >/dev/null 2>&1; then
+            GENERATOR="Ninja"
+        else
+            GENERATOR="Unix Makefiles"
+        fi
+        echo "--> Configuring with ${GENERATOR} (${BUILD_TYPE})"
+        cmake -B "${BUILD_DIR}" -G "${GENERATOR}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
+    else
+        echo "--> Reconfiguring with ${CACHED_GENERATOR} (${CACHED_TYPE} -> ${BUILD_TYPE})"
+        cmake -B "${BUILD_DIR}" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
+    fi
     echo
 fi
 

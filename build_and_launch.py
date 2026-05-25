@@ -48,13 +48,14 @@ def pick_generator() -> str | None:
     return None   # CMake's platform default (Make, Visual Studio, etc.)
 
 
-def cached_build_type() -> str | None:
-    """Read CMAKE_BUILD_TYPE from the existing CMake cache, if present."""
+def cached_cmake_value(key: str) -> str | None:
+    """Read a value from CMakeCache.txt; return None if cache or key absent."""
     cache = BUILD_DIR / "CMakeCache.txt"
     if not cache.exists():
         return None
+    prefix = f"{key}="
     for line in cache.read_text().splitlines():
-        if line.startswith("CMAKE_BUILD_TYPE:STRING="):
+        if line.startswith(prefix):
             return line.split("=", 1)[1]
     return None
 
@@ -66,13 +67,27 @@ def configure(cmake: str) -> None:
     # ignore `cmake --build --config <X>`, so without this check a switch
     # between Debug and Release just rebuilds the wrong type and the
     # standalone path resolution below points at an empty directory.
-    if cached_build_type() == BUILD_TYPE:
+    #
+    # Generators are immutable for a given build dir — CMake errors out
+    # if `-G` is passed with a different value than the cached one. So
+    # we only pick a generator on a *fresh* configure; on reconfigure we
+    # omit `-G` and let CMake reuse the cached generator.
+    cached_type = cached_cmake_value("CMAKE_BUILD_TYPE:STRING")
+    if cached_type == BUILD_TYPE:
         return
+
     args = [cmake, "-B", str(BUILD_DIR), f"-DCMAKE_BUILD_TYPE={BUILD_TYPE}"]
-    gen = pick_generator()
-    if gen is not None:
-        args.extend(["-G", gen])
-    print(f"--> Configuring (generator: {gen or 'default'}, {BUILD_TYPE})")
+
+    if cached_type is None:
+        gen = pick_generator()
+        if gen is not None:
+            args.extend(["-G", gen])
+        print(f"--> Configuring (generator: {gen or 'default'}, {BUILD_TYPE})")
+    else:
+        cached_gen = cached_cmake_value("CMAKE_GENERATOR:INTERNAL") or "default"
+        print(f"--> Reconfiguring (generator: {cached_gen}, "
+              f"{cached_type} -> {BUILD_TYPE})")
+
     subprocess.run(args, cwd=REPO_ROOT, check=True)
 
 

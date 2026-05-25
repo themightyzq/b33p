@@ -23,7 +23,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ### Fixed
 
-- `Build and Launch.command` and `build_and_launch.py` now reconfigure the CMake build directory when its cached `CMAKE_BUILD_TYPE` differs from the requested one. Single-config generators (Make, Ninja) silently ignore `cmake --build --config <X>`, so switching between Debug and Release used to build the cached type and then fail to find the artefact at the requested path.
+- `Build and Launch.command` and `build_and_launch.py` now reconfigure the CMake build directory when its cached `CMAKE_BUILD_TYPE` differs from the requested one, and only pass `-G <generator>` on a *fresh* configure (omitting it on reconfigure so CMake reuses the cached generator). Two interacting bugs were biting in sequence: single-config generators (Make, Ninja) silently ignore `cmake --build --config <X>` so switching between Debug and Release used to build the cached type and then fail to find the artefact; and once that was fixed, passing `-G` on reconfigure tripped CMake's "generator does not match the generator used previously" check when ninja showed up on PATH after the first configure.
 
 ## [0.2.0] — 2026-04-30
 
