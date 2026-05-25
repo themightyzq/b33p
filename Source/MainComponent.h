@@ -75,6 +75,7 @@ namespace B33p
         void updateWindowTitle();
         void showAboutDialog();
         void showKeyboardShortcutsDialog();
+        void showAudioSettingsHelpDialog();
         void showPresetBrowser();
         void promptSavePreset();
 
