@@ -35,6 +35,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - OscillatorSection and FilterSection cell width is capped at 180 pt with the cell group centered. Switching waveform mode (Sine → FM → Wavetable) or filter mode (Lowpass → Comb → Formant) no longer makes unchanged knobs like Pitch and Cutoff visibly resize to fill the new layout — they stay the same size regardless of how many siblings appear.
 - Modulation section gains a small italic hint above the matrix rows: "Route a Source (LFO 1 or LFO 2) to a Destination, then dial the Amount to start modulating." Removes the "what do I do with this" cliff a first-time user used to face when opening the most powerful section in the editor.
 - Mod FX slider labels now read "—" when the effect type is None (was misleadingly showing "Rate / Depth / Mix" from the Chorus placeholder). The dashes pair with the existing disabled-slider state to clearly signal "nothing meaningful here yet."
+- Pattern grid snap-preview line is now visible at alpha 0.85 (was 0.55) while dragging clips. The line tells the user where their drag will land on release; the previous opacity was borderline invisible against the pattern background. The red wall-clamp variant stays distinguishable via color + thicker stroke.
 
 ### Removed
 

@@ -778,9 +778,16 @@ namespace B33p
         if (snapPreviewSeconds >= 0.0)
         {
             const float x = secondsToX(snapPreviewSeconds);
+            // Both states share alpha 0.85 so the snap target is
+            // reliably visible during drag — the previous 0.55 on the
+            // valid-snap variant was borderline invisible against the
+            // pattern background, and snap is a precision interaction
+            // whose feedback can't afford to be subtle. Red vs pale
+            // blue + the wall-clamp's thicker stroke still cleanly
+            // distinguish "snapping into place" from "hit the wall."
             g.setColour(dragClampedAtWall
                             ? juce::Colour::fromRGB(255, 100,  90).withAlpha(0.85f)
-                            : juce::Colour::fromRGB(230, 240, 255).withAlpha(0.55f));
+                            : juce::Colour::fromRGB(230, 240, 255).withAlpha(0.85f));
             g.drawLine(x, frame.getY() + kRulerHeight,
                        x, frame.getBottom(),
                        dragClampedAtWall ? 1.6f : 1.0f);
