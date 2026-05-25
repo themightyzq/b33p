@@ -271,6 +271,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Section accent strip bumped from 2 px / α 0.85 to 4 px / α 1.0 so the per-lane color carries across the editor without becoming heavy. (REVIEW.md Pass 1 NTH #30.)
 - [x] WaveformEditor footer split into two stacked lines (was a single run-on sentence). Line 1 = gesture, Line 2 = slot semantics. (REVIEW.md Pass 1 NTH #31.)
 - [x] REVIEW.md Pass 1 NTH #32 (slot numbering 1-vs-0 cosmetic) — no action needed. REVIEW.md itself notes this is the "friendly choice" (UI is 1-indexed, code is 0-indexed) and was logged for awareness rather than action. Standard convention; no fix.
+- [x] Pattern ruler bar labels now use power-of-two skip (1, 2, 4, …) when adjacent labels would overlap. At standard 120 BPM / 4/4 / wide grid → no skip; high BPM in narrow plugin hosts → labels thin out until they fit. (REVIEW.md Pass 1 NTH #33.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
