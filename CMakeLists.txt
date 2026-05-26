@@ -131,6 +131,7 @@ target_sources(B33p PRIVATE
     Source/Main.cpp
     Source/StandaloneApp.cpp
     Source/MainComponent.cpp
+    Source/Core/CommandLineFiles.cpp
     Source/State/B33pProcessor.cpp
     Source/State/ParameterLayout.cpp
     Source/State/ParameterRandomizer.cpp

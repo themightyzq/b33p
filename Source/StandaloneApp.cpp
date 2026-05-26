@@ -13,10 +13,17 @@
 // the window-close and quit gestures, which only the wrapper can see.
 // (Listed under TODO.md "Deferred regressions".)
 //
-// Single-instance enforcement and command-line .beep open are the other
-// two deferred regressions; this app deliberately keeps JUCE's default
-// behaviour for both (moreThanOneInstanceAllowed() → true, no-op
-// anotherInstanceStarted) so this change stays scoped to quit-confirm.
+// This app also restores the other two standalone deferred regressions:
+//   • Single-instance enforcement — moreThanOneInstanceAllowed() returns
+//     false, so a second launch routes to the running instance instead of
+//     spawning a duplicate window.
+//   • Command-line / Finder .beep open — a .beep passed on the launch
+//     command line (Windows / Linux) or opened from the OS file manager
+//     loads into the running instance. macOS delivers document-open events
+//     through anotherInstanceStarted(); Windows / Linux pass the path in
+//     the launch command line, picked up in initialise(). Both route
+//     through MainComponent so a dirty project still gets the discard
+//     prompt before being replaced.
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -25,6 +32,7 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
 
+#include "Core/CommandLineFiles.h"
 #include "MainComponent.h"
 #include "State/B33pProcessor.h"
 #include "UI/B33pEditor.h"
@@ -45,6 +53,25 @@ namespace B33p
                         return &b33pEditor->getMainComponent();
 
             return nullptr;
+        }
+
+        // Open a .beep into the already-running instance, routing through
+        // the dirty-project discard prompt because the running app may hold
+        // unsaved work. No-op if the editor isn't ready (generic-editor
+        // fallback / headless) or the file vanished between the OS event
+        // and here.
+        void openBeepFileWithConfirm(juce::StandaloneFilterWindow* window, const juce::File& file)
+        {
+            if (window == nullptr || ! file.existsAsFile())
+                return;
+
+            if (auto* mainComponent = findMainComponent(*window))
+                mainComponent->confirmDiscardThen(
+                    [mc = juce::Component::SafePointer<MainComponent>(mainComponent), file]
+                    {
+                        if (auto* component = mc.getComponent())
+                            component->openProjectFile(file);
+                    });
         }
 
         // Shared close / quit handler. Clean projects quit immediately
@@ -120,17 +147,40 @@ namespace B33p
 
             const juce::String getApplicationName() override    { return juce::CharPointer_UTF8(JucePlugin_Name); }
             const juce::String getApplicationVersion() override { return JucePlugin_VersionString; }
-            bool moreThanOneInstanceAllowed() override          { return true; }
-            void anotherInstanceStarted(const juce::String&) override {}
+            bool moreThanOneInstanceAllowed() override          { return false; }
 
-            void initialise(const juce::String&) override
+            // A second launch — or a macOS document-open event — lands
+            // here. Surface the running window either way; if a .beep came
+            // along, open it through the discard prompt.
+            void anotherInstanceStarted(const juce::String& commandLine) override
+            {
+                if (mainWindow != nullptr)
+                    mainWindow->toFront(true);
+
+                openBeepFileWithConfirm(mainWindow.get(), findBeepFileInCommandLine(commandLine));
+            }
+
+            void initialise(const juce::String& commandLine) override
             {
                 mainWindow = createWindow();
 
                 if (mainWindow != nullptr)
+                {
                     mainWindow->setVisible(true);
+
+                    // Windows / Linux deliver a double-clicked .beep as a
+                    // launch argument (macOS routes it to a document-open
+                    // event handled in anotherInstanceStarted). The project
+                    // is freshly launched and clean here, so open directly —
+                    // no discard prompt to show.
+                    if (const auto file = findBeepFileInCommandLine(commandLine); file.existsAsFile())
+                        if (auto* mainComponent = findMainComponent(*mainWindow))
+                            mainComponent->openProjectFile(file);
+                }
                 else
+                {
                     pluginHolder = createPluginHolder();   // headless fallback (no display)
+                }
             }
 
             void shutdown() override
