@@ -39,6 +39,12 @@ namespace B33p
         // file's path on success, an invalid juce::File on failure.
         juce::File savePreset(const juce::String& name);
 
+        // The on-disk file a given preset name would map to (same legal-name
+        // + `.beep` logic savePreset uses), without writing anything. Lets the
+        // UI check `.existsAsFile()` to prompt before overwriting. Returns an
+        // invalid juce::File for a name that can't form a legal filename.
+        juce::File getPresetFile(const juce::String& name) const;
+
         // Loads the named preset file into the processor. Returns
         // true on success; failure surfaces a juce::AlertWindow via
         // ProjectState::readFromFile (so the caller doesn't need to
