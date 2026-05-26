@@ -88,6 +88,7 @@ $RECYCLE.BIN/
 
 # AI agent / editor settings — project-local only --------------------------
 CLAUDE.md
+repo-hygiene.md
 .claude/
 .anthropic/
 .cursor/
