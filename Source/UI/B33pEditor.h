@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MainComponent.h"
+#include "B33pLookAndFeel.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -17,6 +18,7 @@ namespace B33p
     {
     public:
         explicit B33pEditor(B33pProcessor& processor);
+        ~B33pEditor() override;
 
         void resized() override;
 
@@ -26,7 +28,11 @@ namespace B33p
         MainComponent& getMainComponent() noexcept { return mainComponent; }
 
     private:
-        MainComponent mainComponent;
+        // Declared before mainComponent so it outlives every child that
+        // paints through it. The editor installs it as the process default
+        // LookAndFeel for its lifetime — see the constructor.
+        B33pLookAndFeel lookAndFeel;
+        MainComponent   mainComponent;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(B33pEditor)
     };

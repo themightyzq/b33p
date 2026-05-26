@@ -8,6 +8,10 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+### Changed
+
+- Custom flat dark **LookAndFeel** (REVIEW.md P8 / P15 / P29 / P30). Rotary knobs drop JUCE's default line indicator for a flat body + thin value arc + dot, and the arc takes the **selected lane's accent colour** (blue / green / amber / pink) so the knobs shift colour with the section strips when you switch lanes. Comboboxes are flat with a hairline border + accent caret; buttons are flat rounded; popup menus and dialogs match the charcoal palette. Modulation-amount sliders now render bipolar (fill grows from the centre). Installed process-wide so the editor and its dialogs share one look.
+
 ### Fixed
 
 - Standalone window now fits the screen on launch. The voice editor was a six-row vertical stack ~1338 px tall — taller than a 1080p display's usable height — so the pattern grid opened off the bottom of the screen. The three full-width-but-short rows (Mod FX, Modulation, Pitch Env) are now column-packed: Mod FX sits beside Effects + Master, and Modulation sits beside Pitch Env, bringing the default window to ~1007 px. The standalone window also clamps to the display's usable area on launch (and stays resizable), so it never opens partly off-screen. The editor additionally gained resize limits (min 1000×600, max 3200×2200) so it can't be dragged down to an unreadable sliver or ballooned past sane bounds (REVIEW.md P12).
