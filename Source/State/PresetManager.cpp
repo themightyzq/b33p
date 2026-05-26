@@ -54,24 +54,30 @@ namespace B33p
         return presets;
     }
 
-    juce::File PresetManager::savePreset(const juce::String& name)
+    juce::File PresetManager::getPresetFile(const juce::String& name) const
     {
-        // Trim whitespace and ensure we have a non-empty filename
-        // root. Anything else becomes a no-op returning an invalid
-        // File so the UI can show the standard "save failed" alert.
+        // Trim whitespace and ensure we have a non-empty filename root.
         const auto trimmed = name.trim();
         if (trimmed.isEmpty())
             return {};
 
-        // Strip any extension the user might have typed; we always
-        // append `.beep` ourselves to keep listing reliable.
+        // Strip any extension the user might have typed; we always append
+        // `.beep` ourselves to keep listing reliable.
         const auto fileNameRoot = juce::File::createLegalFileName(
             trimmed.upToLastOccurrenceOf(".", false, false));
         if (fileNameRoot.isEmpty())
             return {};
 
-        const auto destination = presetsDirectory.getChildFile(
-            fileNameRoot + ".beep");
+        return presetsDirectory.getChildFile(fileNameRoot + ".beep");
+    }
+
+    juce::File PresetManager::savePreset(const juce::String& name)
+    {
+        // Anything that can't form a legal filename is a no-op returning an
+        // invalid File so the UI can show the standard "save failed" alert.
+        const auto destination = getPresetFile(name);
+        if (destination == juce::File())
+            return {};
 
         if (! ProjectState::writeToFile(processor, destination))
             return {};

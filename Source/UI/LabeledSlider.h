@@ -7,6 +7,24 @@
 
 namespace B33p
 {
+    // juce::Slider with b33p's interaction niceties (REVIEW.md P9/P10/P25/P36):
+    //   * hold Shift before dragging for fine adjustment
+    //   * mouse-wheel / two-finger scroll steps the value
+    //   * right-click (or ctrl-click) opens a menu: Enter value / Reset to
+    //     default
+    // The flat rotary visual lives in B33pLookAndFeel; this only adds behaviour.
+    class B33pSlider : public juce::Slider
+    {
+    public:
+        B33pSlider();
+        void mouseDown(const juce::MouseEvent&) override;
+
+    private:
+        void showContextMenu();
+
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(B33pSlider)
+    };
+
     // Compact rotary slider with a name label above, JUCE's default
     // value text box below the knob, and a dice + lock button pair
     // at the very bottom. Designed to drop into a section's inner
@@ -48,7 +66,7 @@ namespace B33p
         void resized() override;
 
     private:
-        juce::Slider slider;
+        B33pSlider   slider;
         juce::Label  label;
         IconButton   diceButton { IconButton::Glyph::Die  };
         IconButton   lockButton { IconButton::Glyph::Lock };

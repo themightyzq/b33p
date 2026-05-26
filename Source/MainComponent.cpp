@@ -632,36 +632,52 @@ namespace B33p
                     if (result != 1 || name.trim().isEmpty())
                         return;
 
-                    const auto saved = presetManager.savePreset(name);
-                    if (saved == juce::File())
+                    // P26: a name mapping to an existing preset gets a
+                    // confirm before we clobber it; otherwise save straight
+                    // away. Both paths run savePresetNamed below.
+                    if (presetManager.getPresetFile(name).existsAsFile())
                     {
-                        // Actionable copy: name the two likely causes
-                        // and the on-disk path so the user can fix
-                        // permissions or rename, rather than guessing.
-                        const juce::String message =
-                            "Could not save preset \"" + name + "\".\n\n"
-                            "The name may contain invalid characters "
-                            "(avoid / \\ : * ? \" |), or the presets folder "
-                            "is not writable:\n"
-                          + presetManager.getPresetsDirectory().getFullPathName();
-
-                        juce::AlertWindow::showAsync(
-                            juce::MessageBoxOptions()
-                                .withIconType(juce::MessageBoxIconType::WarningIcon)
-                                .withTitle("Save Preset failed")
-                                .withMessage(message)
-                                .withButton("OK"),
-                            nullptr);
+                        confirmActionThen(
+                            "A preset with that name already exists. Overwrite it?",
+                            [this, name] { savePresetNamed(name); });
                         return;
                     }
 
-                    // If the browser is open, repopulate so the new
-                    // preset shows up.
-                    if (presetBrowserWindow != nullptr)
-                        presetBrowserWindow->refresh();
+                    savePresetNamed(name);
                 }),
             false);   // we own the AlertWindow, don't let the modal
                        // helper delete it
+    }
+
+    void MainComponent::savePresetNamed(const juce::String& name)
+    {
+        const auto saved = presetManager.savePreset(name);
+        if (saved == juce::File())
+        {
+            // Actionable copy: name the two likely causes
+            // and the on-disk path so the user can fix
+            // permissions or rename, rather than guessing.
+            const juce::String message =
+                "Could not save preset \"" + name + "\".\n\n"
+                "The name may contain invalid characters "
+                "(avoid / \\ : * ? \" |), or the presets folder "
+                "is not writable:\n"
+              + presetManager.getPresetsDirectory().getFullPathName();
+
+            juce::AlertWindow::showAsync(
+                juce::MessageBoxOptions()
+                    .withIconType(juce::MessageBoxIconType::WarningIcon)
+                    .withTitle("Save Preset failed")
+                    .withMessage(message)
+                    .withButton("OK"),
+                nullptr);
+            return;
+        }
+
+        // If the browser is open, repopulate so the new
+        // preset shows up.
+        if (presetBrowserWindow != nullptr)
+            presetBrowserWindow->refresh();
     }
 
     void MainComponent::showAboutDialog()

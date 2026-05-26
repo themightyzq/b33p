@@ -78,6 +78,10 @@ namespace B33p
         void showAudioSettingsHelpDialog();
         void showPresetBrowser();
         void promptSavePreset();
+        // Writes the preset and handles the success (browser refresh) /
+        // failure (actionable alert) outcomes. Split out of promptSavePreset
+        // so the overwrite-confirm path can reuse it.
+        void savePresetNamed(const juce::String& name);
 
         // The top-level component we registered the KeyListener on,
         // kept so the destructor can deregister cleanly even after
