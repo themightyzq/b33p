@@ -170,11 +170,31 @@ namespace B33p
                     return nullptr;
                 }
 
-                return std::make_unique<StandaloneWindow>(
+                auto window = std::make_unique<StandaloneWindow>(
                     getApplicationName(),
                     juce::LookAndFeel::getDefaultLookAndFeel()
                         .findColour(juce::ResizableWindow::backgroundColourId),
                     createPluginHolder());
+
+                // Fit-to-screen on launch. The editor opens at its natural
+                // size; on a display smaller than that (e.g. a 1080p laptop)
+                // JUCE's StandaloneFilterWindow centres at full size without
+                // clamping, so part of the window lands off-screen. Shrink to
+                // the display's usable area and re-centre. The window stays
+                // resizable, so the user can grow it back afterward.
+                const auto& displays = juce::Desktop::getInstance().getDisplays();
+                if (auto* display = displays.getDisplayForRect(window->getBounds()))
+                {
+                    const auto usable = display->userArea;
+                    const auto bounds = window->getBounds();
+                    const int  w      = juce::jmin(bounds.getWidth(),  usable.getWidth());
+                    const int  h      = juce::jmin(bounds.getHeight(), usable.getHeight());
+
+                    if (w < bounds.getWidth() || h < bounds.getHeight())
+                        window->setBounds(juce::Rectangle<int>(w, h).withCentre(usable.getCentre()));
+                }
+
+                return window;
             }
 
             juce::ApplicationProperties                   appProperties;
