@@ -275,7 +275,16 @@ namespace B33p
 
     void B33pProcessor::getStateInformation(juce::MemoryBlock& destData)
     {
-        const auto xml = ProjectState::toXmlString(ProjectState::save(*this));
+        auto tree = ProjectState::save(*this);
+
+        // Editor size rides the DAW plugin state (not ProjectState / .beep)
+        // so a resized window survives close / reopen (REVIEW.md P11), while
+        // shared .beep patches don't dictate the recipient's window size.
+        // ProjectState::load ignores these root properties.
+        tree.setProperty("editor_width",  getEditorWidth(),  nullptr);
+        tree.setProperty("editor_height", getEditorHeight(), nullptr);
+
+        const auto xml = ProjectState::toXmlString(tree);
         destData.replaceAll(xml.toRawUTF8(), xml.getNumBytesAsUTF8());
     }
 
@@ -306,7 +315,14 @@ namespace B33p
                                   static_cast<size_t>(sizeInBytes) };
         const auto tree = ProjectState::fromXmlString(xml);
         if (tree.isValid())
+        {
             ProjectState::load(*this, tree);
+            // Restore editor size (P11) — the editor reads this in its
+            // constructor. Absent in .beep-derived trees / older sessions,
+            // which leaves the default 0×0 ("use editor default").
+            setEditorSize(static_cast<int>(tree.getProperty("editor_width",  0)),
+                          static_cast<int>(tree.getProperty("editor_height", 0)));
+        }
     }
 
     void B33pProcessor::triggerAudition()

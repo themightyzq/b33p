@@ -1,5 +1,8 @@
 #include "MainComponent.h"
 
+#include "State/ProjectState.h"
+#include "State/UndoableActions.h"
+
 namespace B33p
 {
     namespace
@@ -586,14 +589,24 @@ namespace B33p
                 {
                     confirmDiscardThen([this, presetFile]
                     {
-                        if (! presetManager.loadPreset(presetFile))
+                        // P6: wrap the load in one undoable transaction so
+                        // Cmd+Z (or the in-plugin Undo button) restores the
+                        // previous patch instead of leaving it lost. Parse the
+                        // preset, snapshot the full pre-load state, and swap
+                        // via a LoadProjectStateAction. The preset is NOT
+                        // promoted to the project save target — presets and
+                        // projects are separate concepts.
+                        if (! presetFile.existsAsFile())
                             return;
-                        // Loaded preset becomes the new "current
-                        // file" for the recent-files list, but is
-                        // NOT promoted to the project save target
-                        // — presets and projects are separate
-                        // concepts, and saving over a preset by
-                        // accident would surprise the user.
+                        auto after = ProjectState::fromXmlString(presetFile.loadFileAsString());
+                        if (! after.isValid())
+                            return;   // same silent no-op the old loadPreset path had
+
+                        auto before = ProjectState::save(processor);
+                        processor.getUndoManager().beginNewTransaction("Load preset");
+                        processor.getUndoManager().perform(
+                            new LoadProjectStateAction(processor, this,
+                                                       std::move(before), std::move(after)));
                     });
                 },
                 [this](const juce::File& presetFile)

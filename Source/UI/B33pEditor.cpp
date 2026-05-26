@@ -35,6 +35,13 @@ namespace B33p
         // small display without fighting the constrainer. The standalone window
         // and plugin hosts both honour the editor's constrainer.
         setResizeLimits(1000, 600, 3200, 2200);
+
+        // P11: restore the last editor size from the plugin state, if the
+        // host already restored it before creating us. setSize clamps to the
+        // limits above; the standalone window additionally fits it to the
+        // screen on launch.
+        if (processor.getEditorWidth() > 0 && processor.getEditorHeight() > 0)
+            setSize(processor.getEditorWidth(), processor.getEditorHeight());
     }
 
     B33pEditor::~B33pEditor()
@@ -48,6 +55,12 @@ namespace B33p
     void B33pEditor::resized()
     {
         mainComponent.setBounds(getLocalBounds());
+
+        // P11: remember the size so getStateInformation can persist it.
+        // Cheap (two atomic stores) and deliberately does NOT mark the
+        // project dirty — window size isn't a patch edit.
+        if (auto* p = dynamic_cast<B33pProcessor*>(getAudioProcessor()))
+            p->setEditorSize(getWidth(), getHeight());
     }
 
     // Factory hook called by B33pProcessor::createEditor when

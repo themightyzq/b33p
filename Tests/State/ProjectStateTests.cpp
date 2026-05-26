@@ -638,6 +638,59 @@ TEST_CASE("ProjectState: getStateInformation/setStateInformation round-trip",
     REQUIRE(restored.getRandomizer().isLocked(B33p::ParameterIDs::filterCutoffHz(0)));
 }
 
+TEST_CASE("ProjectState: selected lane round-trips (P7)", "[state][project]")
+{
+    B33pProcessor original;
+    original.setSelectedLane(2);
+
+    const auto tree = B33p::ProjectState::save(original);
+
+    B33pProcessor restored;
+    REQUIRE(restored.getSelectedLane() == 0);   // sanity: fresh default
+    REQUIRE(B33p::ProjectState::load(restored, tree));
+    REQUIRE(restored.getSelectedLane() == 2);
+}
+
+TEST_CASE("ProjectState: a file with no selected_lane loads on lane 0 (P7)",
+          "[state][project]")
+{
+    juce::ValueTree root { "B33P" };
+    root.setProperty("version", B33p::ProjectState::kCurrentVersion, nullptr);
+    juce::ValueTree pattern { "PATTERN" };
+    pattern.setProperty("length_seconds", 2.0, nullptr);
+    root.appendChild(pattern, nullptr);
+
+    B33pProcessor restored;
+    restored.setSelectedLane(3);   // load must actively reset to the default
+    REQUIRE(B33p::ProjectState::load(restored, root));
+    REQUIRE(restored.getSelectedLane() == 0);
+}
+
+TEST_CASE("ProjectState: editor size persists in plugin state but not .beep (P11)",
+          "[state][project]")
+{
+    B33pProcessor original;
+    original.setEditorSize(1234, 850);
+
+    // Rides the DAW plugin state (getStateInformation).
+    juce::MemoryBlock memory;
+    original.getStateInformation(memory);
+
+    B33pProcessor restored;
+    REQUIRE(restored.getEditorWidth() == 0);   // sanity: unset default
+    restored.setStateInformation(memory.getData(), static_cast<int>(memory.getSize()));
+    REQUIRE(restored.getEditorWidth()  == 1234);
+    REQUIRE(restored.getEditorHeight() == 850);
+
+    // But NOT a plain ProjectState tree (what .beep files store) — window
+    // size is session state, not portable patch data.
+    const auto tree = B33p::ProjectState::save(original);
+    B33pProcessor fromBeep;
+    REQUIRE(B33p::ProjectState::load(fromBeep, tree));
+    REQUIRE(fromBeep.getEditorWidth()  == 0);
+    REQUIRE(fromBeep.getEditorHeight() == 0);
+}
+
 TEST_CASE("ProjectState: writeToFile / readFromFile round-trip via temp file",
           "[state][project]")
 {
