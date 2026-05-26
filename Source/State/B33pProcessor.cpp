@@ -467,6 +467,95 @@ namespace B33p
         }
     }
 
+    juce::String B33pProcessor::copyLaneVoiceToString(int lane) const
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return {};
+
+        const auto ids = ParameterIDs::allForLane(lane);
+
+        juce::ValueTree voice { "B33P_VOICE" };
+        voice.setProperty("count", static_cast<int>(ids.size()), nullptr);
+
+        // Normalised parameter values, in allForLane order — the same
+        // index-based mapping copyLaneSettingsToAll uses, so a paste into
+        // any lane lands on the matching parameters.
+        juce::String csv;
+        for (size_t i = 0; i < ids.size(); ++i)
+        {
+            if (i > 0) csv += ",";
+            auto* p = apvts.getParameter(ids[i]);
+            csv += juce::String(p != nullptr ? p->getValue() : 0.0f, 6);
+        }
+        voice.setProperty("params", csv, nullptr);
+
+        for (int slot = 0; slot < Oscillator::kNumWavetableSlots; ++slot)
+        {
+            const auto table = getWavetableSlotCopy(lane, slot);
+            if (table.empty())
+                continue;
+            juce::String samples;
+            for (size_t i = 0; i < table.size(); ++i)
+            {
+                if (i > 0) samples += ",";
+                samples += juce::String(table[i], 4);
+            }
+            juce::ValueTree wt { "WT" };
+            wt.setProperty("slot",    slot,    nullptr);
+            wt.setProperty("samples", samples, nullptr);
+            voice.appendChild(wt, nullptr);
+        }
+
+        return voice.toXmlString();
+    }
+
+    bool B33pProcessor::applyLaneVoiceFromString(int lane, const juce::String& data)
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return false;
+
+        auto parsed = juce::parseXML(data);
+        if (parsed == nullptr)
+            return false;
+        const auto voice = juce::ValueTree::fromXml(*parsed);
+        if (! voice.hasType("B33P_VOICE"))
+            return false;
+
+        const auto ids = ParameterIDs::allForLane(lane);
+        juce::StringArray vals;
+        vals.addTokens(voice.getProperty("params", juce::String{}).toString(), ",", "");
+        if (vals.size() != static_cast<int>(ids.size()))
+            return false;   // shape mismatch — refuse rather than misalign
+
+        undoManager.beginNewTransaction("Paste lane voice");
+
+        for (size_t i = 0; i < ids.size(); ++i)
+            if (auto* p = apvts.getParameter(ids[i]))
+                p->setValueNotifyingHost(
+                    juce::jlimit(0.0f, 1.0f, vals[static_cast<int>(i)].getFloatValue()));
+
+        // Wavetable slots: clear all, then restore any carried in the blob.
+        for (int slot = 0; slot < Oscillator::kNumWavetableSlots; ++slot)
+            setWavetableSlot(lane, slot, {});
+        for (auto wt : voice)
+        {
+            if (! wt.hasType("WT"))
+                continue;
+            const int slot = wt.getProperty("slot", -1);
+            if (slot < 0 || slot >= Oscillator::kNumWavetableSlots)
+                continue;
+            juce::StringArray parts;
+            parts.addTokens(wt.getProperty("samples", juce::String{}).toString(), ",", "");
+            std::vector<float> table;
+            table.reserve(static_cast<size_t>(parts.size()));
+            for (const auto& s : parts)
+                table.push_back(s.getFloatValue());
+            setWavetableSlot(lane, slot, std::move(table));
+        }
+
+        return true;
+    }
+
     void B33pProcessor::resetLaneVoice(int lane)
     {
         if (lane < 0 || lane >= Pattern::kNumLanes)

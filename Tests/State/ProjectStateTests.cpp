@@ -732,6 +732,50 @@ TEST_CASE("ProjectState: readFromFile rejects malformed XML", "[state][project]"
     tmp.deleteFile();
 }
 
+TEST_CASE("B33pProcessor: lane voice copy/paste round-trips across lanes (P24)",
+          "[state][lane]")
+{
+    B33pProcessor processor;
+    auto& apvts = processor.getApvts();
+
+    // Move lane 0 off its defaults (params + a wavetable slot).
+    apvts.getParameter(B33p::ParameterIDs::basePitchHz(0))->setValueNotifyingHost(0.3f);
+    apvts.getParameter(B33p::ParameterIDs::ampAttack(0))->setValueNotifyingHost(0.6f);
+    apvts.getParameter(B33p::ParameterIDs::voiceGain(0))->setValueNotifyingHost(0.8f);
+    processor.setWavetableSlot(0, 0, { -1.0f, 0.0f, 1.0f, 0.5f });
+
+    const auto blob = processor.copyLaneVoiceToString(0);
+    REQUIRE(blob.isNotEmpty());
+
+    // Paste into a DIFFERENT lane — the index-based mapping must land the
+    // values on lane 2's matching parameters.
+    REQUIRE(processor.applyLaneVoiceFromString(2, blob));
+
+    const juce::String ids0[] = { B33p::ParameterIDs::basePitchHz(0),
+                                  B33p::ParameterIDs::ampAttack(0),
+                                  B33p::ParameterIDs::voiceGain(0) };
+    const juce::String ids2[] = { B33p::ParameterIDs::basePitchHz(2),
+                                  B33p::ParameterIDs::ampAttack(2),
+                                  B33p::ParameterIDs::voiceGain(2) };
+    for (int i = 0; i < 3; ++i)
+        REQUIRE(apvts.getRawParameterValue(ids0[i])->load()
+                == Approx(apvts.getRawParameterValue(ids2[i])->load()));
+
+    const auto slot = processor.getWavetableSlotCopy(2, 0);
+    REQUIRE(slot.size() == 4);
+    REQUIRE(slot[0] == Approx(-1.0f).margin(1e-3f));
+    REQUIRE(slot[3] == Approx(0.5f).margin(1e-3f));
+}
+
+TEST_CASE("B33pProcessor: applyLaneVoiceFromString rejects non-voice text (P24)",
+          "[state][lane]")
+{
+    B33pProcessor processor;
+    REQUIRE_FALSE(processor.applyLaneVoiceFromString(0, "not a voice at all"));
+    REQUIRE_FALSE(processor.applyLaneVoiceFromString(0, "<SOMETHING_ELSE/>"));
+    REQUIRE_FALSE(processor.applyLaneVoiceFromString(0, juce::String{}));
+}
+
 // ---------------------------------------------------------------
 // Dirty-state machine
 // ---------------------------------------------------------------

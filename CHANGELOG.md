@@ -8,6 +8,11 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+### Added
+
+- **File ▸ Restore Factory Presets...** rewrites the four shipped presets (FM Bell, Resonant Stab, Delay Pad, Ring Mod Robot) to their originals — recovering any you saved over — behind a confirmation. Your own presets are untouched. (REVIEW.md P22.)
+- **Edit ▸ Lane ▸ Copy / Paste voice (clipboard)** — copy a dialed-in lane's whole voice (every parameter + its wavetable slots) to the system clipboard and paste it into another lane, or another b33p instance entirely. Paste is one undoable step. (REVIEW.md P24.)
+
 ### Changed
 
 - **Master level meter** gains a peak-hold marker (a bright tick that holds the recent maximum ~1.5 s, then eases down) and a latching **clip indicator** (a red cap at the right end that lights for ~1.5 s whenever the output hits 0 dBFS, so a brief overload isn't missed between frames). (REVIEW.md P18.)
