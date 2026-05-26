@@ -47,6 +47,9 @@ namespace B33p
             HelpAbout,
             HelpKeyboardShortcuts,
             HelpAudioSettings,
+            FileRestoreFactory,
+            LaneCopyVoice,
+            LanePasteVoice,
 
             FileOpenRecentBase = 1000,   // [1000, 1000 + N) reserved for MRU slots
             FileOpenRecentMax  = 1099,
@@ -437,6 +440,7 @@ namespace B33p
                 m.addSeparator();
                 m.addItem(withShortcut(MenuId::FileSavePreset,    "Save Preset...",   ""));
                 m.addItem(withShortcut(MenuId::FileBrowsePresets, "Browse Presets...", ""));
+                m.addItem(withShortcut(MenuId::FileRestoreFactory, "Restore Factory Presets...", ""));
                 break;
             case 1: // Edit
                 m.addItem(withShortcut(MenuId::EditUndo, "Undo", "Cmd+Z",
@@ -462,6 +466,10 @@ namespace B33p
                     juce::PopupMenu laneMenu;
                     laneMenu.addItem(MenuId::LaneCopyToAll,  "Copy " + tag + " voice to all lanes");
                     laneMenu.addItem(MenuId::LaneResetVoice, "Reset " + tag + " voice to defaults");
+                    laneMenu.addSeparator();
+                    laneMenu.addItem(MenuId::LaneCopyVoice,  "Copy " + tag + " voice (clipboard)");
+                    laneMenu.addItem(MenuId::LanePasteVoice, "Paste voice into " + tag + " (clipboard)",
+                                     juce::SystemClipboard::getTextFromClipboard().contains("B33P_VOICE"));
                     laneMenu.addSeparator();
                     laneMenu.addItem(MenuId::LaneGenerate,   "Generate Random Pattern in " + tag);
                     laneMenu.addItem(MenuId::LaneClear,      "Clear All Events in " + tag);
@@ -508,6 +516,20 @@ namespace B33p
             case MenuId::FileSavePreset:     promptSavePreset();                break;
             case MenuId::FileBrowsePresets:  showPresetBrowser();               break;
             case MenuId::FileClearRecent:    fileManager.clearRecentFiles();    break;
+            case MenuId::FileRestoreFactory:
+                confirmActionThen(
+                    "Restore the factory presets?\n\n"
+                    "This rewrites the four shipped presets (FM Bell, Resonant "
+                    "Stab, Delay Pad, Ring Mod Robot) to their originals, "
+                    "overwriting any changes you saved under those names. Your "
+                    "own presets are untouched.",
+                    [this]
+                    {
+                        presetManager.restoreFactoryPresets();
+                        if (presetBrowserWindow != nullptr)
+                            presetBrowserWindow->refresh();
+                    });
+                break;
             case MenuId::EditUndo:        processor.getUndoManager().undo(); break;
             case MenuId::EditCopy:        patternSection.getGrid().copySelectedToClipboard();      break;
             case MenuId::EditPaste:       patternSection.getGrid().pasteFromClipboardAtPlayhead(); break;
@@ -522,6 +544,25 @@ namespace B33p
                         + "'s voice to every other lane?\n\n"
                           "This overwrites the other three lanes' voice parameters.",
                     [this, lane] { processor.copyLaneSettingsToAll(lane); });
+                break;
+            }
+            case MenuId::LaneCopyVoice:
+                juce::SystemClipboard::copyTextToClipboard(
+                    processor.copyLaneVoiceToString(processor.getSelectedLane()));
+                break;
+            case MenuId::LanePasteVoice:
+            {
+                // Undoable + single-lane, so no confirm — Cmd+Z reverts it.
+                const auto data = juce::SystemClipboard::getTextFromClipboard();
+                if (! processor.applyLaneVoiceFromString(processor.getSelectedLane(), data))
+                    juce::AlertWindow::showAsync(
+                        juce::MessageBoxOptions()
+                            .withIconType(juce::MessageBoxIconType::InfoIcon)
+                            .withTitle("Paste voice")
+                            .withMessage("The clipboard doesn't contain a b33p voice. "
+                                         "Use \"Copy ... voice (clipboard)\" first.")
+                            .withButton("OK"),
+                        nullptr);
                 break;
             }
             case MenuId::LaneResetVoice:

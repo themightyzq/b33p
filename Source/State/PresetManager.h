@@ -65,6 +65,13 @@ namespace B33p
         // file and reopening the app.
         void seedFactoryPresetsIfMissing();
 
+        // Re-writes EVERY factory preset to its shipped definition,
+        // overwriting any the user has modified or saved over (REVIEW.md
+        // P22). Destructive on name collisions — unlike the non-destructive
+        // seed-on-launch path — so the caller must confirm. User presets
+        // (non-factory names) are untouched. Returns the number written.
+        int restoreFactoryPresets();
+
     private:
         B33pProcessor& processor;
         juce::File     presetsDirectory;

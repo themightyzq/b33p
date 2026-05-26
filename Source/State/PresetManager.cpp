@@ -120,4 +120,23 @@ namespace B33p
             ProjectState::writeToFile(temp, destination);
         }
     }
+
+    int PresetManager::restoreFactoryPresets()
+    {
+        // Same as the seed path, minus the "skip if present" guard — this
+        // deliberately overwrites a factory preset the user has modified,
+        // so the live processor's state is again held in a throwaway temp.
+        int restored = 0;
+        for (const auto& preset : getFactoryPresets())
+        {
+            const auto destination = presetsDirectory.getChildFile(
+                juce::File::createLegalFileName(preset.name) + ".beep");
+
+            B33pProcessor temp;
+            preset.configure(temp);
+            if (ProjectState::writeToFile(temp, destination))
+                ++restored;
+        }
+        return restored;
+    }
 }

@@ -194,6 +194,16 @@ namespace B33p
         // undoable transaction per call.
         void copyLaneSettingsToAll(int sourceLane);
 
+        // Copy / paste a single lane's whole voice (every APVTS param for the
+        // lane + its wavetable slots) as portable text, for moving a dialed-in
+        // voice between lanes or between plugin instances via the system
+        // clipboard (REVIEW.md P24). copyLaneVoiceToString serialises;
+        // applyLaneVoiceFromString applies to the target lane in one undo
+        // transaction and returns false if the text isn't a valid b33p voice
+        // (e.g. an unrelated clipboard, or a future-version shape).
+        juce::String copyLaneVoiceToString(int lane) const;
+        bool         applyLaneVoiceFromString(int lane, const juce::String& data);
+
         // Resets one lane's voice parameters to their defaults.
         // One undoable transaction.
         void resetLaneVoice(int lane);
