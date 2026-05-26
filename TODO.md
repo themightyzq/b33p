@@ -8,7 +8,7 @@ b33p roadmap. Each phase is a shippable milestone. Pick tasks **only from the cu
 
 ## Release in flight — v0.2.0
 
-**Status:** Tag `v0.2.0` is on the remote (commit `6876f4b`). The release workflow built and attached three archives to a **draft pre-release** at <https://github.com/themightyzq/b33p/releases/tag/v0.2.0>. **Publish has not happened yet.**
+**Status:** Tag `v0.2.0` was **re-tagged on 2026-05-26 at commit `268e5b7`** (current `main`) — the original tag (`6876f4b`) was 54 commits stale, missing the entire REVIEW Pass 1 polish, the Pass 2 plugin items (host bypass, latency + tail reporting, A/B compare, in-plugin Undo/Redo), and the standalone quit-confirm fix. The old draft + stale artifacts were deleted (never published, 0 downloads) and the release workflow rebuilt all three archives from current `main`. They're attached to a fresh **draft pre-release** at <https://github.com/themightyzq/b33p/releases/tag/v0.2.0>. **Publish still has not happened** — gated on the smoke tests below. Note: the release **body** auto-extracted from the `## [0.2.0]` CHANGELOG section, so it lists the headline 0.2.0 feature set but not the fine-grained post-tag polish (still under `## [Unreleased]`); edit the draft body in the GitHub UI before publishing if you want those enumerated.
 
 ### Smoke tests required before clicking Publish
 
