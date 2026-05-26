@@ -116,6 +116,12 @@ juce_add_plugin(B33p
     NEEDS_MIDI_INPUT        TRUE
     NEEDS_MIDI_OUTPUT       FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
+    # Declare the plugin subcategory explicitly (REVIEW.md P27). IS_SYNTH
+    # already implies an instrument, but an explicit VST3_CATEGORY improves
+    # discoverability in host plugin pickers that filter by subcategory, and
+    # AU_MAIN_TYPE documents the (already-correct) Music Device type.
+    VST3_CATEGORY           "Instrument" "Synth"
+    AU_MAIN_TYPE            "kAudioUnitType_MusicDevice"
     DOCUMENT_EXTENSIONS     "beep"
     ICON_BIG                "${CMAKE_SOURCE_DIR}/Source/Resources/icon_big.png"
     ICON_SMALL              "${CMAKE_SOURCE_DIR}/Source/Resources/icon_small.png"

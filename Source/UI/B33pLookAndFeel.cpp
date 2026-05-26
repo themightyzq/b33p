@@ -208,4 +208,18 @@ namespace B33p
         g.setColour(kOutline);
         g.drawRect(0, 0, width, height, 1);
     }
+
+    juce::Font B33pLookAndFeel::getSliderPopupFont(juce::Slider&)
+    {
+        return juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
+                                            13.0f, juce::Font::plain));
+    }
+
+    juce::Label* B33pLookAndFeel::createSliderTextBox(juce::Slider& slider)
+    {
+        auto* label = juce::LookAndFeel_V4::createSliderTextBox(slider);
+        label->setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
+                                                    11.0f, juce::Font::plain)));
+        return label;
+    }
 }
