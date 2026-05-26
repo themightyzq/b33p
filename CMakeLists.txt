@@ -123,6 +123,7 @@ juce_add_plugin(B33p
 
 target_sources(B33p PRIVATE
     Source/Main.cpp
+    Source/StandaloneApp.cpp
     Source/MainComponent.cpp
     Source/State/B33pProcessor.cpp
     Source/State/ParameterLayout.cpp
@@ -188,6 +189,13 @@ target_compile_definitions(B33p PRIVATE
     # (Build_VST=0) and JUCE_VST3_CAN_REPLACE_VST2 isn't explicitly
     # zero.
     JUCE_VST3_CAN_REPLACE_VST2=0
+    # Replace JUCE's default StandaloneFilterApp with the custom one in
+    # Source/StandaloneApp.cpp so the standalone window/Cmd+Q gestures
+    # prompt before discarding unsaved work. PRIVATE defs on B33p reach
+    # the B33p_Standalone wrapper TU, which reads this flag. Harmless on
+    # the VST3 / AU targets — their standalone wrapper TU is compiled out
+    # (JucePlugin_Build_Standalone=0) regardless.
+    JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1
 )
 
 target_link_libraries(B33p
