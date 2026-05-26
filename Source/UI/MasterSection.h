@@ -33,6 +33,15 @@ namespace B33p
         juce::TextButton auditionButton { "Audition" };
         juce::TextButton diceAllButton  { "Dice All" };
 
+        // A/B compare buttons (top-right of the section). Active
+        // slot highlights via setToggleState; copy button mirrors
+        // the active side's state into the other.
+        juce::TextButton abButtonA       { "A" };
+        juce::TextButton abButtonB       { "B" };
+        juce::TextButton abCopyButton    { "Copy" };
+
+        void refreshAbButtonStates();
+
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAttachment;
 
         // Output level meter — 30 Hz timer-driven update of

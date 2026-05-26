@@ -184,6 +184,27 @@ namespace B33p
         // One undoable transaction.
         void resetLaneVoice(int lane);
 
+        // ---- A/B compare -----------------------------------------
+        // Two-slot snapshot/compare of APVTS state. Snapshots store
+        // parameter values only (not Pattern, pitch curve, or
+        // wavetables); A/B is for comparing patches, not songs.
+        //
+        // First switch to B copies A's current state into B so the
+        // user has something to start tweaking from instead of an
+        // empty B-side. Subsequent switches save the leaving side
+        // and load the arriving side. Both snapshots + active side
+        // are persisted to the .beep / DAW project state (v13).
+        char getActiveAbSlot() const noexcept { return activeAbSlot; }
+        void switchAbSlot(char target);
+        void copyActiveAbSlotToOther();
+
+        // ProjectState (v13+) serialises snapshots via these. Caller
+        // owns the returned pointer's data (deep-copy as needed).
+        const juce::XmlElement* getAbSnapshot(char slot) const noexcept;
+        void restoreAbState(char activeSlot,
+                            std::unique_ptr<juce::XmlElement> snapshotA,
+                            std::unique_ptr<juce::XmlElement> snapshotB);
+
         // Audio thread writes once per block, UI reads from a Timer
         // callback. atomic<double> is lock-free on every 64-bit
         // platform we support.
@@ -360,6 +381,14 @@ namespace B33p
         // the constructor from apvts.getRawParameterValue(); checked
         // every processBlock to decide whether to clear and bail.
         std::atomic<float>*                    bypassParam { nullptr };
+
+        // A/B slot snapshots — APVTS state XML for each side. Both
+        // can be nullptr (then a switch from A → B captures the
+        // current state into A and copies it into B). activeAbSlot
+        // is the side whose values currently drive the APVTS.
+        std::unique_ptr<juce::XmlElement>      abSnapshotA;
+        std::unique_ptr<juce::XmlElement>      abSnapshotB;
+        char                                   activeAbSlot { 'A' };
 
         // Audio-thread mutable state (touched only from processBlock).
         bool                                   audioThreadPlaying { false };
