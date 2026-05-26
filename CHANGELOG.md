@@ -8,27 +8,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
-### Added
-
-- **File ▸ Restore Factory Presets...** rewrites the four shipped presets (FM Bell, Resonant Stab, Delay Pad, Ring Mod Robot) to their originals — recovering any you saved over — behind a confirmation. Your own presets are untouched. (REVIEW.md P22.)
-- **Edit ▸ Lane ▸ Copy / Paste voice (clipboard)** — copy a dialed-in lane's whole voice (every parameter + its wavetable slots) to the system clipboard and paste it into another lane, or another b33p instance entirely. Paste is one undoable step. (REVIEW.md P24.)
-
-### Changed
-
-- **Master level meter** gains a peak-hold marker (a bright tick that holds the recent maximum ~1.5 s, then eases down) and a latching **clip indicator** (a red cap at the right end that lights for ~1.5 s whenever the output hits 0 dBFS, so a brief overload isn't missed between frames). (REVIEW.md P18.)
-- **Pitch Envelope** canvas now shows axis reference: faint vertical gridlines at the quarter points of the note duration and `+12 / 0 / -12` semitone labels down the left edge, so the curve reads against concrete pitch values. (REVIEW.md P32.)
-- The **selected lane** now persists in saved projects and DAW sessions, and the **editor window size** persists across DAW close / reopen (stored in the plugin's DAW state, deliberately *not* in shared `.beep` files — window size isn't portable patch data). (REVIEW.md P7 / P11.)
-- Numeric value readouts under each knob (and the drag-time popup bubble) now use a **monospaced** face, so digits no longer shift left/right as a value ticks during a drag. (REVIEW.md P28.)
-- VST3 / AU plugin **subcategory** is now declared explicitly (`Instrument | Synth` / `kAudioUnitType_MusicDevice`) so host plugin pickers that filter by subcategory list b33p correctly. (REVIEW.md P27.)
-- **Knob interactions** (REVIEW.md P9 / P10 / P25 / P36). Every rotary now supports the synth standards: hold **Shift** before dragging for fine adjustment, **mouse-wheel / two-finger scroll** to step the value, **double-click** to reset to the parameter default, and a **right-click menu** (Enter value… / Reset to default) — so typing an exact value is finally discoverable.
-- Custom flat dark **LookAndFeel** (REVIEW.md P8 / P15 / P29 / P30). Rotary knobs drop JUCE's default line indicator for a flat body + thin value arc + dot, and the arc takes the **selected lane's accent colour** (blue / green / amber / pink) so the knobs shift colour with the section strips when you switch lanes. Comboboxes are flat with a hairline border + accent caret; buttons are flat rounded; popup menus and dialogs match the charcoal palette. Modulation-amount sliders now render bipolar (fill grows from the centre). Installed process-wide so the editor and its dialogs share one look.
-
-### Fixed
-
-- The `.beep` / plugin-state schema version is now correctly stamped as **13** — it had lagged at 12 while the saved content already included v13 A/B-compare data. Files written by earlier 0.2.0 builds (stamped 12) still load and migrate forward.
-- Loading a preset is now a single undoable step — Cmd+Z (or the in-plugin Undo button) restores the previous patch instead of losing it. (REVIEW.md P6.)
-- Saving a preset under a name that already exists now asks for confirmation before overwriting, instead of silently replacing the existing preset. (REVIEW.md P26.)
-- Standalone window now fits the screen on launch. The voice editor was a six-row vertical stack ~1338 px tall — taller than a 1080p display's usable height — so the pattern grid opened off the bottom of the screen. The three full-width-but-short rows (Mod FX, Modulation, Pitch Env) are now column-packed: Mod FX sits beside Effects + Master, and Modulation sits beside Pitch Env, bringing the default window to ~1007 px. The standalone window also clamps to the display's usable area on launch (and stays resizable), so it never opens partly off-screen. The editor additionally gained resize limits (min 1000×600, max 3200×2200) so it can't be dragged down to an unreadable sliver or ballooned past sane bounds (REVIEW.md P12).
+_Nothing yet. The 0.2.0 entry below was refreshed on 2026-05-26 to fold in this session's UI / state work (LookAndFeel, knob interactions, factory-preset restore, lane-voice clipboard, master-meter peak/clip, pitch-env axes, schema-version fix, off-screen-window fix) ahead of the v0.2.0 re-tag._
 
 ## [0.2.0] — 2026-05-26
 
@@ -45,6 +25,8 @@ feature-complete changelog follows under **"Original 0.2.0 feature set"**.
 - `NOTICE` — third-party attribution for JUCE 8.0.12 (GPL-3.0) and Catch2 v3.14.0 (BSL-1.0).
 - New `B33P_ENABLE_SANITIZERS` CMake option wires AddressSanitizer + UndefinedBehaviorSanitizer compile/link flags (GCC/Clang only). A dedicated `sanitizers` CI job on Ubuntu runs the full test suite under asan + ubsan on every push.
 - `Help ▸ Keyboard Shortcuts...` opens a dedicated dialog with the keyboard reference grouped by Transport / File · Edit / Pattern editing — mirroring the README's table. The shortcut reference no longer needs to be hunted inside the About dialog.
+- **File ▸ Restore Factory Presets...** rewrites the four shipped presets (FM Bell, Resonant Stab, Delay Pad, Ring Mod Robot) to their originals — recovering any you saved over — behind a confirmation. Your own presets are untouched. (REVIEW.md P22.)
+- **Edit ▸ Lane ▸ Copy / Paste voice (clipboard)** — copy a dialed-in lane's whole voice (every parameter + its wavetable slots) to the system clipboard and paste it into another lane, or another b33p instance entirely. Paste is one undoable step. (REVIEW.md P24.)
 
 ### Changed
 
@@ -86,6 +68,13 @@ feature-complete changelog follows under **"Original 0.2.0 feature set"**.
 - Tail length reporting — `getTailLengthSeconds()` now returns 4 seconds (was 0). Covers worst-case audible tail from amp-envelope release + reverb decay + delay feedback so DAWs don't cut off reverb wash or delay echoes mid-decay when transport stops.
 - **A/B compare** — top-right of the Master section gets three small buttons: `A` / `B` toggle + `Copy`. Snapshots store the APVTS parameter state only (not Pattern, pitch curve, or wavetables — A/B is for comparing patches, not songs). First switch to B copies A's current state into B so the user starts with something to tweak, not an init patch. Both snapshots + the active slot persist in the `.beep` file and DAW project state (schema bump v12 → v13).
 - **In-plugin Undo / Redo buttons** — top-left of the Master section. Gives a click-path that survives the DAW capturing the Cmd+Z keyboard shortcut. Enable/disable state matches `UndoManager::canUndo()` / `canRedo()`.
+- **Master level meter** gains a peak-hold marker (a bright tick that holds the recent maximum ~1.5 s, then eases down) and a latching **clip indicator** (a red cap at the right end that lights for ~1.5 s whenever the output hits 0 dBFS, so a brief overload isn't missed between frames). (REVIEW.md P18.)
+- **Pitch Envelope** canvas now shows axis reference: faint vertical gridlines at the quarter points of the note duration and `+12 / 0 / -12` semitone labels down the left edge, so the curve reads against concrete pitch values. (REVIEW.md P32.)
+- The **selected lane** now persists in saved projects and DAW sessions, and the **editor window size** persists across DAW close / reopen (stored in the plugin's DAW state, deliberately *not* in shared `.beep` files — window size isn't portable patch data). (REVIEW.md P7 / P11.)
+- Numeric value readouts under each knob (and the drag-time popup bubble) now use a **monospaced** face, so digits no longer shift left/right as a value ticks during a drag. (REVIEW.md P28.)
+- VST3 / AU plugin **subcategory** is now declared explicitly (`Instrument | Synth` / `kAudioUnitType_MusicDevice`) so host plugin pickers that filter by subcategory list b33p correctly. (REVIEW.md P27.)
+- **Knob interactions** (REVIEW.md P9 / P10 / P25 / P36). Every rotary now supports the synth standards: hold **Shift** before dragging for fine adjustment, **mouse-wheel / two-finger scroll** to step the value, **double-click** to reset to the parameter default, and a **right-click menu** (Enter value… / Reset to default) — so typing an exact value is finally discoverable.
+- Custom flat dark **LookAndFeel** (REVIEW.md P8 / P15 / P29 / P30). Rotary knobs drop JUCE's default line indicator for a flat body + thin value arc + dot, and the arc takes the **selected lane's accent colour** (blue / green / amber / pink) so the knobs shift colour with the section strips when you switch lanes. Comboboxes are flat with a hairline border + accent caret; buttons are flat rounded; popup menus and dialogs match the charcoal palette. Modulation-amount sliders now render bipolar (fill grows from the centre). Installed process-wide so the editor and its dialogs share one look.
 
 ### Removed
 
@@ -95,6 +84,10 @@ feature-complete changelog follows under **"Original 0.2.0 feature set"**.
 
 - Closing the standalone window or quitting it (Cmd+Q / the OS quit) with unsaved changes now prompts **Save / Discard / Cancel** instead of silently discarding the project. The standalone build had lost this when the target switched to `juce_add_plugin` — JUCE's default `StandaloneFilterApp` wrapper has no dirty check. b33p now ships a custom standalone app (`JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP`, `Source/StandaloneApp.cpp`) that routes both the window-close button and Cmd+Q through the same confirmation File ▸ New / Open already use. Plugin (VST3 / AU) builds are unaffected — the host owns the window lifecycle there.
 - `Build and Launch.command` and `build_and_launch.py` now reconfigure the CMake build directory when its cached `CMAKE_BUILD_TYPE` differs from the requested one, and only pass `-G <generator>` on a *fresh* configure (omitting it on reconfigure so CMake reuses the cached generator). Two interacting bugs were biting in sequence: single-config generators (Make, Ninja) silently ignore `cmake --build --config <X>` so switching between Debug and Release used to build the cached type and then fail to find the artefact; and once that was fixed, passing `-G` on reconfigure tripped CMake's "generator does not match the generator used previously" check when ninja showed up on PATH after the first configure.
+- The `.beep` / plugin-state schema version is now correctly stamped as **13** — it had lagged at 12 while the saved content already included v13 A/B-compare data. Files written by earlier 0.2.0 builds (stamped 12) still load and migrate forward.
+- Loading a preset is now a single undoable step — Cmd+Z (or the in-plugin Undo button) restores the previous patch instead of losing it. (REVIEW.md P6.)
+- Saving a preset under a name that already exists now asks for confirmation before overwriting, instead of silently replacing the existing preset. (REVIEW.md P26.)
+- Standalone window now fits the screen on launch. The voice editor was a six-row vertical stack ~1338 px tall — taller than a 1080p display's usable height — so the pattern grid opened off the bottom of the screen. The three full-width-but-short rows (Mod FX, Modulation, Pitch Env) are now column-packed: Mod FX sits beside Effects + Master, and Modulation sits beside Pitch Env, bringing the default window to ~1007 px. The standalone window also clamps to the display's usable area on launch (and stays resizable), so it never opens partly off-screen. The editor additionally gained resize limits (min 1000×600, max 3200×2200) so it can't be dragged down to an unreadable sliver or ballooned past sane bounds (REVIEW.md P12).
 
 ### Original 0.2.0 feature set (feature-complete tag, 2026-04-30)
 
