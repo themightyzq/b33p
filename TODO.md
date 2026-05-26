@@ -286,6 +286,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Undo / Redo buttons in Master section's top-left strip — gives the user a click-path that survives the DAW capturing Cmd+Z. Enable/disable state refreshes via the existing 30 Hz timer. (REVIEW.md Pass 2 Critical P5.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 - [x] **Standalone window opened off-screen on 1080p — fit to screen on first load.** The voice editor was a six-row vertical stack (~1338 pt tall) that overflowed a 1080p display, pushing the pattern grid off the bottom. Column-packed the three full-width-but-short rows (Mod FX → beside Effects/Master; Pitch Env → beside Modulation), dropping the default to ~1007 pt so the whole window fits. `Source/StandaloneApp.cpp` also clamps the window to the display's usable area on launch and re-centres; the window stays resizable. (Reported by user 2026-05-26; not covered by the 2026-05-25 `REVIEW.md` pass, which audited toolbar *width*, not total height. Follow-ups: refresh the hero screenshot for the new layout; `docs/USAGE.md` spatial phrasing ("Below the Mod FX row…") is now slightly stale.)
+- [x] **REVIEW.md Pass 2 P12 — editor resize limits.** `B33pEditor` now calls `setResizeLimits(1000, 600, 3200, 2200)`. Min keeps the wrapped toolbar legible and is low enough that the fit-to-screen clamp can still shrink onto small displays; max prevents ballooning. Verified: a forced 400×300 resize clamps to ~1002×628.
 
 ---
 
