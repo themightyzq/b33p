@@ -49,7 +49,10 @@ namespace B33p
         //       follow_host_transport boolean attribute. v11 patterns load
         //       with the default (false) so existing projects continue to
         //       use the internal transport.
-        inline constexpr int kCurrentVersion = 12;
+        //  v13: A/B compare state — root grows an AB_STATE child holding the
+        //       two APVTS snapshots + the active slot. v12-and-older files
+        //       load with no snapshots (active 'A'), seeded on first B switch.
+        inline constexpr int kCurrentVersion = 13;
 
         // Captures every persistable piece of state the processor
         // owns: APVTS parameter values, the drawn pitch envelope

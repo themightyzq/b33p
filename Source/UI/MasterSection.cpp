@@ -136,15 +136,49 @@ namespace B33p
             auditionFlashActive = false;
         }
 
-        // Pull the latest output peak; only repaint when it actually
-        // changes by more than 1 LSB so an idle app doesn't tax the
-        // GPU 30 times a second.
+        // Pull the latest output peak; only repaint the meter when something
+        // it draws actually changed, so an idle app doesn't tax the GPU 30
+        // times a second.
         const float newLevel = processor.getOutputPeak();
+        const auto  nowMs    = juce::Time::currentTimeMillis();
+        bool meterDirty = false;
+
         if (std::abs(newLevel - meterLevel) > 1.0f / 256.0f)
         {
             meterLevel = newLevel;
-            repaint(meterBounds);
+            meterDirty = true;
         }
+
+        // Peak-hold (P18): snap up instantly, hold ~1.5 s, then ease down
+        // toward the live level (~0.6/s at 30 Hz) so transients stay legible.
+        if (newLevel >= peakHoldLevel)
+        {
+            peakHoldLevel   = newLevel;
+            peakHoldUntilMs = nowMs + 1500;
+            meterDirty      = true;
+        }
+        else if (nowMs >= peakHoldUntilMs && peakHoldLevel > newLevel)
+        {
+            peakHoldLevel = juce::jmax(newLevel, peakHoldLevel - 0.02f);
+            meterDirty    = true;
+        }
+
+        // Clip latch (P18): light the red cap whenever the output reaches
+        // full scale, and hold it ~1.5 s so a brief overload isn't missed.
+        if (newLevel >= 0.999f)
+        {
+            clipLatched      = true;
+            clipLatchUntilMs = nowMs + 1500;
+            meterDirty       = true;
+        }
+        else if (clipLatched && nowMs >= clipLatchUntilMs)
+        {
+            clipLatched = false;
+            meterDirty  = true;
+        }
+
+        if (meterDirty)
+            repaint(meterBounds);
 
         // Undo/Redo enable state — undo history changes silently
         // when other surfaces (sliders, menu undo) write to the
@@ -166,21 +200,42 @@ namespace B33p
         g.setColour(juce::Colour::fromRGB(60, 60, 60));
         g.drawRoundedRectangle(bounds, 2.0f, 1.0f);
 
-        // Filled width = meterLevel (0..1). Green up to 0.7,
-        // amber 0.7..0.9, red above. Anything above 1.0 is
-        // already clipped — show the bar fully red at the top.
+        // Filled width = meterLevel (0..1). Green up to 0.7, amber 0.7..0.9,
+        // red above.
         const float clamped = juce::jlimit(0.0f, 1.0f, meterLevel);
-        if (clamped <= 0.0f) return;
+        const auto  track   = bounds.reduced(1.5f);
 
-        auto fill = bounds.reduced(1.5f);
-        fill.setWidth(fill.getWidth() * clamped);
+        if (clamped > 0.0f)
+        {
+            auto fill = track;
+            fill.setWidth(fill.getWidth() * clamped);
 
-        auto barColour = juce::Colour::fromRGB(60, 180, 80);
-        if (clamped > 0.9f)      barColour = juce::Colour::fromRGB(220,  60,  60);
-        else if (clamped > 0.7f) barColour = juce::Colour::fromRGB(220, 180,  60);
+            auto barColour = juce::Colour::fromRGB(60, 180, 80);
+            if (clamped > 0.9f)      barColour = juce::Colour::fromRGB(220,  60,  60);
+            else if (clamped > 0.7f) barColour = juce::Colour::fromRGB(220, 180,  60);
 
-        g.setColour(barColour);
-        g.fillRoundedRectangle(fill, 1.5f);
+            g.setColour(barColour);
+            g.fillRoundedRectangle(fill, 1.5f);
+        }
+
+        // Peak-hold tick (P18) — bright vertical marker at the recent max.
+        const float ph = juce::jlimit(0.0f, 1.0f, peakHoldLevel);
+        if (ph > 0.0f)
+        {
+            const float x = track.getX() + track.getWidth() * ph;
+            g.setColour(juce::Colour::fromRGB(235, 235, 245));
+            g.fillRect(juce::Rectangle<float>(x - 0.75f, track.getY(), 1.5f, track.getHeight()));
+        }
+
+        // Clip cap (P18) — latched red block at the right end after 0 dBFS.
+        if (clipLatched)
+        {
+            g.setColour(juce::Colour::fromRGB(255, 70, 70));
+            g.fillRoundedRectangle(
+                juce::Rectangle<float>(bounds.getRight() - 4.5f, bounds.getY(),
+                                       4.5f, bounds.getHeight()).reduced(0.5f),
+                1.0f);
+        }
     }
 
     void MasterSection::resized()
