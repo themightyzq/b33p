@@ -1,0 +1,10 @@
+# Keep the "blank issue" escape hatch, but steer most reports through the
+# templates above.
+blank_issues_enabled: true
+contact_links:
+  - name: Roadmap & scope (TODO.md)
+    url: https://github.com/themightyzq/b33p/blob/main/TODO.md
+    about: Check the roadmap and scope notes before filing a feature request.
+  - name: Usage guide (docs/USAGE.md)
+    url: https://github.com/themightyzq/b33p/blob/main/docs/USAGE.md
+    about: How-to and keyboard shortcuts — your question may be answered here.
