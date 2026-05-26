@@ -8,6 +8,13 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-26
+
+The b33p 0.2.0 release. It was tagged feature-complete on 2026-04-30, then
+refined through the 2026-05-25 design-review pass and plugin-hardening work
+before release. Those refinements are listed first below; the original
+feature-complete changelog follows under **"Original 0.2.0 feature set"**.
+
 ### Added
 
 - `.gitattributes` declares cross-platform line-ending normalization (LF for text) and binary markers for `*.png`, `*.icns`, `*.ico`, `*.wav`.
@@ -67,7 +74,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Closing the standalone window or quitting it (Cmd+Q / the OS quit) with unsaved changes now prompts **Save / Discard / Cancel** instead of silently discarding the project. The standalone build had lost this when the target switched to `juce_add_plugin` — JUCE's default `StandaloneFilterApp` wrapper has no dirty check. b33p now ships a custom standalone app (`JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP`, `Source/StandaloneApp.cpp`) that routes both the window-close button and Cmd+Q through the same confirmation File ▸ New / Open already use. Plugin (VST3 / AU) builds are unaffected — the host owns the window lifecycle there.
 - `Build and Launch.command` and `build_and_launch.py` now reconfigure the CMake build directory when its cached `CMAKE_BUILD_TYPE` differs from the requested one, and only pass `-G <generator>` on a *fresh* configure (omitting it on reconfigure so CMake reuses the cached generator). Two interacting bugs were biting in sequence: single-config generators (Make, Ninja) silently ignore `cmake --build --config <X>` so switching between Debug and Release used to build the cached type and then fail to find the artefact; and once that was fixed, passing `-G` on reconfigure tripped CMake's "generator does not match the generator used previously" check when ninja showed up on PATH after the first configure.
 
-## [0.2.0] — 2026-04-30
+### Original 0.2.0 feature set (feature-complete tag, 2026-04-30)
 
 A 28-commit session on 2026-04-29 worked top-to-bottom through the post-MVP
 roadmap, then closed it out. The synth grew from "monophonic 4-lane sketchpad"
