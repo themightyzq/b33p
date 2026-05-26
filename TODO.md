@@ -232,6 +232,7 @@ End-user review surfaced a stack of items that all amount to "the README and the
 Cross-cutting work that isn't tied to any single phase. Review at the start of every session — if any item has a time-sensitive deadline approaching, flag it to the user before starting feature work.
 
 - [x] Bump `actions/checkout` and `actions/cache` to `@v5` before June 2, 2026 (Node 20 deprecation — GitHub Actions warning surfaced on every run)
+- [ ] Bump `softprops/action-gh-release` off Node 20 before June 2, 2026 (the last Node-20 action left — surfaced as an annotation on the 2026-05-26 v0.2.0 release run). After June 2 the runner forces Node 24 and `@v2` "may not work as expected", which would break the release `publish` job on the next `v*` tag. Check for a Node-24-capable tag (e.g. a newer `@v2.x`/`@v3`) and pin it.
 - [x] Add `.gitattributes` (`* text=auto eol=lf` plus binary marks for `*.png`, `*.icns`, `*.ico`, `*.wav`).
 - [x] Add `docs/RELEASE_SMOKE.md` — per-OS smoke-test runbook + failure-mode triage + publish / re-tag / fix-forward decision tree for any `v*` draft release.
 - [x] Capture the 2026-05-25 design review in `docs/REVIEW.md` — 40 prioritized UX findings (10 Critical / 19 High Impact / 11 Nice to Have). New chore-list entries get extracted from this as they're worked.
