@@ -10,6 +10,26 @@ namespace B33p
         constexpr int   kTitleIndent     = 10;
         constexpr int   kContentPadding  = 8;
         constexpr float kOutlineThickness = 1.0f;
+
+        // Push the lane accent down onto every slider in the subtree so the
+        // custom LookAndFeel paints each knob's value arc / fill in the
+        // current lane's colour — matching the section's accent strip. Safe
+        // to call on lane switches; non-rotary sliders simply ignore the
+        // rotary colour IDs.
+        void tintSliders(juce::Component& component, juce::Colour accent)
+        {
+            for (auto* child : component.getChildren())
+            {
+                if (auto* slider = dynamic_cast<juce::Slider*>(child))
+                {
+                    slider->setColour(juce::Slider::rotarySliderFillColourId, accent);
+                    slider->setColour(juce::Slider::trackColourId,            accent);
+                    slider->setColour(juce::Slider::thumbColourId,            accent);
+                }
+
+                tintSliders(*child, accent);
+            }
+        }
     }
 
     Section::Section(juce::String titleIn)
@@ -67,6 +87,7 @@ namespace B33p
     {
         if (accentColour == c) return;
         accentColour = c;
+        tintSliders(*this, c);
         repaint();
     }
 

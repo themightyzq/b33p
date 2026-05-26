@@ -135,6 +135,7 @@ target_sources(B33p PRIVATE
     Source/UI/AmpEnvSection.cpp
     Source/UI/AmpEnvelopeVisualizer.cpp
     Source/UI/B33pEditor.cpp
+    Source/UI/B33pLookAndFeel.cpp
     Source/UI/EffectsSection.cpp
     Source/UI/EventOverridesDialog.cpp
     Source/UI/ExportDialog.cpp

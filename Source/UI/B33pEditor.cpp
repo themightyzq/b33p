@@ -8,6 +8,15 @@ namespace B33p
         : juce::AudioProcessorEditor(&processor),
           mainComponent(processor)
     {
+        // Install b33p's flat dark LookAndFeel as the process-wide default so
+        // the editor AND the dialogs it spawns (Save/Discard, Export, preset
+        // browser, About) all pick it up — those open as separate windows that
+        // query the default, not mainComponent's. Scoped to this editor's
+        // lifetime; relinquished in the destructor. In plugin mode this only
+        // touches our own statically-linked JUCE, never the host or other
+        // plugins.
+        juce::LookAndFeel::setDefaultLookAndFeel(&lookAndFeel);
+
         addAndMakeVisible(mainComponent);
 
         // MainComponent computes its preferred size in its own
@@ -26,6 +35,14 @@ namespace B33p
         // small display without fighting the constrainer. The standalone window
         // and plugin hosts both honour the editor's constrainer.
         setResizeLimits(1000, 600, 3200, 2200);
+    }
+
+    B33pEditor::~B33pEditor()
+    {
+        // Only relinquish the default if it's still ours — in a multi-instance
+        // host another editor may have taken over since we set it.
+        if (&juce::LookAndFeel::getDefaultLookAndFeel() == &lookAndFeel)
+            juce::LookAndFeel::setDefaultLookAndFeel(nullptr);
     }
 
     void B33pEditor::resized()
