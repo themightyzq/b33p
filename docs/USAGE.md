@@ -1,10 +1,10 @@
 # Using b33p
 
-This is the long-form user guide. The README has the elevator pitch and a quickstart; this file goes deeper. Everything here also lives in the in-app **About b33p** dialog (`Cmd+/` or **Help → About b33p**) in condensed form.
+This is the long-form user guide. The README has the elevator pitch and a quickstart; this file goes deeper. A condensed shortcut reference also lives in the in-app **Help → Keyboard Shortcuts…** dialog, and credits/version in **Help → About b33p**.
 
 ## The mental model in one paragraph
 
-b33p is built around a four-lane pattern. Each lane is its own monophonic synth voice, and the voice editor (Oscillator / Amp Envelope / Filter / Effects / Mod FX / Modulation / Master) edits whichever lane is currently selected. The "(Lane N)" suffix in the section titles tells you which lane is being edited. Click any lane in the pattern grid (or any of its events) to switch.
+b33p is built around a four-lane pattern. Each lane is its own monophonic synth voice, and the voice editor (Oscillator / Amp Envelope / Filter / Effects / Master / Mod FX / Modulation) edits whichever lane is currently selected. The "(Lane N)" suffix on the **Oscillator** section title — and the lane-coloured accent strip carried across every section — tells you which lane is being edited. Click any lane in the pattern grid (or any of its events) to switch; the whole voice editor re-tints to that lane's colour.
 
 The Pitch Envelope is the only voice-shaped thing that's **not** per-lane — it's shared across all four voices, hence its "(shared across all lanes)" suffix.
 
@@ -18,6 +18,15 @@ Pick a lane (click anywhere in it, or click an event), then tweak the voice edit
 - A **lock button** (the padlock icon next to the dice) — pins the value across rolls. Locked params survive both per-knob dice rolls AND the section-level / project-level Randomize buttons.
 
 The **Master Gain** is the one exception — it has neither dice nor lock. Random rolls of master gain are too good a way to blow ears or speakers, so it's simply excluded from every randomize entry point.
+
+Every knob also responds to the standard synth gestures:
+
+- **Drag** to adjust; **hold Shift before dragging** for fine (≈6×) adjustment.
+- **Mouse-wheel / two-finger scroll** over a knob steps the value.
+- **Double-click** resets the knob to the parameter's default.
+- **Right-click** (or Ctrl-click) opens a menu: *Enter value…* (type an exact number into the readout) and *Reset to default*.
+
+Value readouts use a monospaced face so digits don't jitter as you drag.
 
 ### Oscillator modes
 
@@ -69,7 +78,7 @@ In Formant mode the Cutoff / Resonance sliders disappear and a single Vowel slid
 
 ### LFOs and modulation matrix
 
-Below the Mod FX row, the **Modulation** section hosts:
+The **Modulation** section (bottom-left of the voice editor, beside the Pitch Envelope) hosts:
 
 - **Two LFO panels** at the top — Shape (Sine / Triangle / Saw / Square) and Rate (0..30 Hz). LFOs are free-running — they don't retrigger on note events, so a slow filter sweep persists across many notes.
 - **Four matrix slots** below — each slot picks a Source (None / LFO 1 / LFO 2), a Destination (one of 11 voice parameters), and a bipolar Amount (-1..+1).
@@ -142,7 +151,8 @@ Project / file shortcuts work anywhere in the window:
 | `Cmd + Shift + S` | Save As… |
 | `Cmd + Z` | Undo |
 | `Cmd + Shift + Z` | Redo |
-| `Cmd + /` | About b33p |
+
+About b33p and the full shortcut reference are under the **Help** menu (Help → Keyboard Shortcuts… / About b33p).
 
 On Windows / Linux, swap `Cmd` for `Ctrl`.
 
@@ -194,10 +204,13 @@ To pick a specific MIDI input device or to disable MIDI input, use your host's M
 
 ## Presets
 
-Two menu items under **File** drive the preset workflow:
+Three menu items under **File** drive the preset workflow:
 
-- **Save Preset...** — prompts for a name and writes the current state to `<name>.beep` in the per-user presets directory.
-- **Browse Presets...** — opens a list of every `.beep` file in the presets directory. Double-click a row (or pick it and click **Load**) to apply. **Delete** removes a preset (with a confirm prompt).
+- **Save Preset...** — prompts for a name and writes the current state to `<name>.beep` in the per-user presets directory. If a preset with that name already exists, it asks before overwriting.
+- **Browse Presets...** — opens a list of every `.beep` file in the presets directory. Double-click a row (or pick it and click **Load**) to apply. **Delete** removes a preset (with a confirm prompt). Loading a preset is a single undoable step — `Cmd+Z` restores the previous patch.
+- **Restore Factory Presets...** — rewrites the four shipped factory patches to their originals (after a confirm), recovering any you've saved over. Your own presets are untouched.
+
+To move a single voice between lanes or between two b33p instances, use **Edit ▸ Lane ▸ Copy *Lane N* voice (clipboard)** and **Paste voice into *Lane N* (clipboard)** — it carries every parameter for the lane plus its wavetable slots through the system clipboard. Paste is one undoable step.
 
 The presets directory is platform-specific:
 
@@ -216,11 +229,11 @@ The first time the app launches, the presets directory is seeded with four start
 - **Factory - Delay Pad** — Triangle with slow ADSR + Mod-FX Delay at 0.85 feedback / 0.55 mix.
 - **Factory - Ring Mod Robot** — Ring mode at 3.7 ratio, tight envelope, 16 chatter hits with humanize=0.25.
 
-Existing files are NEVER overwritten on subsequent launches — once a user tweaks "Factory - Delay Pad", their version wins forever. Restoring is delete-and-relaunch.
+Existing files are NEVER overwritten on subsequent launches — once a user tweaks "Factory - Delay Pad", their version wins forever. To get the originals back, use **File ▸ Restore Factory Presets...** (or delete the file and relaunch).
 
 ## Saving and loading
 
-Projects save as `.beep` files. The format is versioned (currently v12) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions and are upgraded silently on load. The migration chain covers v1 (single-voice MVP) through v12 (host-transport-follow flag) — see `Source/State/ProjectState.h` for the full version history.
+Projects save as `.beep` files. The format is versioned (currently v13) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions and are upgraded silently on load. The migration chain covers v1 (single-voice MVP) through v13 (A/B compare state) — see `Source/State/ProjectState.h` for the full version history.
 
 Closing the app or starting a New project while you have unsaved changes prompts Save / Discard / Cancel. Cancel keeps the current project open; Discard wipes; Save runs the normal save flow (and only proceeds if the save succeeds).
 

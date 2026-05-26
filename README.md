@@ -40,11 +40,12 @@ Built for sound designers, game developers, and synth hobbyists who want a tight
 - **Randomize Lane / Randomize All** entry points respect locks and the safety caps on attack / release / resonance / drive.
 
 ### Presets + project state
-- **Preset browser** — Save Preset / Browse Presets in the File menu. Per-user presets directory under `~/Library/Application Support/b33p/Presets` (or platform equivalent).
+- **Preset browser** — Save Preset / Browse Presets in the File menu. Per-user presets directory under `~/Library/Application Support/b33p/Presets` (or platform equivalent). Saving over an existing name asks before overwriting; **Restore Factory Presets** rewrites the four shipped patches if you've changed them.
 - **Factory presets** — 4 starter patches ship with the app and seed the presets directory on first launch (FM Bell, Resonant Stab, Delay Pad, Ring Mod Robot).
-- **Project save / load** — `.beep` files carry the full project state. Format is versioned (currently v12) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions.
+- **Copy / paste voice** — `Edit ▸ Lane ▸ Copy / Paste voice` moves a dialed-in lane's whole voice (params + wavetables) to the clipboard and into another lane, or another b33p instance.
+- **Project save / load** — `.beep` files carry the full project state. Format is versioned (currently v13) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions.
 - **Recent Files submenu** in File.
-- **Full undo / redo** through every editing surface.
+- **Full undo / redo** through every editing surface — including loading a preset.
 
 ### Render + plugin builds
 - **Audio export** — WAV / AIFF / FLAC / OGG Vorbis at 8 / 11.025 / 16 / 22.05 / 44.1 / 48 / 88.2 / 96 kHz, 8 / 16 / 24-bit, mono or stereo.
@@ -55,7 +56,7 @@ Built for sound designers, game developers, and synth hobbyists who want a tight
 
 ![b33p main window — voice editor, pitch envelope, and pattern sequencer](docs/images/hero.png)
 
-The full editor at default state: per-lane voice editor (Oscillator / Amp Envelope / Filter / Effects / Modulation Effects / Modulation / Master) with a "(Lane N)" suffix telling you which lane you're editing, the shared drawable pitch envelope, and the pattern sequencer with per-lane name + mute + solo, snap grid, BPM + time-signature controls, and Randomize-All / Export controls.
+The full editor at default state, sized to fit a 1080p screen: the per-lane voice editor is column-packed into three rows — Oscillator / Amp Envelope / Filter, then Effects / Master / Mod FX, then Modulation / Pitch Envelope — with the Oscillator section's "(Lane N)" suffix telling you which lane you're editing. Below it sits the pattern sequencer with per-lane name + mute + solo, snap grid, BPM + time-signature controls, and Randomize-All / Export. Knobs use a flat dark look with a lane-coloured value arc.
 
 ## Installation
 
@@ -191,7 +192,8 @@ For the long-form user guide — every gesture, every keyboard shortcut, the per
 | `Cmd + Shift + S` | Save As… |
 | `Cmd + Z` | Undo |
 | `Cmd + Shift + Z` | Redo |
-| `Cmd + /` | About b33p |
+
+About b33p and the full shortcut reference live under the **Help** menu (Help ▸ Keyboard Shortcuts… / About b33p).
 
 ### Pattern editing (when the pattern grid has focus)
 | Shortcut | Action |
@@ -208,6 +210,13 @@ On Windows / Linux, swap `Cmd` for `Ctrl`.
 
 ## Mouse / right-click
 
+### Knobs
+- **Drag** — adjust. **Hold Shift while dragging** for fine adjustment.
+- **Mouse-wheel / two-finger scroll** over a knob — step the value.
+- **Double-click** — reset to the parameter's default.
+- **Right-click** (or Ctrl-click) — menu: *Enter value…* (type an exact value) / *Reset to default*.
+
+### Pattern grid
 - **Drag in empty grid area** — draw a new event whose duration matches the dragged distance.
 - **Double-click in empty grid area** — create an event at the default 100 ms duration.
 - **Drag a clip body** — move horizontally; vertical drag retargets the lane.
@@ -222,7 +231,7 @@ On Windows / Linux, swap `Cmd` for `Ctrl`.
 
 Projects save as `.beep` files. A `.beep` is a versioned `ValueTree` serialization of the full project: per-lane voice parameters (oscillator + envelopes + filter + effects + modulation + LFOs + matrix), pitch-envelope curve, pattern (lanes, events, BPM, time signature, lane meta — names / mute / solo, custom waveforms, per-event overrides, probability / ratchets / humanize), and randomizer locks. It's self-contained — no external sample files — so a `.beep` is portable and small.
 
-The format is versioned (currently v12) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions and are upgraded silently on load.
+The format is versioned (currently v13) with explicit forward-only migrations; older `.beep` files always open in newer b33p versions and are upgraded silently on load.
 
 ## Contributing
 
