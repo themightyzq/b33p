@@ -8,7 +8,12 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
-_Nothing yet. The 0.2.0 entry below was refreshed on 2026-05-26 to fold in this session's UI / state work (LookAndFeel, knob interactions, factory-preset restore, lane-voice clipboard, master-meter peak/clip, pitch-env axes, schema-version fix, off-screen-window fix) ahead of the v0.2.0 re-tag._
+### Fixed
+
+- **Standalone opens `.beep` files from the OS again.** Double-clicking a `.beep` in the file manager (or passing one on the launch command line) now loads it into the standalone — on macOS via the document-open event, on Windows / Linux via the launch argument. If the running project has unsaved changes, it prompts Save / Discard / Cancel first. Restores a regression introduced by the `juce_add_plugin` standalone switch.
+- **Standalone enforces a single instance again.** Launching a second copy now routes to the running window (bringing it to front, and opening any `.beep` the second launch carried) instead of spawning a duplicate window. Restores a regression introduced by the `juce_add_plugin` standalone switch.
+
+_(The 0.2.0 entry below was refreshed on 2026-05-26 to fold in that session's UI / state work ahead of the v0.2.0 re-tag.)_
 
 ## [0.2.0] — 2026-05-26
 
