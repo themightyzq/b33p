@@ -40,7 +40,15 @@ namespace B33p
         juce::TextButton abButtonB       { "B" };
         juce::TextButton abCopyButton    { "Copy" };
 
+        // Undo / Redo (top-left of the section). The plugin needs its
+        // own buttons because DAWs capture Cmd+Z system-wide and the
+        // Edit-menu route is a slow click-path. Enable / disable
+        // state is refreshed by the existing 30 Hz timer.
+        juce::TextButton undoButton      { "Undo" };
+        juce::TextButton redoButton      { "Redo" };
+
         void refreshAbButtonStates();
+        void refreshUndoButtonStates();
 
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAttachment;
 

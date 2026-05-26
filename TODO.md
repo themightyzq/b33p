@@ -283,6 +283,7 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 - [x] Latency reporting — `setLatencySamples(0)` called explicitly in `prepareToPlay`. The plumbing for PDC is now wired even though we don't introduce latency today; the future addition of oversampling / look-ahead / FFT becomes a one-line update instead of a debugging mystery. (REVIEW.md Pass 2 Critical P2.)
 - [x] Tail length reporting — `getTailLengthSeconds()` returns 4.0 s instead of 0.0. Covers worst-case audible tail (amp-env release + reverb decay + delay feedback) so DAWs don't truncate reverb / delay tails when transport stops. (REVIEW.md Pass 2 Critical P3.)
 - [x] A/B compare — two snapshot slots (XML of APVTS state) + Copy A↔B button in Master section. First switch to B copies A's current state into B so user has a starting point. Both snapshots + active slot persist in the .beep / DAW project state (v13 schema bump). Pattern, pitch curve, wavetables stay constant during A/B switches (A/B is about patches, not songs). (REVIEW.md Pass 2 Critical P4.)
+- [x] Undo / Redo buttons in Master section's top-left strip — gives the user a click-path that survives the DAW capturing Cmd+Z. Enable/disable state refreshes via the existing 30 Hz timer. (REVIEW.md Pass 2 Critical P5.)
 - [ ] Add `.github/ISSUE_TEMPLATE/` and `PULL_REQUEST_TEMPLATE.md`.
 
 ---
