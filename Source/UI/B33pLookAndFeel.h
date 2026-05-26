@@ -36,6 +36,13 @@ namespace B33p
 
         void drawPopupMenuBackground(juce::Graphics&, int width, int height) override;
 
+        // Numeric readouts use a monospaced face (REVIEW.md P28) so digits
+        // don't shift left/right as a value ticks during a knob drag — every
+        // glyph is the same width. Applies to both the drag-time popup bubble
+        // and the value text box under each knob.
+        juce::Font   getSliderPopupFont(juce::Slider&) override;
+        juce::Label* createSliderTextBox(juce::Slider&) override;
+
     private:
         // A control is treated as bipolar (value arc / fill grows from the
         // centre) when its range is symmetric about zero — e.g. a ±semitone
