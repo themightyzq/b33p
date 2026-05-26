@@ -10,7 +10,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ### Fixed
 
-- Standalone window now fits the screen on launch. The voice editor was a six-row vertical stack ~1338 px tall — taller than a 1080p display's usable height — so the pattern grid opened off the bottom of the screen. The three full-width-but-short rows (Mod FX, Modulation, Pitch Env) are now column-packed: Mod FX sits beside Effects + Master, and Modulation sits beside Pitch Env, bringing the default window to ~1007 px. The standalone window also clamps to the display's usable area on launch (and stays resizable), so it never opens partly off-screen.
+- Standalone window now fits the screen on launch. The voice editor was a six-row vertical stack ~1338 px tall — taller than a 1080p display's usable height — so the pattern grid opened off the bottom of the screen. The three full-width-but-short rows (Mod FX, Modulation, Pitch Env) are now column-packed: Mod FX sits beside Effects + Master, and Modulation sits beside Pitch Env, bringing the default window to ~1007 px. The standalone window also clamps to the display's usable area on launch (and stays resizable), so it never opens partly off-screen. The editor additionally gained resize limits (min 1000×600, max 3200×2200) so it can't be dragged down to an unreadable sliver or ballooned past sane bounds (REVIEW.md P12).
 
 ## [0.2.0] — 2026-05-26
 

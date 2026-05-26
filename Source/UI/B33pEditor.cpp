@@ -17,6 +17,15 @@ namespace B33p
         // so re-opening picks up the user's last layout.
         setSize(mainComponent.getWidth(), mainComponent.getHeight());
         setResizable(true, true);
+
+        // Resize limits (REVIEW.md P12). Without these a user could shrink the
+        // window until the section headers are unreadable or balloon it past
+        // any sane size. The minimum width keeps the Pattern toolbar's wrapped
+        // (two-row) layout legible; the minimum height is kept low enough that
+        // the standalone fit-to-screen clamp can still shrink the window onto a
+        // small display without fighting the constrainer. The standalone window
+        // and plugin hosts both honour the editor's constrainer.
+        setResizeLimits(1000, 600, 3200, 2200);
     }
 
     void B33pEditor::resized()
