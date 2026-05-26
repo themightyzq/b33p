@@ -154,3 +154,75 @@ jobs:
       - name: Run sanitized test suite
         working-directory: build
         run: ctest --output-on-failure --build-config ${{ env.CMAKE_BUILD_TYPE }}
+
+  # Static analysis over b33p's own sources. Informational for now:
+  # continue-on-error keeps a first pass over a never-linted codebase from
+  # red-lining main. The .clang-tidy check set is curated for real bug
+  # patterns (see that file). Flip this to blocking once the backlog is
+  # triaged (TODO.md "Chores / tech debt").
+  clang-tidy:
+    name: ubuntu-latest (clang-tidy)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm_cache
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Cache CPM sources (JUCE and friends)
+        uses: actions/cache@v5
+        with:
+          # Shared key with the build job's ubuntu-latest entry — only JUCE
+          # source lives here, not compile artefacts.
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-ubuntu-latest-juce-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            cpm-ubuntu-latest-
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy \
+            libasound2-dev \
+            libjack-jackd2-dev \
+            libcurl4-openssl-dev \
+            libfreetype6-dev \
+            libfontconfig1-dev \
+            libx11-dev \
+            libxcomposite-dev \
+            libxcursor-dev \
+            libxext-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxrender-dev \
+            libglu1-mesa-dev \
+            mesa-common-dev
+          clang-tidy --version
+
+      - name: Configure (export compile commands)
+        # No build needed: clang-tidy compiles each TU itself using the
+        # flags in compile_commands.json. Configure also fetches JUCE via
+        # CPM so the module headers our sources include are on disk.
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Run clang-tidy over Source/
+        run: |
+          set -o pipefail
+          # Only b33p's own translation units. Parallelised across cores;
+          # each TU still parses heavy JUCE headers, so this is the slow
+          # part. --quiet drops the per-file "N warnings generated" noise.
+          find "$PWD/Source" -name '*.cpp' -print0 \
+            | xargs -0 -P "$(nproc)" -I{} clang-tidy -p build --quiet "{}" \
+            > tidy.log 2>&1 || true
+          echo "---- clang-tidy summary ----"
+          warnings=$(grep -cE 'warning:' tidy.log || true)
+          echo "clang-tidy warnings: ${warnings:-0}"
+          # Echo the distinct check names that fired, with counts, so the
+          # backlog is legible at a glance in the job log.
+          echo "---- by check ----"
+          grep -oE '\[[a-z0-9.-]+\]$' tidy.log | sort | uniq -c | sort -rn || true
+          echo "---- full output ----"
+          cat tidy.log
