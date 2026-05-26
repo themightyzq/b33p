@@ -20,6 +20,11 @@ namespace B33p
 
         void resized() override;
 
+        // The standalone wrapper reaches the unsaved-changes prompt
+        // (MainComponent::confirmDiscardThen) through this when the
+        // user closes the window or quits — see Source/StandaloneApp.cpp.
+        MainComponent& getMainComponent() noexcept { return mainComponent; }
+
     private:
         MainComponent mainComponent;
 

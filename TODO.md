@@ -292,9 +292,9 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 
 Features that were lost when the build target switched from `juce_add_gui_app` to `juce_add_plugin`. JUCE's `StandaloneFilterApp` wrapper produces the standalone `b33p.app` now and replaced our custom Application class; restoring each one means subclassing the wrapper via `JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP` and carrying the original behaviour into the override.
 
-- [ ] **Single-instance enforcement** — second copies of the standalone .app no longer route to the running instance.
-- [ ] **Quit-confirm-on-dirty for the standalone window** — closing the wrapper window with unsaved changes doesn't prompt. (File ▸ New / Open paths still confirm — those run inside MainComponent, not the wrapper.)
-- [ ] **Command-line `.beep` file open** — double-clicking a `.beep` in Finder / dragging onto the dock no longer routes into the running standalone instance.
+- [ ] **Single-instance enforcement** — second copies of the standalone .app no longer route to the running instance. (Infrastructure now exists: `Source/StandaloneApp.cpp` is the custom `JUCEApplication` — `moreThanOneInstanceAllowed()` / `anotherInstanceStarted()` are the override points.)
+- [x] **Quit-confirm-on-dirty for the standalone window** — closing the wrapper window with unsaved changes doesn't prompt. (File ▸ New / Open paths still confirm — those run inside MainComponent, not the wrapper.) — Done via `JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP` + `Source/StandaloneApp.cpp`: a `StandaloneFilterWindow` subclass overrides `closeButtonPressed()` and the custom app overrides `systemRequestedQuit()` (Cmd+Q), both routing through `MainComponent::confirmDiscardThen`. Clean projects still quit immediately. Verified live on macOS: dirty close + Cmd+Q prompt; Cancel keeps the window; Discard quits; clean close quits with no prompt.
+- [ ] **Command-line `.beep` file open** — double-clicking a `.beep` in Finder / dragging onto the dock no longer routes into the running standalone instance. (Infrastructure now exists: `Source/StandaloneApp.cpp` — route through `anotherInstanceStarted()` / command-line args into `MainComponent::openProjectFile`.)
 
 ---
 
