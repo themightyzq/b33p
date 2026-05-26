@@ -187,7 +187,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Publish draft release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           # Draft so the maintainer reviews artefacts before
           # publishing. Flip to false to auto-publish.
