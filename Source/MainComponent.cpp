@@ -6,12 +6,13 @@ namespace B33p
     {
         constexpr int kOuterPadding   = 12;
         constexpr int kGap            = 8;
-        constexpr int kTopRowHeight   = 260;
-        constexpr int kMidRowHeight   = 180;
-        constexpr int kModRowHeight       = 130;
-        constexpr int kModulationRowHeight = 220;
-        constexpr int kPitchRowHeight     = 180;
+        constexpr int kTopRowHeight        = 260;   // Oscillator | Amp Env | Filter
+        constexpr int kMidRowHeight        = 180;   // Effects | Master | Mod FX
+        constexpr int kModulationRowHeight = 220;   // Modulation | Pitch Env
         constexpr int kMenuBarHeight  = 24;
+        // Initial height handed to the Pattern grid; it grows to fill any
+        // extra height when the window is taller than the default.
+        constexpr int kInitialPatternHeight = 252;
 
         // Menu item IDs. Kept in one enum so the dispatch in
         // menuItemSelected stays readable. IDs must be > 0 — JUCE
@@ -132,9 +133,20 @@ namespace B33p
         // (Play / Loop / Follow / time readout / Length / Grid / BPM / Time-sig
         // on the left, Randomize All / Scope / Export on the right — see
         // PatternSection::resized). At the old 900 width, BPM + Time-sig +
-        // the Length label were squeezed into zero-width slivers. A toolbar
-        // that wraps gracefully at narrow widths is the proper long-term fix.
-        setSize(1500, 920 + kMenuBarHeight + kModRowHeight + kGap + kModulationRowHeight + kGap);
+        // the Length label were squeezed into zero-width slivers.
+        //
+        // Height = menu + padding + the three voice-editor rows + an initial
+        // Pattern grid. The voice editor is column-packed (Mod FX shares the
+        // mid row, Pitch Env shares the modulation row) so the whole window
+        // fits a 1080p display instead of overflowing it. The standalone
+        // window additionally clamps to the screen on launch — see
+        // StandaloneApp.cpp.
+        setSize(1500,
+                kMenuBarHeight + 2 * kOuterPadding
+              + kTopRowHeight + kGap
+              + kMidRowHeight + kGap
+              + kModulationRowHeight + kGap
+              + kInitialPatternHeight);
     }
 
     void MainComponent::paint(juce::Graphics& g)
@@ -149,18 +161,19 @@ namespace B33p
 
         auto bounds = fullBounds.reduced(kOuterPadding);
 
+        // Three voice-editor rows stacked above the Pattern grid. Mod FX and
+        // Pitch Env — both wide-but-short — share rows with their neighbours
+        // rather than each claiming a full-width row of their own, which is
+        // what kept the old six-row stack taller than a 1080p screen.
         auto topRow = bounds.removeFromTop(kTopRowHeight);
         bounds.removeFromTop(kGap);
         auto midRow = bounds.removeFromTop(kMidRowHeight);
         bounds.removeFromTop(kGap);
-        auto modRow = bounds.removeFromTop(kModRowHeight);
-        bounds.removeFromTop(kGap);
         auto modulationRow = bounds.removeFromTop(kModulationRowHeight);
-        bounds.removeFromTop(kGap);
-        auto pitchRow = bounds.removeFromTop(kPitchRowHeight);
         bounds.removeFromTop(kGap);
         auto patternRow = bounds;
 
+        // Top row: Oscillator | Amp Env | Filter (three equal columns).
         const int topCellWidth = (topRow.getWidth() - 2 * kGap) / 3;
         oscillatorSection.setBounds(topRow.removeFromLeft(topCellWidth));
         topRow.removeFromLeft(kGap);
@@ -168,15 +181,20 @@ namespace B33p
         topRow.removeFromLeft(kGap);
         filterSection.setBounds(topRow);
 
-        const int midCellWidth = (midRow.getWidth() - kGap) / 2;
+        // Mid row: Effects | Master | Mod FX (three equal columns).
+        const int midCellWidth = (midRow.getWidth() - 2 * kGap) / 3;
         effectsSection.setBounds(midRow.removeFromLeft(midCellWidth));
         midRow.removeFromLeft(kGap);
-        masterSection.setBounds(midRow);
+        masterSection.setBounds(midRow.removeFromLeft(midCellWidth));
+        midRow.removeFromLeft(kGap);
+        modEffectsSection.setBounds(midRow);
 
-        modEffectsSection.setBounds(modRow);
-        modulationSection.setBounds(modulationRow);
+        // Modulation row: Modulation | Pitch Env (two equal columns).
+        const int modCellWidth = (modulationRow.getWidth() - kGap) / 2;
+        modulationSection.setBounds(modulationRow.removeFromLeft(modCellWidth));
+        modulationRow.removeFromLeft(kGap);
+        pitchEnvelopeSection.setBounds(modulationRow);
 
-        pitchEnvelopeSection.setBounds(pitchRow);
         patternSection.setBounds(patternRow);
     }
 
