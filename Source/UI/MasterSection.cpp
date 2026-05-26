@@ -76,6 +76,15 @@ namespace B33p
         addAndMakeVisible(abCopyButton);
         refreshAbButtonStates();
 
+        // ---- Undo / Redo buttons ----------------------------------
+        undoButton.onClick = [this] { processor.getUndoManager().undo(); };
+        redoButton.onClick = [this] { processor.getUndoManager().redo(); };
+        undoButton.setTooltip("Undo (Cmd+Z) — the plugin's own undo, in case the host captures the keyboard shortcut.");
+        redoButton.setTooltip("Redo (Cmd+Shift+Z)");
+        addAndMakeVisible(undoButton);
+        addAndMakeVisible(redoButton);
+        refreshUndoButtonStates();
+
         retargetLane(processor.getSelectedLane());
 
         // 30 Hz timer drives the level meter readout + handles the
@@ -136,6 +145,12 @@ namespace B33p
             meterLevel = newLevel;
             repaint(meterBounds);
         }
+
+        // Undo/Redo enable state — undo history changes silently
+        // when other surfaces (sliders, menu undo) write to the
+        // UndoManager. Cheap to refresh; piggybacks on the 30 Hz
+        // tick instead of opening a separate timer.
+        refreshUndoButtonStates();
     }
 
     void MasterSection::paint(juce::Graphics& g)
@@ -182,14 +197,22 @@ namespace B33p
         constexpr int kAbCopyW      = 48;
         constexpr int kAbGap        = 4;
 
-        // ---- A/B row (top-right) ----------------------------------
+        // ---- Top strip: Undo / Redo (left) + A/B (right) ----------
         auto abRow = bounds.removeFromTop(kAbRowHeight);
         bounds.removeFromTop(kRowGap);
+
+        // Right side: A | B | Copy
         abCopyButton.setBounds(abRow.removeFromRight(kAbCopyW));
         abRow.removeFromRight(kAbGap);
         abButtonB.setBounds(abRow.removeFromRight(kAbButtonW));
         abRow.removeFromRight(kAbGap);
         abButtonA.setBounds(abRow.removeFromRight(kAbButtonW));
+
+        // Left side: Undo | Redo
+        constexpr int kUndoW = 48;
+        undoButton.setBounds(abRow.removeFromLeft(kUndoW));
+        abRow.removeFromLeft(kAbGap);
+        redoButton.setBounds(abRow.removeFromLeft(kUndoW));
 
         auto buttonRow = bounds.removeFromBottom(kButtonHeight);
         bounds.removeFromBottom(kRowGap);
@@ -213,5 +236,11 @@ namespace B33p
         const char active = processor.getActiveAbSlot();
         abButtonA.setToggleState(active == 'A', juce::dontSendNotification);
         abButtonB.setToggleState(active == 'B', juce::dontSendNotification);
+    }
+
+    void MasterSection::refreshUndoButtonStates()
+    {
+        undoButton.setEnabled(processor.getUndoManager().canUndo());
+        redoButton.setEnabled(processor.getUndoManager().canRedo());
     }
 }

@@ -56,6 +56,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 - Latency reporting wired — `setLatencySamples(0)` is called explicitly in `prepareToPlay` so the host's plugin delay compensation contract is in place even though we don't introduce latency today.
 - Tail length reporting — `getTailLengthSeconds()` now returns 4 seconds (was 0). Covers worst-case audible tail from amp-envelope release + reverb decay + delay feedback so DAWs don't cut off reverb wash or delay echoes mid-decay when transport stops.
 - **A/B compare** — top-right of the Master section gets three small buttons: `A` / `B` toggle + `Copy`. Snapshots store the APVTS parameter state only (not Pattern, pitch curve, or wavetables — A/B is for comparing patches, not songs). First switch to B copies A's current state into B so the user starts with something to tweak, not an init patch. Both snapshots + the active slot persist in the `.beep` file and DAW project state (schema bump v12 → v13).
+- **In-plugin Undo / Redo buttons** — top-left of the Master section. Gives a click-path that survives the DAW capturing the Cmd+Z keyboard shortcut. Enable/disable state matches `UndoManager::canUndo()` / `canRedo()`.
 
 ### Removed
 
