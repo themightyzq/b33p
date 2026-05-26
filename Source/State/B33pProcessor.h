@@ -164,6 +164,20 @@ namespace B33p
         using OnSelectedLaneChanged = std::function<void(int newLane)>;
         void setOnSelectedLaneChanged(OnSelectedLaneChanged callback);
 
+        // Last editor size (points), persisted in the plugin's DAW state so
+        // a resized window survives close / reopen (REVIEW.md P11). Stored on
+        // the processor because the editor is transient; 0×0 means "never
+        // set, use the default". Not part of ProjectState / .beep — window
+        // size is session state, not portable patch data. Resizing the editor
+        // does NOT mark the project dirty.
+        int  getEditorWidth()  const { return editorWidth.load(); }
+        int  getEditorHeight() const { return editorHeight.load(); }
+        void setEditorSize(int width, int height)
+        {
+            editorWidth.store(width);
+            editorHeight.store(height);
+        }
+
         // " (Lane N)" or " (Lane N: Body)" depending on whether the
         // pattern lane has a custom name. Used by the editor sections
         // to telegraph which lane they're currently editing.
@@ -422,5 +436,11 @@ namespace B33p
         // audio thread reads it when routing the audition trigger.
         std::atomic<int>      selectedLane                { 0 };
         OnSelectedLaneChanged onSelectedLaneChangedCallback;
+
+        // Last editor size in points (0 = unset → editor uses its default).
+        // Atomic since a host may call getStateInformation off the message
+        // thread while the editor writes from the message thread.
+        std::atomic<int>      editorWidth                 { 0 };
+        std::atomic<int>      editorHeight                { 0 };
     };
 }

@@ -15,6 +15,7 @@ namespace B33p::ProjectState
         // place and any change is loudly visible at review time.
         const juce::Identifier kRoot                  { "B33P" };
         const juce::Identifier kVersion               { "version" };
+        const juce::Identifier kSelectedLane          { "selected_lane" };
 
         const juce::Identifier kParameters            { "PARAMETERS" };
 
@@ -67,6 +68,11 @@ namespace B33p::ProjectState
     {
         juce::ValueTree root { kRoot };
         root.setProperty(kVersion, kCurrentVersion, nullptr);
+
+        // Which lane the editor was on (REVIEW.md P7). Tolerant root scalar:
+        // older files lack it and default to lane 0 on load, so no schema
+        // version bump is needed.
+        root.setProperty(kSelectedLane, processor.getSelectedLane(), nullptr);
 
         // ---- Parameters -------------------------------------------
         // APVTS state has its own type ("B33pParameters") so we wrap
@@ -608,6 +614,12 @@ namespace B33p::ProjectState
 
             processor.restoreAbState(active, std::move(snapA), std::move(snapB));
         }
+
+        // ---- Selected lane (P7) -----------------------------------
+        // Default 0 for files saved before this field existed. Done after
+        // the bulk load so the lane-changed callback retargets the editor
+        // sections onto fully-restored state.
+        processor.setSelectedLane(static_cast<int>(tree.getProperty(kSelectedLane, 0)));
 
         // The restore touched APVTS, pitch curve, and looping state;
         // each of those independently flagged the processor dirty.

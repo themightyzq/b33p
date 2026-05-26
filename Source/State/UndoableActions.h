@@ -1,6 +1,7 @@
 #pragma once
 
 #include "B33pProcessor.h"
+#include "ProjectState.h"
 #include "Pattern/Pattern.h"
 #include "DSP/PitchEnvelope.h"
 
@@ -113,5 +114,46 @@ namespace B33p
         juce::Component::SafePointer<juce::Component> editor;
         std::vector<PitchEnvelopePoint> beforeState;
         std::vector<PitchEnvelopePoint> afterState;
+    };
+
+    // Whole-project state swap as one undoable step (REVIEW.md P6). Loading
+    // a preset replaces the entire project (parameters, pattern, pitch curve,
+    // wavetables, locks), so undo restores the full pre-load snapshot rather
+    // than just one field. Both snapshots are raw ProjectState ValueTrees;
+    // each apply runs them through ProjectState::load on a fresh copy (load
+    // calls migrate, which mutates, so the stored snapshots must not be
+    // consumed).
+    class LoadProjectStateAction : public juce::UndoableAction
+    {
+    public:
+        LoadProjectStateAction(B33pProcessor& p,
+                               juce::Component::SafePointer<juce::Component> editorToRefresh,
+                               juce::ValueTree beforeTree,
+                               juce::ValueTree afterTree)
+            : processor(p),
+              editor(editorToRefresh),
+              before(std::move(beforeTree)),
+              after(std::move(afterTree))
+        {}
+
+        bool perform() override { return apply(after); }
+        bool undo()    override { return apply(before); }
+
+        int getSizeInUnits() override { return 2048; }
+
+    private:
+        bool apply(const juce::ValueTree& tree)
+        {
+            const bool ok = ProjectState::load(processor, tree.createCopy());
+            if (ok)
+                if (auto* c = editor.getComponent())
+                    c->repaint();
+            return ok;
+        }
+
+        B33pProcessor& processor;
+        juce::Component::SafePointer<juce::Component> editor;
+        juce::ValueTree before;
+        juce::ValueTree after;
     };
 }
