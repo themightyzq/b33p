@@ -1,0 +1,42 @@
+# clang-tidy configuration for b33p.
+#
+# Scope: b33p's own translation units (Source/*.cpp). JUCE and Catch2 are
+# third-party — HeaderFilterRegex limits reported warnings to headers under
+# Source/, and the CI job only feeds Source/*.cpp to clang-tidy.
+#
+# The check set is curated for high-signal, low-noise findings: real bug
+# patterns (bugprone-*), the clang static analyzer, plus a handful of
+# performance / modernize / readability checks. Noisy or style-opinionated
+# checks (magic numbers, easily-swappable parameters, narrowing conversions,
+# identifier length, non-private members) are left off — they fight JUCE's
+# idioms and the project's own conventions without catching real defects.
+#
+# Status: informational. The CI `clang-tidy` job runs continue-on-error so a
+# first pass over a never-linted codebase surfaces findings without red-lining
+# main. Triage the backlog, then flip the job to blocking (TODO.md chores).
+Checks: >
+  -*,
+  bugprone-*,
+  performance-*,
+  clang-analyzer-*,
+  misc-redundant-expression,
+  misc-unused-using-decls,
+  misc-unused-alias-decls,
+  misc-misplaced-const,
+  modernize-use-override,
+  modernize-use-nullptr,
+  modernize-use-equals-default,
+  modernize-use-equals-delete,
+  modernize-redundant-void-arg,
+  readability-misleading-indentation,
+  readability-redundant-control-flow,
+  readability-redundant-string-init,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-exception-escape,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -performance-no-int-to-ptr
+
+WarningsAsErrors: ''
+HeaderFilterRegex: 'Source/'
+FormatStyle: none
