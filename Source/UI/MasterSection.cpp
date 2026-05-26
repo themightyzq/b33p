@@ -37,6 +37,45 @@ namespace B33p
         auditionButton.setTooltip("Play a single beep with the current settings (Shift+Space)");
         diceAllButton .setTooltip("Randomize every unlocked parameter on the currently-selected lane");
 
+        // ---- A/B compare buttons ----------------------------------
+        abButtonA.setClickingTogglesState(false);
+        abButtonB.setClickingTogglesState(false);
+        abButtonA.setTooltip("A/B compare — switch to slot A. First switch to B copies A into B so you can tweak it independently.");
+        abButtonB.setTooltip("A/B compare — switch to slot B. Tweak independently of A; click A again to compare.");
+        abCopyButton.setTooltip("Copy the active A/B slot's settings into the other slot.");
+
+        const auto kActiveBg   = juce::Colour::fromRGB(80, 130, 200);
+        const auto kInactiveBg = juce::Colour::fromRGB(48, 48, 48);
+        const auto kActiveText = juce::Colour::fromRGB(255, 255, 255);
+        const auto kInactiveText = juce::Colour::fromRGB(160, 160, 160);
+        for (auto* b : { &abButtonA, &abButtonB })
+        {
+            b->setColour(juce::TextButton::buttonColourId,    kInactiveBg);
+            b->setColour(juce::TextButton::buttonOnColourId,  kActiveBg);
+            b->setColour(juce::TextButton::textColourOffId,   kInactiveText);
+            b->setColour(juce::TextButton::textColourOnId,    kActiveText);
+        }
+
+        abButtonA.onClick = [this]
+        {
+            processor.switchAbSlot('A');
+            refreshAbButtonStates();
+        };
+        abButtonB.onClick = [this]
+        {
+            processor.switchAbSlot('B');
+            refreshAbButtonStates();
+        };
+        abCopyButton.onClick = [this]
+        {
+            processor.copyActiveAbSlotToOther();
+        };
+
+        addAndMakeVisible(abButtonA);
+        addAndMakeVisible(abButtonB);
+        addAndMakeVisible(abCopyButton);
+        refreshAbButtonStates();
+
         retargetLane(processor.getSelectedLane());
 
         // 30 Hz timer drives the level meter readout + handles the
@@ -138,6 +177,19 @@ namespace B33p
         constexpr int kMeterHeight  = 6;
         constexpr int kButtonGap    = 6;
         constexpr int kRowGap       = 6;
+        constexpr int kAbRowHeight  = 22;
+        constexpr int kAbButtonW    = 28;
+        constexpr int kAbCopyW      = 48;
+        constexpr int kAbGap        = 4;
+
+        // ---- A/B row (top-right) ----------------------------------
+        auto abRow = bounds.removeFromTop(kAbRowHeight);
+        bounds.removeFromTop(kRowGap);
+        abCopyButton.setBounds(abRow.removeFromRight(kAbCopyW));
+        abRow.removeFromRight(kAbGap);
+        abButtonB.setBounds(abRow.removeFromRight(kAbButtonW));
+        abRow.removeFromRight(kAbGap);
+        abButtonA.setBounds(abRow.removeFromRight(kAbButtonW));
 
         auto buttonRow = bounds.removeFromBottom(kButtonHeight);
         bounds.removeFromBottom(kRowGap);
@@ -154,5 +206,12 @@ namespace B33p
         diceAllButton.setBounds(buttonRow.removeFromLeft(cellWidth));
         buttonRow.removeFromLeft(kButtonGap);
         auditionButton.setBounds(buttonRow);
+    }
+
+    void MasterSection::refreshAbButtonStates()
+    {
+        const char active = processor.getActiveAbSlot();
+        abButtonA.setToggleState(active == 'A', juce::dontSendNotification);
+        abButtonB.setToggleState(active == 'B', juce::dontSendNotification);
     }
 }

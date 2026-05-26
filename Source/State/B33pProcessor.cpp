@@ -52,6 +52,72 @@ namespace B33p
         return apvts.getParameter(ParameterIDs::bypass());
     }
 
+    // ---- A/B compare --------------------------------------------------
+
+    void B33pProcessor::switchAbSlot(char target)
+    {
+        target = (target == 'B') ? 'B' : 'A';
+        if (target == activeAbSlot)
+            return;
+
+        // Capture the leaving side's current parameter state so the
+        // user can switch back to it.
+        auto currentState = apvts.copyState().createXml();
+        if (activeAbSlot == 'A')
+            abSnapshotA = std::move(currentState);
+        else
+            abSnapshotB = std::move(currentState);
+
+        // First switch to a side whose snapshot is empty seeds it
+        // with the leaving side's current state — so a fresh user
+        // clicking B for the first time gets "B starts as a copy of
+        // A" instead of an init / empty patch.
+        auto& targetSnapshot = (target == 'A') ? abSnapshotA : abSnapshotB;
+        if (targetSnapshot == nullptr)
+            targetSnapshot = std::make_unique<juce::XmlElement>(
+                *(activeAbSlot == 'A' ? abSnapshotA : abSnapshotB));
+
+        // Load the arriving side's state into APVTS. parameterChanged
+        // fires for every changed param, the editor's slider
+        // attachments refresh automatically, and markDirty runs
+        // through the existing listener wiring.
+        if (auto* x = targetSnapshot.get())
+            apvts.replaceState(juce::ValueTree::fromXml(*x));
+
+        activeAbSlot = target;
+        markDirty();
+    }
+
+    void B33pProcessor::copyActiveAbSlotToOther()
+    {
+        auto current = apvts.copyState().createXml();
+        if (activeAbSlot == 'A')
+        {
+            abSnapshotA = std::make_unique<juce::XmlElement>(*current);
+            abSnapshotB = std::move(current);
+        }
+        else
+        {
+            abSnapshotB = std::make_unique<juce::XmlElement>(*current);
+            abSnapshotA = std::move(current);
+        }
+        markDirty();
+    }
+
+    const juce::XmlElement* B33pProcessor::getAbSnapshot(char slot) const noexcept
+    {
+        return (slot == 'B') ? abSnapshotB.get() : abSnapshotA.get();
+    }
+
+    void B33pProcessor::restoreAbState(char activeSlot,
+                                       std::unique_ptr<juce::XmlElement> snapshotA,
+                                       std::unique_ptr<juce::XmlElement> snapshotB)
+    {
+        activeAbSlot = (activeSlot == 'B') ? 'B' : 'A';
+        abSnapshotA  = std::move(snapshotA);
+        abSnapshotB  = std::move(snapshotB);
+    }
+
     B33pProcessor::~B33pProcessor()
     {
         unregisterAsApvtsListener();

@@ -55,6 +55,12 @@ namespace B33p::ProjectState
         const juce::Identifier kLocks                 { "LOCKS" };
         const juce::Identifier kLock                  { "LOCK" };
         const juce::Identifier kLockId                { "id" };
+
+        // v13 — A/B compare state.
+        const juce::Identifier kAbState               { "AB_STATE" };
+        const juce::Identifier kAbActiveSlot          { "active_slot" };  // "A" or "B"
+        const juce::Identifier kAbSnapshotA           { "SNAPSHOT_A" };   // wraps APVTS state copy
+        const juce::Identifier kAbSnapshotB           { "SNAPSHOT_B" };   // wraps APVTS state copy
     }
 
     juce::ValueTree save(B33pProcessor& processor)
@@ -168,6 +174,33 @@ namespace B33p::ProjectState
             locksNode.appendChild(lockNode, nullptr);
         }
         root.appendChild(locksNode, nullptr);
+
+        // ---- A/B compare state (v13+) -----------------------------
+        // Persists both snapshots + the active slot so a saved patch
+        // reopens with its A/B context intact. Snapshots wrap the
+        // raw APVTS state ValueTree as a child of SNAPSHOT_A /
+        // SNAPSHOT_B.
+        {
+            juce::ValueTree abNode { kAbState };
+            const char active = processor.getActiveAbSlot();
+            abNode.setProperty(kAbActiveSlot,
+                                juce::String::charToString(active),
+                                nullptr);
+
+            if (auto* snapA = processor.getAbSnapshot('A'))
+            {
+                juce::ValueTree slotA { kAbSnapshotA };
+                slotA.appendChild(juce::ValueTree::fromXml(*snapA), nullptr);
+                abNode.appendChild(slotA, nullptr);
+            }
+            if (auto* snapB = processor.getAbSnapshot('B'))
+            {
+                juce::ValueTree slotB { kAbSnapshotB };
+                slotB.appendChild(juce::ValueTree::fromXml(*snapB), nullptr);
+                abNode.appendChild(slotB, nullptr);
+            }
+            root.appendChild(abNode, nullptr);
+        }
 
         return root;
     }
@@ -398,6 +431,17 @@ namespace B33p::ProjectState
             version = 12;
         }
 
+        if (version == 12)
+        {
+            // v12 → v13: A/B compare state (AB_STATE child). Missing
+            // node defaults to active='A' with no captured snapshots
+            // — the next switchAbSlot('B') call will seed B from
+            // the current state, matching the v12 implicit "you have
+            // one patch" semantic.
+            tree.setProperty(kVersion, 13, nullptr);
+            version = 13;
+        }
+
         return tree;
     }
 
@@ -542,6 +586,27 @@ namespace B33p::ProjectState
             if (! lockNode.hasType(kLock))
                 continue;
             randomizer.setLocked(lockNode.getProperty(kLockId, "").toString(), true);
+        }
+
+        // ---- A/B compare state (v13+) -----------------------------
+        // Missing AB_STATE child (v12-and-older files post-migration)
+        // restores as active='A' with no snapshots — same default the
+        // processor starts at when freshly constructed.
+        {
+            const auto abNode = tree.getChildWithName(kAbState);
+            const juce::String activeStr = abNode.getProperty(kAbActiveSlot, "A").toString();
+            const char active = (activeStr.startsWithIgnoreCase("B")) ? 'B' : 'A';
+
+            std::unique_ptr<juce::XmlElement> snapA;
+            std::unique_ptr<juce::XmlElement> snapB;
+            const auto slotA = abNode.getChildWithName(kAbSnapshotA);
+            if (slotA.getNumChildren() > 0)
+                snapA = slotA.getChild(0).createXml();
+            const auto slotB = abNode.getChildWithName(kAbSnapshotB);
+            if (slotB.getNumChildren() > 0)
+                snapB = slotB.getChild(0).createXml();
+
+            processor.restoreAbState(active, std::move(snapA), std::move(snapB));
         }
 
         // The restore touched APVTS, pitch curve, and looping state;
