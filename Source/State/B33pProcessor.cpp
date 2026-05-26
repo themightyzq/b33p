@@ -1107,8 +1107,12 @@ namespace B33p
             for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
             {
                 int& count = samplesUntilNoteOff[static_cast<size_t>(lane)];
-                if (count > 0 && --count == 0)
-                    voices[static_cast<size_t>(lane)].noteOff();
+                if (count > 0)
+                {
+                    --count;
+                    if (count == 0)
+                        voices[static_cast<size_t>(lane)].noteOff();
+                }
             }
 
             // ---- Mix all four lane voices + the MIDI voice pool ---
