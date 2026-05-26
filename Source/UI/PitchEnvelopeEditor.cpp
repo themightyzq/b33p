@@ -99,18 +99,30 @@ namespace B33p
         g.drawHorizontalLine(static_cast<int>(area.getCentreY()),
                              area.getX(), area.getRight());
 
+        // Axis reference (P32). Faint vertical gridlines at the quarter
+        // points of the note's duration, plus semitone labels down the left
+        // edge, so the curve reads against concrete pitch values (±12 st)
+        // instead of unitless space. ASCII labels only (the dark theme's
+        // String paint asserts on non-ASCII glyphs).
+        g.setColour(juce::Colour::fromRGB(42, 42, 46));
+        for (const float t : { 0.25f, 0.5f, 0.75f })
+            g.drawVerticalLine(static_cast<int>(area.getX() + t * area.getWidth()),
+                               area.getY(), area.getBottom());
+
+        g.setColour(juce::Colour::fromRGB(115, 115, 115));
+        g.setFont(juce::FontOptions(9.0f));
+        const auto label = [&](const char* text, float cy)
+        {
+            g.drawText(text,
+                       juce::Rectangle<float>(area.getX() + 2.0f, cy - 6.0f, 26.0f, 12.0f),
+                       juce::Justification::centredLeft);
+        };
+        label("+12", area.getY() + 6.0f);
+        label("0",   area.getCentreY());
+        label("-12", area.getBottom() - 6.0f);
+
         if (curve.empty())
         {
-            // Axis hint on the left edge so the baseline reads as a
-            // reference, not a decoration.
-            g.setColour(juce::Colour::fromRGB(120, 120, 120));
-            g.setFont(juce::FontOptions(10.0f));
-            g.drawText("0 st",
-                       juce::Rectangle<float>(area.getX(),
-                                              area.getCentreY() - 14.0f,
-                                              28.0f, 12.0f),
-                       juce::Justification::centredLeft);
-
             // First-run hint — fades the moment a single point is added.
             g.setColour(juce::Colour::fromRGB(140, 140, 140));
             g.setFont(juce::FontOptions(12.0f));

@@ -58,6 +58,16 @@ namespace B33p
         float                meterLevel { 0.0f };
         juce::Rectangle<int> meterBounds;
 
+        // Meter feedback (REVIEW.md P18). Peak-hold draws a bright tick at
+        // the recent maximum, decaying after ~1.5 s so transients stay
+        // readable. The clip latch lights a red cap at the meter's right end
+        // for ~1.5 s whenever the output reaches 0 dBFS, so a brief overload
+        // can't be missed between timer frames.
+        float       peakHoldLevel    { 0.0f };
+        juce::int64 peakHoldUntilMs  { 0 };
+        bool        clipLatched      { false };
+        juce::int64 clipLatchUntilMs { 0 };
+
         // Audition flash deadline. The timer is now continuous (so
         // it can drive the meter); the flash uses a deadline rather
         // than start/stop so both purposes share one timer.
