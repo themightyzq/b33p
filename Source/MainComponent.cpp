@@ -692,7 +692,9 @@ namespace B33p
                                ? (delta > 0 ? 0 : count - 1)
                                : ((index + delta) % count + count) % count;
 
-        const auto file = presets[static_cast<size_t>(target)];
+        // const ref: the lambda capture below makes the one necessary copy
+        // (it outlives this call), so don't copy here too.
+        const auto& file = presets[static_cast<size_t>(target)];
         confirmDiscardThen([this, file] { loadPresetFile(file); });
     }
 
