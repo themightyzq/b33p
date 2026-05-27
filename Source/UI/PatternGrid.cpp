@@ -755,7 +755,7 @@ namespace B33p
             const float totalHeight       = lineHeight * 2.0f;
             const float firstLineY        = hintArea.getCentreY() - totalHeight * 0.5f;
 
-            g.drawText("Drag in a lane to draw a beep — or double-click for default size.",
+            g.drawText("Drag in a lane to draw a beep, or double-click for default size.",
                        hintArea.withY(firstLineY).withHeight(lineHeight),
                        juce::Justification::centred);
             g.drawText("Drag a beep to move it (vertically across lanes); drag its edges to resize.",
