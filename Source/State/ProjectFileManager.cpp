@@ -60,7 +60,9 @@ namespace B33p
             saveAs(parent, std::move(onComplete));
             return;
         }
-        writeAndReport(currentFile, std::move(onComplete));
+        // writeAndReport takes the callback by const ref (it only calls it),
+        // so pass through without a no-op move.
+        writeAndReport(currentFile, onComplete);
     }
 
     void ProjectFileManager::saveAs(juce::Component* parent, OnSaveComplete onComplete)
@@ -90,7 +92,7 @@ namespace B33p
             // Force the .beep extension if the user dropped or
             // edited it away — keeps the file-type association
             // and the Open dialog filter both predictable.
-            writeAndReport(chosen.withFileExtension(".beep"), std::move(capturedOnComplete));
+            writeAndReport(chosen.withFileExtension(".beep"), capturedOnComplete);
         });
     }
 
