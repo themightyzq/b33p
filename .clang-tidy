@@ -11,9 +11,11 @@
 # identifier length, non-private members) are left off — they fight JUCE's
 # idioms and the project's own conventions without catching real defects.
 #
-# Status: informational. The CI `clang-tidy` job runs continue-on-error so a
-# first pass over a never-linted codebase surfaces findings without red-lining
-# main. Triage the backlog, then flip the job to blocking (TODO.md chores).
+# Two clang-analyzer checks are disabled as JUCE-idiom false positives:
+# optin.cplusplus.VirtualCall (calling resized() from a Component subclass's
+# own setup is idiomatic JUCE and resolves to the intended override) and
+# security.FloatLoopCounter (paint() loops that step a double over a
+# time/position range are standard drawing code, here epsilon-guarded).
 Checks: >
   -*,
   bugprone-*,
@@ -36,7 +38,9 @@ Checks: >
   -bugprone-exception-escape,
   -bugprone-implicit-widening-of-multiplication-result,
   -performance-no-int-to-ptr,
-  -performance-enum-size
+  -performance-enum-size,
+  -clang-analyzer-optin.cplusplus.VirtualCall,
+  -clang-analyzer-security.FloatLoopCounter
 
 WarningsAsErrors: ''
 HeaderFilterRegex: 'Source/'

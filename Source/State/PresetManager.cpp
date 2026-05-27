@@ -75,7 +75,7 @@ namespace B33p
     {
         // Anything that can't form a legal filename is a no-op returning an
         // invalid File so the UI can show the standard "save failed" alert.
-        const auto destination = getPresetFile(name);
+        auto destination = getPresetFile(name);
         if (destination == juce::File())
             return {};
 

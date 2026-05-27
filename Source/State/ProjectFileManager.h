@@ -76,7 +76,7 @@ namespace B33p
 
     private:
         void writeAndReport(const juce::File& destination,
-                            OnSaveComplete onComplete = {});
+                            const OnSaveComplete& onComplete = {});
         void readAndReport (const juce::File& source);
 
         // Push `file` onto the MRU list and persist. Called from

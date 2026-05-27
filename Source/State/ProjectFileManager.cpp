@@ -172,7 +172,7 @@ namespace B33p
     }
 
     void ProjectFileManager::writeAndReport(const juce::File& destination,
-                                             OnSaveComplete onComplete)
+                                             const OnSaveComplete& onComplete)
     {
         if (! ProjectState::writeToFile(processor, destination))
         {

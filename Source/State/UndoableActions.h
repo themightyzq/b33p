@@ -26,7 +26,7 @@ namespace B33p
     {
     public:
         SetPatternAction(B33pProcessor& p,
-                         juce::Component::SafePointer<juce::Component> editorToRefresh,
+                         const juce::Component::SafePointer<juce::Component>& editorToRefresh,
                          Pattern beforeSnapshot,
                          Pattern afterSnapshot)
             : processor(p),
@@ -82,7 +82,7 @@ namespace B33p
     {
     public:
         SetPitchCurveAction(B33pProcessor& p,
-                            juce::Component::SafePointer<juce::Component> editorToRefresh,
+                            const juce::Component::SafePointer<juce::Component>& editorToRefresh,
                             std::vector<PitchEnvelopePoint> beforeSnapshot,
                             std::vector<PitchEnvelopePoint> afterSnapshot)
             : processor(p),
@@ -127,7 +127,7 @@ namespace B33p
     {
     public:
         LoadProjectStateAction(B33pProcessor& p,
-                               juce::Component::SafePointer<juce::Component> editorToRefresh,
+                               const juce::Component::SafePointer<juce::Component>& editorToRefresh,
                                juce::ValueTree beforeTree,
                                juce::ValueTree afterTree)
             : processor(p),
