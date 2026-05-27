@@ -76,6 +76,9 @@ namespace B33p
         // click context menu. lane defaults to processor's current
         // selected lane when called from the menu bar.
         void generateRandomPatternInLane(int lane);
+        // Scatters fresh random clips across every lane in one undoable
+        // transaction (the "Randomize Pattern" button).
+        void generateRandomPatternAllLanes();
         void clearAllEventsInLane(int lane);
 
         // Pulls the per-lane name + mute state out of the pattern
@@ -108,6 +111,13 @@ namespace B33p
         void toggleInSelection(const Selection& s);
         bool isInSelection    (const Selection& s) const;
         void notifySelectionChanged();
+
+        // Replaces one lane's events with a generated handful of random
+        // clips, mutating `pattern` in place. No snapshot / undo / repaint
+        // — the public generate* entry points own the transaction so they
+        // can roll one lane or all four into a single undo step.
+        void fillLaneWithRandomEvents(Pattern& pattern, int lane,
+                                      juce::Random& rng);
 
         // One per selected event during a Move drag — captures the
         // event's original position so each can be shifted by the

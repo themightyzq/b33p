@@ -15,7 +15,8 @@ namespace B33p
         constexpr int  kControlsGap     = 6;
         constexpr int  kButtonWidth     = 80;
         constexpr int  kExportWidth     = 90;
-        constexpr int  kRandomizeWidth  = 120;
+        constexpr int  kRandomizeWidth  = 130;   // "Randomize Params"
+        constexpr int  kRandomizePatternWidth = 140;   // "Randomize Pattern"
         constexpr int  kComboWidth      = 110;
         constexpr int  kLabelWidth      = 50;
         constexpr int  kTimeWidth       = 180;
@@ -240,14 +241,43 @@ namespace B33p
         addAndMakeVisible(timeSigCombo);
         syncBpmAndTimeSigFromPattern();
 
-        // Randomize-all and Export buttons (right-aligned to separate
-        // the action group from playback / editing controls).
-        randomizeAllButton.onClick = [this]
+        // Randomize + Export buttons (right-aligned to separate the
+        // action group from playback / editing controls).
+        //
+        // "Randomize Pattern" scatters fresh random clips across every
+        // lane in one undoable step (the grid owns the clip-generation
+        // logic the Lane menu already uses, applied to all four lanes).
+        randomizePatternButton.onClick = [this]
+        {
+            grid.generateRandomPatternAllLanes();
+        };
+        addAndMakeVisible(randomizePatternButton);
+
+        // "Randomize Params" rolls the synth parameters only for lanes
+        // that currently hold clips — randomizing a silent lane's voice
+        // is wasted motion. If the pattern is empty there's nothing to
+        // scope to, so it falls back to rolling every lane.
+        randomizeParamsButton.onClick = [this]
         {
             juce::Random rng;
-            processor.getRandomizer().rollAllUnlocked(rng);
+            std::vector<juce::String> ids;
+            for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+                if (! processor.getPattern().getEvents(lane).empty())
+                {
+                    const auto laneIds = ParameterIDs::allForLane(lane);
+                    ids.insert(ids.end(), laneIds.begin(), laneIds.end());
+                }
+
+            if (ids.empty())
+                for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+                {
+                    const auto laneIds = ParameterIDs::allForLane(lane);
+                    ids.insert(ids.end(), laneIds.begin(), laneIds.end());
+                }
+
+            processor.getRandomizer().rollMany(ids, rng, "Randomize Params");
         };
-        addAndMakeVisible(randomizeAllButton);
+        addAndMakeVisible(randomizeParamsButton);
 
         // Randomization scope slider — 0.05..1.0 multiplier applied
         // to every dice roll. Visible label so the user knows what
@@ -280,7 +310,8 @@ namespace B33p
         gridCombo         .setTooltip("Snap event positions to this grid (Off = free). Musical entries follow the pattern's BPM.");
         bpmSlider         .setTooltip("Pattern tempo in beats per minute. Drives the musical grid + the bars/beats time display.");
         timeSigCombo      .setTooltip("Time signature. Sets how many beats sit in a bar for the time display.");
-        randomizeAllButton.setTooltip("Randomize every unlocked parameter across all 4 lanes");
+        randomizePatternButton.setTooltip("Scatter fresh random clips across all 4 lanes");
+        randomizeParamsButton .setTooltip("Randomize the synth parameters for every lane that has clips");
         scopeSlider       .setTooltip("Randomization scope. 1.0 = full range, 0.1 = small jitter around current value.");
         exportButton      .setTooltip("Render the pattern to a WAV file");
 
@@ -473,11 +504,12 @@ namespace B33p
         constexpr int kBpmWidth         = 100;
         constexpr int kSigWidth         = 70;
 
-        // The full single-row toolbar needs ~1440 pt to fit every control
-        // without clipping. Below that, wrap the tempo/grid settings onto
-        // a second row so plugin hosts with narrow editor panels keep all
-        // controls reachable.
-        constexpr int kToolbarSingleRowMinWidth = 1440;
+        // The full single-row toolbar needs ~1600 pt to fit every control
+        // without clipping (the second randomize button widened the action
+        // cluster). Below that, wrap the tempo/grid settings onto a second
+        // row so plugin hosts with narrow editor panels keep all controls
+        // reachable.
+        constexpr int kToolbarSingleRowMinWidth = 1600;
         const bool useNarrowLayout = bounds.getWidth() < kToolbarSingleRowMinWidth;
 
         auto controlsRow = bounds.removeFromTop(kControlsHeight);
@@ -490,15 +522,19 @@ namespace B33p
             bounds.removeFromTop(kControlsGap);
         }
 
-        // Right-align Export + Randomize All + Scope to separate
-        // the action group from the play/edit controls on the left.
-        // This cluster stays on row 1 in both layouts.
+        // Right-align Export + Scope + the two Randomize buttons to
+        // separate the action group from the play/edit controls on the
+        // left. This cluster stays on row 1 in both layouts. Laid out
+        // right-to-left: Export, Scope, Randomize Params, Randomize
+        // Pattern.
         exportButton      .setBounds(controlsRow.removeFromRight(kExportWidth));
         controlsRow.removeFromRight(kControlsGap);
         scopeSlider       .setBounds(controlsRow.removeFromRight(kScopeSliderWidth));
         scopeLabel        .setBounds(controlsRow.removeFromRight(kLabelWidth));
         controlsRow.removeFromRight(kControlsGap);
-        randomizeAllButton.setBounds(controlsRow.removeFromRight(kRandomizeWidth));
+        randomizeParamsButton .setBounds(controlsRow.removeFromRight(kRandomizeWidth));
+        controlsRow.removeFromRight(kControlsGap);
+        randomizePatternButton.setBounds(controlsRow.removeFromRight(kRandomizePatternWidth));
         controlsRow.removeFromRight(kControlsGap);
 
         // Transport + time readout always lives at the left of row 1.

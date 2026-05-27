@@ -214,6 +214,8 @@ namespace B33p
                 lfo.prepare(sampleRate);
                 lfo.reset();
             }
+        outputLimiter.prepare(sampleRate);
+        outputLimiter.reset();
     }
 
     void B33pProcessor::releaseResources()
@@ -1119,6 +1121,13 @@ namespace B33p
             float s = 0.0f;
             for (auto& v : voices)     s += v.processSample();
             for (auto& v : midiVoices) s += v.processSample();
+
+            // Soft-clip safety on the summed output. The voices sum with
+            // no headroom, so a dense pattern or a hot randomized patch
+            // can drive the sum well past +/-1.0; the limiter rounds those
+            // peaks toward a ceiling just below 0 dBFS so nothing hard-clips
+            // (clean signal below the knee is untouched).
+            s = outputLimiter.processSample(s);
 
             if (left  != nullptr) left[i]  = s;
             if (right != nullptr) right[i] = s;

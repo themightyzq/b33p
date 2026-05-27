@@ -60,7 +60,11 @@ namespace B33p
         juce::Label      timeSigLabel;
         juce::ComboBox   timeSigCombo;
 
-        juce::TextButton randomizeAllButton { "Randomize All" };
+        // "Randomize Pattern" lays down fresh random clips across all
+        // four lanes; "Randomize Params" rolls the synth parameters for
+        // the lanes that currently hold clips.
+        juce::TextButton randomizePatternButton { "Randomize Pattern" };
+        juce::TextButton randomizeParamsButton  { "Randomize Params" };
         juce::Label      scopeLabel;
         juce::Slider     scopeSlider;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
