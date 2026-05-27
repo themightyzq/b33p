@@ -11,6 +11,7 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 ### Changed
 
 - **Master output meter now shows a dBFS scale.** A thin ruler under the meter marks `-12 / -6 / -3 / 0` dBFS so you can read headroom at a glance; the marks sit on the meter's amplitude axis (so they bunch toward the right, as a level meter should). Fits the existing Master panel — no window growth.
+- **Modulation matrix shows which routings are live.** Each slot row gets a small indicator at its left edge: a routed slot lights up and pulses in time with its LFO (brightness tracks the live modulation amount), while unrouted slots stay a faint outline — so it's obvious at a glance what's actually modulating.
 
 ### Fixed
 

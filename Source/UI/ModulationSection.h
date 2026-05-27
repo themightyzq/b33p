@@ -17,16 +17,27 @@ namespace B33p
     // source / destination combos and a horizontal amount slider.
     // Sources and destinations are wired via the standard APVTS
     // attachments — the rest of the engine is in B33pProcessor.
-    class ModulationSection : public Section
+    class ModulationSection : public Section,
+                              private juce::Timer
     {
     public:
         explicit ModulationSection(B33pProcessor& processor);
 
+        void paint(juce::Graphics& g) override;
         void resized() override;
+        void timerCallback() override;
 
         void retargetLane(int lane);
 
     private:
+        // Live modulation magnitude for slot (|LFO × amount|, 0..1) when
+        // its routing is active, else a negative sentinel meaning "not
+        // routed". Drives the per-row activity indicator (REVIEW.md P14).
+        float slotActivity (int slot) const;
+
+        int currentLane { 0 };
+        std::array<juce::Rectangle<int>, kNumModSlots> slotIndicatorBounds;
+
         struct LfoControls
         {
             juce::ComboBox shape;

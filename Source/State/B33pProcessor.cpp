@@ -1154,5 +1154,13 @@ namespace B33p
         for (auto& laneLfos : lfos)
             for (auto& lfo : laneLfos)
                 lfo.advance(numSamples);
+
+        // Mirror the selected lane's LFO outputs for the modulation
+        // editor's live-activity cue (P14). Cheap atomic stores; the
+        // editor reads them on its Timer.
+        const int sel = juce::jlimit(0, Pattern::kNumLanes - 1, selectedLane.load());
+        for (int i = 0; i < kNumLfosPerLane; ++i)
+            selectedLaneLfoValues[static_cast<size_t>(i)].store(
+                lfos[static_cast<size_t>(sel)][static_cast<size_t>(i)].currentValue());
     }
 }
