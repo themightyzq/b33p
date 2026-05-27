@@ -236,6 +236,38 @@ namespace B33p
                                        4.5f, bounds.getHeight()).reduced(0.5f),
                 1.0f);
         }
+
+        // dBFS scale ruler (P18) — ticks + labels at -12 / -6 / -3 / 0 dBFS,
+        // placed on the meter's linear-amplitude axis (level = gain for that
+        // dB). Shares the meter's `track` inset so ticks line up with the bar.
+        if (! meterScaleBounds.isEmpty())
+        {
+            const auto scale = meterScaleBounds.toFloat();
+            g.setFont(juce::FontOptions(8.5f));
+
+            struct DbMark { int db; const char* label; };
+            for (const auto& mark : { DbMark { -12, "-12" }, DbMark { -6, "-6" },
+                                      DbMark { -3, "-3" }, DbMark { 0, "0" } })
+            {
+                const float level = juce::Decibels::decibelsToGain((float) mark.db);
+                const float x     = track.getX() + track.getWidth() * level;
+
+                g.setColour(juce::Colour::fromRGB(110, 110, 120));
+                g.fillRect(juce::Rectangle<float>(x - 0.5f, scale.getY(), 1.0f, 3.0f));
+
+                // Centre the label under its tick, clamped so the right-most
+                // "0" doesn't clip off the meter's edge.
+                constexpr float textW = 22.0f;
+                const float textX = juce::jlimit(scale.getX(),
+                                                 scale.getRight() - textW,
+                                                 x - textW * 0.5f);
+                g.setColour(juce::Colour::fromRGB(150, 150, 160));
+                g.drawText(mark.label,
+                           juce::Rectangle<float>(textX, scale.getY() + 2.0f,
+                                                  textW, scale.getHeight() - 2.0f),
+                           juce::Justification::centred, false);
+            }
+        }
     }
 
     void MasterSection::resized()
@@ -244,7 +276,8 @@ namespace B33p
 
         constexpr int kSliderWidth  = 140;
         constexpr int kButtonHeight = 28;
-        constexpr int kMeterHeight  = 6;
+        constexpr int kMeterHeight  = 9;    // taller so the dB ticks read (P18)
+        constexpr int kScaleHeight  = 10;   // dBFS ruler strip below the meter
         constexpr int kButtonGap    = 6;
         constexpr int kRowGap       = 6;
         constexpr int kAbRowHeight  = 22;
@@ -272,9 +305,12 @@ namespace B33p
         auto buttonRow = bounds.removeFromBottom(kButtonHeight);
         bounds.removeFromBottom(kRowGap);
 
-        // Output level meter — thin horizontal strip just above the
-        // button row, full content width.
-        meterBounds = bounds.removeFromBottom(kMeterHeight);
+        // Output level meter + dBFS ruler — thin horizontal strips just
+        // above the button row, full content width. The scale sits directly
+        // under the meter; both are carved from the bottom so the gain knob
+        // takes whatever height remains (P18).
+        meterScaleBounds = bounds.removeFromBottom(kScaleHeight);
+        meterBounds      = bounds.removeFromBottom(kMeterHeight);
         bounds.removeFromBottom(kRowGap);
 
         const int xSlider = bounds.getX() + (bounds.getWidth() - kSliderWidth) / 2;
