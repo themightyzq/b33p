@@ -1,5 +1,6 @@
 #pragma once
 
+#include "IconButton.h"
 #include "LabeledSlider.h"
 #include "Section.h"
 #include "State/B33pProcessor.h"
@@ -55,10 +56,12 @@ namespace B33p
         juce::TextButton redoButton      { "Redo" };
 
         // Preset prev/next + current-name readout, centred in the top
-        // strip between Undo/Redo and A/B/Copy (REVIEW.md P23).
-        juce::TextButton prevPresetButton { "<" };
-        juce::TextButton nextPresetButton { ">" };
-        juce::Label      presetNameLabel;
+        // strip between Undo/Redo and A/B/Copy (REVIEW.md P23). Drawn
+        // chevron icons for consistency with the other compact controls
+        // (dice / lock / combo carets) rather than "<" / ">" text.
+        IconButton  prevPresetButton { IconButton::Glyph::ChevronLeft };
+        IconButton  nextPresetButton { IconButton::Glyph::ChevronRight };
+        juce::Label presetNameLabel;
 
         void refreshAbButtonStates();
         void refreshUndoButtonStates();
