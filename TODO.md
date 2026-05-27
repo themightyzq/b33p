@@ -319,7 +319,7 @@ The 2026-05-25 plugin-designer pass (`docs/REVIEW.md`, P1–P38) was mostly work
 - [ ] **P17 — distortion has no oversampling option.** Real DSP (anti-aliasing); `juce::dsp::Oversampling` per the DSP dependency policy. Needs unit tests + likely a `.beep`/param addition.
 - [ ] **P19 — no preset metadata** (author / description / tags / category / BPM). Needs a `.beep` schema bump + migration + browser UI.
 - [ ] **P20 — no audition-while-browsing in the preset browser.**
-- [ ] **P23 — no next/previous preset arrows in the main UI.**
+- [x] **P23 — next/previous preset arrows in the main UI (2026-05-27).** The Master section's top strip now carries `< (preset name) >` between Undo/Redo and A/B/Copy. The arrows step through the sorted preset list (wrapping) relative to the currently-loaded preset — loading each via the existing dirty-prompt + undoable `LoadProjectStateAction` path (refactored into `MainComponent::loadPresetFile`, shared with the browser). `currentPresetFile` is set on preset load / save-preset and cleared on New / project-open, so the readout shows the live preset name or `(no preset)`. Verified: builds clean, the nav renders correctly (screenshot), 201/201 tests. The live arrow-click wasn't automatable (JUCE controls don't expose to System Events; no pyobjc for a synthetic mouse event) — the `onClick` wiring mirrors the adjacent working buttons, so it's manual-confirm.
 
 ### Nice to Have
 - [ ] **P31 — AmpEnvelope visualizer has no playhead.**

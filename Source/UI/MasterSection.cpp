@@ -85,6 +85,23 @@ namespace B33p
         addAndMakeVisible(redoButton);
         refreshUndoButtonStates();
 
+        // ---- Preset prev/next (P23) -------------------------------
+        prevPresetButton.onClick = [this] { if (onPrevPreset) onPrevPreset(); };
+        nextPresetButton.onClick = [this] { if (onNextPreset) onNextPreset(); };
+        prevPresetButton.setTooltip("Load the previous preset");
+        nextPresetButton.setTooltip("Load the next preset");
+        addAndMakeVisible(prevPresetButton);
+        addAndMakeVisible(nextPresetButton);
+
+        presetNameLabel.setJustificationType(juce::Justification::centred);
+        presetNameLabel.setFont(juce::FontOptions(11.0f));
+        presetNameLabel.setColour(juce::Label::textColourId,
+                                  juce::Colour::fromRGB(170, 170, 175));
+        presetNameLabel.setTooltip("Current preset — use < and > to step through your presets");
+        presetNameLabel.setInterceptsMouseClicks(false, false);
+        setPresetName({});   // starts as the em-dash placeholder
+        addAndMakeVisible(presetNameLabel);
+
         retargetLane(processor.getSelectedLane());
 
         // 30 Hz timer drives the level meter readout + handles the
@@ -302,6 +319,16 @@ namespace B33p
         abRow.removeFromLeft(kAbGap);
         redoButton.setBounds(abRow.removeFromLeft(kUndoW));
 
+        // Middle: < [preset name] >  (P23). Uses whatever width is left
+        // between the Undo/Redo and A/B clusters; the name label ellipsises
+        // when the section is narrow.
+        constexpr int kPresetArrowW = 22;
+        abRow.removeFromLeft(kAbGap);
+        abRow.removeFromRight(kAbGap);
+        prevPresetButton.setBounds(abRow.removeFromLeft(kPresetArrowW));
+        nextPresetButton.setBounds(abRow.removeFromRight(kPresetArrowW));
+        presetNameLabel.setBounds(abRow);
+
         auto buttonRow = bounds.removeFromBottom(kButtonHeight);
         bounds.removeFromBottom(kRowGap);
 
@@ -333,5 +360,13 @@ namespace B33p
     {
         undoButton.setEnabled(processor.getUndoManager().canUndo());
         redoButton.setEnabled(processor.getUndoManager().canRedo());
+    }
+
+    void MasterSection::setPresetName(const juce::String& name)
+    {
+        // ASCII placeholder when not on a preset — keeps clear of the
+        // non-ASCII String paint assertion seen elsewhere in the UI.
+        presetNameLabel.setText(name.isNotEmpty() ? name : juce::String("(no preset)"),
+                                juce::dontSendNotification);
     }
 }
