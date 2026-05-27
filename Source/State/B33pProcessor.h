@@ -239,6 +239,17 @@ namespace B33p
         // falls when the signal stops; UI reads via Timer.
         float  getOutputPeak() const  { return outputPeak.load(); }
 
+        // Current output (-1..1) of the selected lane's two free-running
+        // LFOs. Audio thread writes once per block; the modulation editor
+        // reads via Timer to show a live "this routing is active" cue
+        // (REVIEW.md P14). Index out of range returns 0.
+        float  getSelectedLaneLfoValue(int lfoIndex) const
+        {
+            return (lfoIndex >= 0 && lfoIndex < kNumLfosPerLane)
+                       ? selectedLaneLfoValues[static_cast<size_t>(lfoIndex)].load()
+                       : 0.0f;
+        }
+
         // Lets the UI park the playhead at a specific time (e.g. by
         // clicking on the pattern grid ruler). Clamped to
         // [0, pattern length). Used as the paste-target time for
@@ -396,6 +407,8 @@ namespace B33p
         std::atomic<bool>   followHostTransport   { false };
         std::atomic<double> playheadSeconds       { 0.0   };
         std::atomic<float>  outputPeak            { 0.0f  };
+        // Live LFO outputs for the selected lane (P14 mod-activity cue).
+        std::array<std::atomic<float>, kNumLfosPerLane> selectedLaneLfoValues {};
 
         // Pattern snapshot lives behind atomic_load/store — see
         // class-level comment for the threading model.

@@ -76,10 +76,17 @@ namespace B33p
         addAndMakeVisible(hintLabel);
 
         retargetLane(processor.getSelectedLane());
+
+        // Drive the live mod-activity indicators (P14). 30 Hz matches the
+        // master meter; the repainted region is just the thin indicator
+        // strip on the left of the matrix rows.
+        startTimerHz(30);
     }
 
     void ModulationSection::retargetLane(int lane)
     {
+        currentLane = lane;
+
         for (int i = 0; i < kNumLfosPerLane; ++i)
         {
             auto& lfo = lfoControls[static_cast<size_t>(i)];
@@ -169,10 +176,19 @@ namespace B33p
 
             auto& slot = slotControls[static_cast<size_t>(i)];
 
+            constexpr int kIndicatorWidth = 5;
+            constexpr int kIndicatorGap   = 5;
             constexpr int kLabelWidth  = 48;
             constexpr int kSourceWidth = 70;
             constexpr int kDestWidth   = 140;
             constexpr int kSmallGap    = 4;
+
+            // Live mod-activity indicator (P14): a thin strip at the row's
+            // left edge, vertically centred, painted in paint().
+            auto indicatorCol = row.removeFromLeft(kIndicatorWidth);
+            slotIndicatorBounds[static_cast<size_t>(i)] =
+                indicatorCol.withSizeKeepingCentre(kIndicatorWidth, kSlotRowHeight - 8);
+            row.removeFromLeft(kIndicatorGap);
 
             slot.label.setBounds(row.removeFromLeft(kLabelWidth));
             row.removeFromLeft(kSmallGap);
@@ -181,6 +197,64 @@ namespace B33p
             slot.dest.setBounds(row.removeFromLeft(kDestWidth));
             row.removeFromLeft(kSmallGap);
             slot.amount.setBounds(row);
+        }
+    }
+
+    float ModulationSection::slotActivity(int slot) const
+    {
+        auto& apvts = processor.getApvts();
+        const int source = static_cast<int>(
+            apvts.getRawParameterValue(ParameterIDs::modSlotSource(currentLane, slot))->load());
+        const int dest = static_cast<int>(
+            apvts.getRawParameterValue(ParameterIDs::modSlotDest(currentLane, slot))->load());
+
+        // Source "None" (0) or destination "None" (0) → routing is idle.
+        if (source <= 0 || dest <= 0)
+            return -1.0f;
+
+        const float amount = apvts.getRawParameterValue(
+            ParameterIDs::modSlotAmount(currentLane, slot))->load();
+        const float lfo = processor.getSelectedLaneLfoValue(source - 1);   // 1=LFO1→0, 2=LFO2→1
+        return juce::jlimit(0.0f, 1.0f, std::abs(lfo * amount));
+    }
+
+    void ModulationSection::timerCallback()
+    {
+        // Repaint just the thin indicator strips so routed slots pulse with
+        // their live modulation. Cheap enough to do unconditionally.
+        for (const auto& r : slotIndicatorBounds)
+            repaint(r);
+    }
+
+    void ModulationSection::paint(juce::Graphics& g)
+    {
+        Section::paint(g);
+
+        const auto accent = processor.laneAccentColour(currentLane);
+
+        for (int i = 0; i < kNumModSlots; ++i)
+        {
+            const auto r = slotIndicatorBounds[static_cast<size_t>(i)].toFloat();
+            if (r.isEmpty())
+                continue;
+
+            const float activity = slotActivity(i);
+            if (activity < 0.0f)
+            {
+                // Not routed — faint hollow tick so the column reads "idle here".
+                g.setColour(juce::Colour::fromRGB(60, 60, 64));
+                g.drawRoundedRectangle(r.reduced(1.0f), 1.5f, 1.0f);
+                continue;
+            }
+
+            // Routed — a steady accent frame plus a fill whose brightness
+            // tracks the live |LFO × amount|, so the slot visibly pulses
+            // while it modulates (and sits faint when amount/LFO are at 0).
+            g.setColour(accent.withAlpha(0.30f));
+            g.drawRoundedRectangle(r.reduced(0.5f), 1.5f, 1.0f);
+
+            g.setColour(accent.withAlpha(juce::jlimit(0.15f, 1.0f, activity)));
+            g.fillRoundedRectangle(r.reduced(1.5f), 1.0f);
         }
     }
 }
