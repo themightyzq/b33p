@@ -96,8 +96,14 @@ namespace B33p
         addAndMakeVisible(pitchEnvelopeSection);
         addAndMakeVisible(patternSection);
 
-        fileManager.setOnStateChanged([this] { updateWindowTitle(); });
+        // Opening / saving a project moves off any loaded preset, so clear
+        // the preset readout alongside the title refresh (P23).
+        fileManager.setOnStateChanged([this] { updateWindowTitle(); clearPresetContext(); });
         processor.setOnDirtyChanged ([this] { updateWindowTitle(); });
+
+        // Preset prev/next arrows live in the Master section (P23).
+        masterSection.onPrevPreset = [this] { stepPreset(-1); };
+        masterSection.onNextPreset = [this] { stepPreset(+1); };
 
         // Resync the editors / pattern combos that don't auto-track
         // APVTS attachments after a bulk reload (Open or New).
@@ -300,7 +306,7 @@ namespace B33p
         }
         if (cmd && code == 'N')
         {
-            confirmDiscardThen([this] { fileManager.newProject(); });
+            confirmDiscardThen([this] { fileManager.newProject(); clearPresetContext(); });
             return true;
         }
 
@@ -506,7 +512,7 @@ namespace B33p
         switch (menuItemId)
         {
             case MenuId::FileNew:
-                confirmDiscardThen([this] { fileManager.newProject(); });
+                confirmDiscardThen([this] { fileManager.newProject(); clearPresetContext(); });
                 break;
             case MenuId::FileOpen:
                 confirmDiscardThen([this] { fileManager.open(this); });
@@ -628,27 +634,9 @@ namespace B33p
                 // unsaved changes by clicking a preset.
                 [this](const juce::File& presetFile)
                 {
-                    confirmDiscardThen([this, presetFile]
-                    {
-                        // P6: wrap the load in one undoable transaction so
-                        // Cmd+Z (or the in-plugin Undo button) restores the
-                        // previous patch instead of leaving it lost. Parse the
-                        // preset, snapshot the full pre-load state, and swap
-                        // via a LoadProjectStateAction. The preset is NOT
-                        // promoted to the project save target — presets and
-                        // projects are separate concepts.
-                        if (! presetFile.existsAsFile())
-                            return;
-                        auto after = ProjectState::fromXmlString(presetFile.loadFileAsString());
-                        if (! after.isValid())
-                            return;   // same silent no-op the old loadPreset path had
-
-                        auto before = ProjectState::save(processor);
-                        processor.getUndoManager().beginNewTransaction("Load preset");
-                        processor.getUndoManager().perform(
-                            new LoadProjectStateAction(processor, this,
-                                                       std::move(before), std::move(after)));
-                    });
+                    // Route through the same dirty-prompt + undoable load
+                    // path the prev/next arrows use (P23).
+                    confirmDiscardThen([this, presetFile] { loadPresetFile(presetFile); });
                 },
                 [this](const juce::File& presetFile)
                 {
@@ -660,6 +648,65 @@ namespace B33p
         }
         presetBrowserWindow->setVisible(true);
         presetBrowserWindow->toFront(true);
+    }
+
+    void MainComponent::loadPresetFile(const juce::File& presetFile)
+    {
+        // P6: one undoable transaction so Cmd+Z (or the in-plugin Undo
+        // button) restores the previous patch. Parse, snapshot the full
+        // pre-load state, swap via LoadProjectStateAction. The preset is
+        // NOT promoted to the project save target — presets and projects
+        // are separate concepts. Callers own the dirty-prompt.
+        if (! presetFile.existsAsFile())
+            return;
+        auto after = ProjectState::fromXmlString(presetFile.loadFileAsString());
+        if (! after.isValid())
+            return;
+
+        auto before = ProjectState::save(processor);
+        processor.getUndoManager().beginNewTransaction("Load preset");
+        processor.getUndoManager().perform(
+            new LoadProjectStateAction(processor, this,
+                                       std::move(before), std::move(after)));
+
+        currentPresetFile = presetFile;
+        updatePresetNameDisplay();
+    }
+
+    void MainComponent::stepPreset(int delta)
+    {
+        // Move +/-1 through the sorted preset list relative to the
+        // currently-loaded preset (wrapping). If we're not on a known
+        // preset, a forward step starts at the first entry, a backward
+        // step at the last.
+        const auto presets = presetManager.listPresets();
+        if (presets.empty())
+            return;
+
+        const int count = static_cast<int>(presets.size());
+        int index = -1;
+        for (int i = 0; i < count; ++i)
+            if (presets[static_cast<size_t>(i)] == currentPresetFile) { index = i; break; }
+
+        const int target = (index < 0)
+                               ? (delta > 0 ? 0 : count - 1)
+                               : ((index + delta) % count + count) % count;
+
+        const auto file = presets[static_cast<size_t>(target)];
+        confirmDiscardThen([this, file] { loadPresetFile(file); });
+    }
+
+    void MainComponent::clearPresetContext()
+    {
+        currentPresetFile = juce::File();
+        updatePresetNameDisplay();
+    }
+
+    void MainComponent::updatePresetNameDisplay()
+    {
+        masterSection.setPresetName(currentPresetFile == juce::File()
+                                        ? juce::String()
+                                        : currentPresetFile.getFileNameWithoutExtension());
     }
 
     void MainComponent::promptSavePreset()
@@ -727,6 +774,11 @@ namespace B33p
                 nullptr);
             return;
         }
+
+        // The just-saved preset becomes the current one, so prev/next
+        // continues from it and the readout names it (P23).
+        currentPresetFile = saved;
+        updatePresetNameDisplay();
 
         // If the browser is open, repopulate so the new
         // preset shows up.

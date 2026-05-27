@@ -83,6 +83,18 @@ namespace B33p
         // so the overwrite-confirm path can reuse it.
         void savePresetNamed(const juce::String& name);
 
+        // Preset navigation (REVIEW.md P23). loadPresetFile is the shared
+        // undoable load path (browser + prev/next both route through it);
+        // stepPreset moves +/-1 through the sorted preset list relative to
+        // the currently-loaded one; clearPresetContext forgets it (New /
+        // Open a project). updatePresetNameDisplay pushes the name to the
+        // Master section's readout.
+        void loadPresetFile(const juce::File& presetFile);
+        void stepPreset(int delta);
+        void clearPresetContext();
+        void updatePresetNameDisplay();
+        juce::File currentPresetFile;
+
         // The top-level component we registered the KeyListener on,
         // kept so the destructor can deregister cleanly even after
         // the window is mid-teardown.

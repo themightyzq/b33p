@@ -21,6 +21,13 @@ namespace B33p
 
         void retargetLane(int lane);
 
+        // Preset navigation (REVIEW.md P23). MainComponent owns the
+        // preset list + the undoable load path, so the buttons just fire
+        // these callbacks; it pushes the current name back via setPresetName.
+        std::function<void()> onPrevPreset;
+        std::function<void()> onNextPreset;
+        void setPresetName(const juce::String& name);
+
     private:
         void timerCallback() override;
         void flashAuditionButton();
@@ -46,6 +53,12 @@ namespace B33p
         // state is refreshed by the existing 30 Hz timer.
         juce::TextButton undoButton      { "Undo" };
         juce::TextButton redoButton      { "Redo" };
+
+        // Preset prev/next + current-name readout, centred in the top
+        // strip between Undo/Redo and A/B/Copy (REVIEW.md P23).
+        juce::TextButton prevPresetButton { "<" };
+        juce::TextButton nextPresetButton { ">" };
+        juce::Label      presetNameLabel;
 
         void refreshAbButtonStates();
         void refreshUndoButtonStates();
