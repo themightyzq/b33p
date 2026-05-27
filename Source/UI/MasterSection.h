@@ -57,6 +57,9 @@ namespace B33p
         // computed in resized() so paint() knows where to draw.
         float                meterLevel { 0.0f };
         juce::Rectangle<int> meterBounds;
+        // Thin ruler strip below the meter carrying the dBFS scale
+        // (-12 / -6 / -3 / 0) — also computed in resized() (P18).
+        juce::Rectangle<int> meterScaleBounds;
 
         // Meter feedback (REVIEW.md P18). Peak-hold draws a bright tick at
         // the recent maximum, decaying after ~1.5 s so transients stay

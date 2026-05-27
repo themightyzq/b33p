@@ -8,6 +8,10 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+### Changed
+
+- **Master output meter now shows a dBFS scale.** A thin ruler under the meter marks `-12 / -6 / -3 / 0` dBFS so you can read headroom at a glance; the marks sit on the meter's amplitude axis (so they bunch toward the right, as a level meter should). Fits the existing Master panel — no window growth.
+
 ### Fixed
 
 - **Standalone opens `.beep` files from the OS again.** Double-clicking a `.beep` in the file manager (or passing one on the launch command line) now loads it into the standalone — on macOS via the document-open event, on Windows / Linux via the launch argument. If the running project has unsaved changes, it prompts Save / Discard / Cancel first. Restores a regression introduced by the `juce_add_plugin` standalone switch.
