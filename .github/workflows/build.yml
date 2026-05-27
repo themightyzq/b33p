@@ -155,15 +155,13 @@ jobs:
         working-directory: build
         run: ctest --output-on-failure --build-config ${{ env.CMAKE_BUILD_TYPE }}
 
-  # Static analysis over b33p's own sources. Informational for now:
-  # continue-on-error keeps a first pass over a never-linted codebase from
-  # red-lining main. The .clang-tidy check set is curated for real bug
-  # patterns (see that file). Flip this to blocking once the backlog is
-  # triaged (TODO.md "Chores / tech debt").
+  # Static analysis over b33p's own sources. BLOCKING: the first-pass backlog
+  # is cleared, so any finding fails the job (WarningsAsErrors='*' in
+  # .clang-tidy). The check set is curated for real bug patterns; new code
+  # must stay clean or add a justified NOLINT.
   clang-tidy:
     name: ubuntu-latest (clang-tidy)
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     env:
       CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm_cache
@@ -210,19 +208,22 @@ jobs:
 
       - name: Run clang-tidy over Source/
         run: |
-          set -o pipefail
           # Only b33p's own translation units. Parallelised across cores;
           # each TU still parses heavy JUCE headers, so this is the slow
           # part. --quiet drops the per-file "N warnings generated" noise.
+          # WarningsAsErrors='*' makes clang-tidy exit non-zero on any
+          # finding; xargs then exits non-zero, which we propagate so the
+          # job fails (blocking).
           find "$PWD/Source" -name '*.cpp' -print0 \
             | xargs -0 -P "$(nproc)" -I{} clang-tidy -p build --quiet "{}" \
-            > tidy.log 2>&1 || true
+            > tidy.log 2>&1 ; status=$?
           echo "---- clang-tidy summary ----"
-          warnings=$(grep -cE 'warning:' tidy.log || true)
-          echo "clang-tidy warnings: ${warnings:-0}"
-          # Echo the distinct check names that fired, with counts, so the
-          # backlog is legible at a glance in the job log.
+          findings=$(grep -cE 'warning:|error:' tidy.log || true)
+          echo "clang-tidy findings: ${findings:-0}"
+          # Echo the distinct check names that fired, with counts.
           echo "---- by check ----"
           grep -oE '\[[a-z0-9.-]+\]$' tidy.log | sort | uniq -c | sort -rn || true
           echo "---- full output ----"
           cat tidy.log
+          # Fail the job if any clang-tidy invocation reported a finding.
+          exit $status

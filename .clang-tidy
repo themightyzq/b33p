@@ -42,6 +42,10 @@ Checks: >
   -clang-analyzer-optin.cplusplus.VirtualCall,
   -clang-analyzer-security.FloatLoopCounter
 
-WarningsAsErrors: ''
+# Status: BLOCKING. The backlog from the first pass is cleared, so the CI
+# clang-tidy job fails on any finding (continue-on-error dropped). Every
+# enabled check is an error — new code must stay clean or add a justified
+# NOLINT.
+WarningsAsErrors: '*'
 HeaderFilterRegex: 'Source/'
 FormatStyle: none
