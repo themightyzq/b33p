@@ -208,6 +208,11 @@ jobs:
 
       - name: Run clang-tidy over Source/
         run: |
+          # NB: GitHub runs this under `bash -e`. Disable errexit so a
+          # non-zero clang-tidy/xargs DOESN'T abort the script before the
+          # diagnostics are printed — we capture the status and exit with it
+          # at the end instead. (Without this the job fails silently.)
+          set +e
           # Only b33p's own translation units. Parallelised across cores;
           # each TU still parses heavy JUCE headers, so this is the slow
           # part. --quiet drops the per-file "N warnings generated" noise.
