@@ -88,6 +88,25 @@ namespace B33p::SliderFormatting
         slider.updateText();
     }
 
+    // Bipolar value (e.g. a -1..+1 modulation amount): two decimals with an
+    // explicit "+" for positives so the sign reads at a glance ("+0.29",
+    // "0.00", "-1.00"). Prefer this over setNumDecimalPlacesToDisplay — a
+    // SliderAttachment's setRange resets that, but leaves textFromValueFunction
+    // alone, so the display stays clean after attaching.
+    inline void applyBipolar(juce::Slider& slider)
+    {
+        slider.textFromValueFunction = [](double v)
+        {
+            const auto sign = v > 0.0 ? juce::String("+") : juce::String();
+            return sign + juce::String(v, 2);
+        };
+        slider.valueFromTextFunction = [](const juce::String& s)
+        {
+            return s.trim().getDoubleValue();
+        };
+        slider.updateText();
+    }
+
     // Linear-gain → dB display. Slider value is linear amplitude
     // (e.g. 1.0 = unity, 2.0 = +6 dB). Display reads as dB because
     // audio users speak dB. Round-trips via valueFromTextFunction so
