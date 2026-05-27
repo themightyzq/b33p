@@ -183,7 +183,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-tidy \
+          # Pin the clang-tidy version so the blocking gate is deterministic:
+          # ubuntu-latest's default `clang-tidy` floats with the runner image,
+          # and a newer clang-tidy surfaces new checks that would spontaneously
+          # red-line main with no code change. clang-tidy-18 matches what the
+          # gate was tuned against. (If a future runner drops 18, bump this pin
+          # deliberately and clear any new findings — don't let it float.)
+          sudo apt-get install -y clang-tidy-18 \
             libasound2-dev \
             libjack-jackd2-dev \
             libcurl4-openssl-dev \
@@ -198,7 +204,7 @@ jobs:
             libxrender-dev \
             libglu1-mesa-dev \
             mesa-common-dev
-          clang-tidy --version
+          clang-tidy-18 --version
 
       - name: Configure (export compile commands)
         # No build needed: clang-tidy compiles each TU itself using the
@@ -220,7 +226,7 @@ jobs:
           # finding; xargs then exits non-zero, which we propagate so the
           # job fails (blocking).
           find "$PWD/Source" -name '*.cpp' -print0 \
-            | xargs -0 -P "$(nproc)" -I{} clang-tidy -p build --quiet "{}" \
+            | xargs -0 -P "$(nproc)" -I{} clang-tidy-18 -p build --quiet "{}" \
             > tidy.log 2>&1 ; status=$?
           echo "---- clang-tidy summary ----"
           findings=$(grep -cE 'warning:|error:' tidy.log || true)
