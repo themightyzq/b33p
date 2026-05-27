@@ -4,24 +4,46 @@ namespace B33p
 {
     namespace
     {
-        // Tones tuned against the section background (rgb 36,36,36).
-        const juce::Colour kIdleInk        { juce::Colour::fromRGB(150, 150, 150) };
-        const juce::Colour kHoverInk       { juce::Colour::fromRGB(220, 220, 220) };
+        // Tones tuned against the section background (rgb 36,36,36). Idle
+        // ink/button already clear WCAG 3:1 (~4.5:1); the legibility issue was
+        // perceptual — small glyphs, thin strokes, and a button that barely
+        // separated from the panel. A touch more ink + button separation +
+        // crisper strokes (below), without making 30 of these loud.
+        const juce::Colour kIdleInk        { juce::Colour::fromRGB(170, 170, 170) };
+        const juce::Colour kHoverInk       { juce::Colour::fromRGB(225, 225, 225) };
         const juce::Colour kPressedInk     { juce::Colour::fromRGB(255, 255, 255) };
         const juce::Colour kLockedAccent   { juce::Colour::fromRGB(120, 200, 255) };
-        const juce::Colour kButtonBgIdle   { juce::Colour::fromRGB( 48,  48,  48) };
-        const juce::Colour kButtonBgHover  { juce::Colour::fromRGB( 64,  64,  64) };
+        const juce::Colour kButtonBgIdle   { juce::Colour::fromRGB( 56,  56,  56) };
+        const juce::Colour kButtonBgHover  { juce::Colour::fromRGB( 72,  72,  72) };
 
         constexpr float kButtonCorner = 3.0f;
     }
 
+    namespace
+    {
+        juce::String glyphName(IconButton::Glyph g)
+        {
+            switch (g)
+            {
+                case IconButton::Glyph::Die:          return "Roll";
+                case IconButton::Glyph::Lock:         return "Lock";
+                case IconButton::Glyph::ChevronLeft:  return "Previous";
+                case IconButton::Glyph::ChevronRight: return "Next";
+            }
+            return "Button";
+        }
+    }
+
     IconButton::IconButton(Glyph g)
-        : juce::Button(g == Glyph::Die ? "Roll" : "Lock"),
+        : juce::Button(glyphName(g)),
           glyph(g)
     {
-        setTooltip(g == Glyph::Die
-                       ? juce::String("Roll a random value")
-                       : juce::String("Lock to exclude from random rolls"));
+        // Die/Lock carry their own tooltips; chevrons get a context-specific
+        // one from the owner (the preset prev/next caption).
+        if (g == Glyph::Die)
+            setTooltip("Roll a random value");
+        else if (g == Glyph::Lock)
+            setTooltip("Lock to exclude from random rolls");
     }
 
     void IconButton::paintButton(juce::Graphics& g,
@@ -49,10 +71,41 @@ namespace B33p
         const auto iconArea = bounds.reduced(bounds.getWidth() * 0.18f,
                                              bounds.getHeight() * 0.18f);
 
-        if (glyph == Glyph::Die)
-            paintDie(g, iconArea, ink);
-        else
-            paintLock(g, iconArea, ink, getToggleState());
+        switch (glyph)
+        {
+            case Glyph::Die:          paintDie(g, iconArea, ink); break;
+            case Glyph::Lock:         paintLock(g, iconArea, ink, getToggleState()); break;
+            case Glyph::ChevronLeft:  paintChevron(g, iconArea, ink, false); break;
+            case Glyph::ChevronRight: paintChevron(g, iconArea, ink, true);  break;
+        }
+    }
+
+    void IconButton::paintChevron(juce::Graphics& g,
+                                  juce::Rectangle<float> area,
+                                  juce::Colour ink,
+                                  bool pointRight)
+    {
+        const float side = std::min(area.getWidth(), area.getHeight());
+        const auto  cell = juce::Rectangle<float>(side, side).withCentre(area.getCentre());
+
+        // Two arms meeting at an apex on the pointing side — a ">" or "<".
+        const float midY  = cell.getCentreY();
+        const float apexX = pointRight ? cell.getRight() - side * 0.30f
+                                       : cell.getX()     + side * 0.30f;
+        const float baseX = pointRight ? cell.getX()     + side * 0.34f
+                                       : cell.getRight() - side * 0.34f;
+        const float topY  = cell.getY()      + side * 0.24f;
+        const float botY  = cell.getBottom() - side * 0.24f;
+
+        juce::Path chevron;
+        chevron.startNewSubPath(baseX, topY);
+        chevron.lineTo(apexX, midY);
+        chevron.lineTo(baseX, botY);
+
+        g.setColour(ink);
+        g.strokePath(chevron, juce::PathStrokeType(1.8f,
+                                                   juce::PathStrokeType::curved,
+                                                   juce::PathStrokeType::rounded));
     }
 
     void IconButton::paintDie(juce::Graphics& g,
@@ -65,9 +118,9 @@ namespace B33p
                                  .withCentre(area.getCentre());
 
         g.setColour(ink);
-        g.drawRoundedRectangle(square, side * 0.18f, 1.2f);
+        g.drawRoundedRectangle(square, side * 0.18f, 1.5f);
 
-        const float r = side * 0.10f;     // pip radius
+        const float r = side * 0.12f;     // pip radius
         const float pX[] = { 0.28f, 0.72f, 0.50f, 0.28f, 0.72f };
         const float pY[] = { 0.28f, 0.28f, 0.50f, 0.72f, 0.72f };
         for (int i = 0; i < 5; ++i)
@@ -136,7 +189,7 @@ namespace B33p
             shackle.lineTo(shackleBounds.getRight(),
                            shackleBounds.getY() + shackleBounds.getHeight() * 0.45f);
         }
-        g.strokePath(shackle, juce::PathStrokeType(1.4f,
+        g.strokePath(shackle, juce::PathStrokeType(1.7f,
                                                     juce::PathStrokeType::curved,
                                                     juce::PathStrokeType::rounded));
 
@@ -147,7 +200,7 @@ namespace B33p
         }
         else
         {
-            g.drawRoundedRectangle(body, body.getHeight() * 0.18f, 1.2f);
+            g.drawRoundedRectangle(body, body.getHeight() * 0.18f, 1.5f);
         }
 
         // Tiny keyhole dot (only when locked, against the filled body).

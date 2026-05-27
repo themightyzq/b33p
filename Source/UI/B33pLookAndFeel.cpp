@@ -69,7 +69,12 @@ namespace B33p
     {
         const auto area   = juce::Rectangle<int>(x, y, width, height).toFloat().reduced(3.0f);
         const auto centre = area.getCentre();
-        const float radius   = juce::jmin(area.getWidth(), area.getHeight()) * 0.5f;
+        // Cap the diameter so a knob reads as one consistent control across
+        // sections — without it, a section with a single knob (e.g. Oscillator
+        // Pitch) stretches it ~2.5x the size of a packed section's knobs.
+        constexpr float kMaxKnobRadius = 34.0f;   // ~68 px knob
+        const float radius   = juce::jmin(juce::jmin(area.getWidth(), area.getHeight()) * 0.5f,
+                                          kMaxKnobRadius);
         const float lineW    = juce::jmax(2.0f, radius * 0.12f);
         const float arcR     = radius - lineW * 0.5f;
         const bool  enabled  = slider.isEnabled();

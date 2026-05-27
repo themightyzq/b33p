@@ -157,10 +157,18 @@ namespace B33p
         const bool single = currentSelection.valid() && totalCount == 1;
         const bool multi  = currentSelection.valid() && totalCount > 1;
 
+        // Suppress the "Select a clip…" hint when the pattern is completely
+        // empty — the grid already shows its own "draw a beep" hint, and two
+        // stacked empty-state messages just compete (REVIEW-DESIGN).
+        int patternEventCount = 0;
+        for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+            patternEventCount += static_cast<int>(processor.getPattern().getEvents(lane).size());
+        const bool patternEmpty = patternEventCount == 0;
+
         // Single-select: full controls. Multi-select: placeholder
         // saying "N events selected" — operations like delete /
         // nudge / paste happen from the grid's keyboard shortcuts.
-        placeholder.setVisible(! single);
+        placeholder.setVisible(! single && ! patternEmpty);
         if (multi)
             // Multi-select inspector also tells the user which actions
             // apply to the whole selection — the inspector itself
