@@ -309,6 +309,28 @@ Cross-cutting work that isn't tied to any single phase. Review at the start of e
 
 ---
 
+## REVIEW Pass 2 — remaining findings
+
+The 2026-05-25 plugin-designer pass (`docs/REVIEW.md`, P1–P38) was mostly worked into the Chores list above. These are the findings not yet addressed, extracted here so they're tracked (CLAUDE.md: the roadmap is the source of truth). **P13 was re-checked and is already covered** — `FilterResponseVisualizer` adds parameter listeners and repaints live on drag. P30 stays `[~]` in Chores (deferred, needs a matrix-layout rework).
+
+### High Impact
+- [ ] **P14 — modulation matrix shows no active modulation.** No live cue for which routings are doing anything. Plan: expose the selected lane's current LFO values via an atomic snapshot (the `getOutputPeak` meter pattern), and draw a small live indicator per matrix row (LFO value × amount) on the 30 Hz timer.
+- [ ] **P16 — no CPU display.** Atomic `processBlock` timing → a small % readout.
+- [ ] **P17 — distortion has no oversampling option.** Real DSP (anti-aliasing); `juce::dsp::Oversampling` per the DSP dependency policy. Needs unit tests + likely a `.beep`/param addition.
+- [ ] **P19 — no preset metadata** (author / description / tags / category / BPM). Needs a `.beep` schema bump + migration + browser UI.
+- [ ] **P20 — no audition-while-browsing in the preset browser.**
+- [ ] **P23 — no next/previous preset arrows in the main UI.**
+
+### Nice to Have
+- [ ] **P31 — AmpEnvelope visualizer has no playhead.**
+- [ ] **P33 — per-event overrides have no indicator on the grid clips** (the "Edit overrides…" data is invisible until the dialog is opened).
+- [ ] **P34 — mute/solo state not echoed in the voice-editor sections.**
+- [ ] **P35 — randomize is silent/instant** (no visual feedback that values changed).
+- [ ] **P37 — no keyboard navigation in the preset browser** beyond the ListBox default arrows (no Enter-to-load / type-ahead).
+- [ ] **P38 — bus configuration is stereo-only.** Likely a deliberate design call for a lo-fi sound-design tool — confirm won't-do, or scope minimal I/O flexibility.
+
+---
+
 ## Deferred regressions
 
 Features that were lost when the build target switched from `juce_add_gui_app` to `juce_add_plugin`. JUCE's `StandaloneFilterApp` wrapper produces the standalone `b33p.app` now and replaced our custom Application class; restoring each one means subclassing the wrapper via `JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP` and carrying the original behaviour into the override.
