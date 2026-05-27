@@ -134,9 +134,8 @@ namespace B33p
     {
         auto bounds = getContentBounds();
 
-        constexpr int kLfoRowHeight  = 70;
+        constexpr int kLfoRowHeight  = 56;   // leaves room for all 4 matrix rows
         constexpr int kRowGap        = 6;
-        constexpr int kSlotRowHeight = 24;
         constexpr int kInnerGap      = 6;
 
         // ---- LFO row ------------------------------------------------
@@ -169,10 +168,17 @@ namespace B33p
         bounds.removeFromTop(kRowGap);
 
         // ---- Matrix rows --------------------------------------------
+        // Divide the remaining height evenly across the slots so all four
+        // always fit inside the (column-packed, short) section — fixed row
+        // heights previously overflowed and clipped slot 4.
+        constexpr int kSlotGap = 2;
+        const int slotRowHeight = juce::jmax(
+            16, (bounds.getHeight() - (kNumModSlots - 1) * kSlotGap) / kNumModSlots);
         for (int i = 0; i < kNumModSlots; ++i)
         {
-            auto row = bounds.removeFromTop(kSlotRowHeight);
-            bounds.removeFromTop(2);
+            auto row = bounds.removeFromTop(slotRowHeight);
+            if (i < kNumModSlots - 1)
+                bounds.removeFromTop(kSlotGap);
 
             auto& slot = slotControls[static_cast<size_t>(i)];
 
@@ -187,7 +193,7 @@ namespace B33p
             // left edge, vertically centred, painted in paint().
             auto indicatorCol = row.removeFromLeft(kIndicatorWidth);
             slotIndicatorBounds[static_cast<size_t>(i)] =
-                indicatorCol.withSizeKeepingCentre(kIndicatorWidth, kSlotRowHeight - 8);
+                indicatorCol.withSizeKeepingCentre(kIndicatorWidth, juce::jmax(6, slotRowHeight - 8));
             row.removeFromLeft(kIndicatorGap);
 
             slot.label.setBounds(row.removeFromLeft(kLabelWidth));
