@@ -356,6 +356,27 @@ From the 2026-05-27 fresh end-user review (`REVIEW-USER.md`). The #1 user blocke
 
 ---
 
+## REVIEW-DESIGN findings
+
+From the 2026-05-27 craft/design pass (`REVIEW-DESIGN.md`). The two Criticals were fixed immediately (kept here, checked off, for history).
+
+### Critical (done)
+- [x] **Modulation Slot 4 clipped by the section border** — the column-packed section was too short for 4 slot rows, so Slot 4 rendered half-height with a garbled amount readout. Fixed (`ModulationSection::resized`): LFO row 70→56 px + slots divide the remaining height evenly so all four always fit. *Why it mattered: a core control looked broken on every launch.*
+- [x] **Empty-pattern hint rendered mojibake "â€"** instead of an em-dash (`PatternGrid.cpp:758` — UTF-8 literal painted as Latin-1). Fixed by rewording with a comma (ASCII). *Why it mattered: the first text on an empty grid looked corrupted.*
+
+### High Impact
+- [ ] **Same knob, wildly different sizes across sections** — the Oscillator's lone Pitch knob is ~2.5× the Amp Envelope's Attack/Decay knobs. *Why: a rotary should read as one consistent control; the size jump breaks rhythm.* Cap knob diameter to a shared size and top-align the cell. (`OscillatorSection` / `AmpEnvSection`.) [high]
+- [ ] **Numeric readouts show raw float precision then truncate with "…"** — mod amounts "0.29007…", Scope "1.000…". *Why: truncated 5-decimal numbers read as unfinished and say nothing.* Format to 2 decimals (bipolar `+0.29` for matrix amounts) and widen the readout box. (`ModulationSection` amount sliders; `PatternSection` Scope.) [high]
+- [ ] **Per-knob dice/lock icons are near-invisible (below ~3:1 contrast).** *Why: a headline feature is barely discoverable — yet at full contrast ~30 glyphs would be noise.* Raise resting contrast and/or hover-reveal the pair with a quiet resting dot. (`LabeledSlider` randomizer pair.) [high]
+- [ ] **Focus state likely invisible on the flat dark theme (unverified).** *Why: keyboard users can't see what's focused; JUCE's default ring vanishes on dark flat surfaces.* Draw a deliberate accent focus ring in `B33pLookAndFeel`; confirm tab order matches visual order. [high]
+
+### Nice to have
+- [ ] **Lone Pitch knob leaves a large dead zone** in the Oscillator section (consequence of the knob-size finding). Ties to the consistent-knob-size fix. [polish]
+- [ ] **Preset nav uses text `<` / `>`** while every other compact control uses drawn icons (dice, lock, combo carets). Use the icon set's chevrons. (`MasterSection`.) [polish]
+- [ ] **Two stacked empty-state messages** in the pattern area (the grid gesture hint + the inspector "Select a clip…" hint compete in one empty view). Suppress the inspector hint until a clip exists. [polish]
+
+---
+
 ## Deferred regressions
 
 Features that were lost when the build target switched from `juce_add_gui_app` to `juce_add_plugin`. JUCE's `StandaloneFilterApp` wrapper produces the standalone `b33p.app` now and replaced our custom Application class; restoring each one means subclassing the wrapper via `JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP` and carrying the original behaviour into the override.
