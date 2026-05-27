@@ -125,6 +125,10 @@ namespace B33p
             slot.amountAttachment = std::make_unique<
                 juce::AudioProcessorValueTreeState::SliderAttachment>(
                     processor.getApvts(), ParameterIDs::modSlotAmount(lane, i), slot.amount);
+            // After the attachment — it installs the param's own textFromValue
+            // (full float precision); override it for a clean bipolar readout
+            // ("+0.29" / "-1.00") (REVIEW-DESIGN).
+            SliderFormatting::applyBipolar(slot.amount);
         }
 
         setAccentColour(processor.laneAccentColour(lane));

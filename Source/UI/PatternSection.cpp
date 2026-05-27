@@ -2,6 +2,7 @@
 
 #include "Core/ParameterIDs.h"
 #include "ExportTask.h"
+#include "SliderFormatting.h"
 #include "State/UndoableActions.h"
 
 #include <array>
@@ -258,12 +259,15 @@ namespace B33p
 
         scopeSlider.setSliderStyle(juce::Slider::LinearHorizontal);
         scopeSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 48, 18);
-        scopeSlider.setNumDecimalPlacesToDisplay(2);
         scopeAttachment = std::make_unique<
             juce::AudioProcessorValueTreeState::SliderAttachment>(
                 processor.getApvts(),
                 ParameterIDs::randomizationScope(),
                 scopeSlider);
+        // 2-decimal readout via textFromValueFunction — survives the
+        // attachment above (setNumDecimalPlacesToDisplay would be reset by
+        // it, which is why Scope used to read "1.000…"). (REVIEW-DESIGN.)
+        SliderFormatting::applyDecimal(scopeSlider, 2);
         addAndMakeVisible(scopeSlider);
 
         exportButton.onClick = [this] { onExportClicked(); };
