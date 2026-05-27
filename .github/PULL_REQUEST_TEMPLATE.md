@@ -1,5 +1,5 @@
 <!-- Title please uses a Conventional Commit prefix: feat: / fix: / refactor: /
-     docs: / test: / build: / chore: (see CLAUDE.md). -->
+     docs: / test: / build: / chore:. -->
 
 ## Summary
 
@@ -8,7 +8,7 @@ What this PR does and why.
 ## Related roadmap item
 
 <!-- Link or quote the TODO.md item this addresses. New work should land on
-     the roadmap first — see CLAUDE.md scope discipline. -->
+     the roadmap (TODO.md) first, even as a one-line entry. -->
 
 ## Type of change
 
