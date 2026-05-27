@@ -19,7 +19,7 @@ namespace B33p
 
         std::unique_ptr<juce::AudioParameterFloat> makeFloat(const juce::String& id,
                                                              const juce::String& name,
-                                                             juce::NormalisableRange<float> range,
+                                                             const juce::NormalisableRange<float>& range,
                                                              float defaultValue,
                                                              const juce::String& unitSuffix = {})
         {

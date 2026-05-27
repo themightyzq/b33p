@@ -287,7 +287,7 @@ namespace B33p::ProjectState
         // canonically. Empty / missing attributes are no-ops; the
         // pattern, parameters, locks, and pitch curve round-trip
         // unchanged.
-        void migratePatternV2ToV3(juce::ValueTree patternNode)
+        void migratePatternV2ToV3(const juce::ValueTree& patternNode)
         {
             for (auto laneNode : patternNode)
             {
@@ -445,7 +445,7 @@ namespace B33p::ProjectState
             // the current state, matching the v12 implicit "you have
             // one patch" semantic.
             tree.setProperty(kVersion, 13, nullptr);
-            version = 13;
+            version = 13;   // NOLINT(clang-analyzer-deadcode.DeadStores) — final migration step; kept for chain symmetry so a future v13->v14 block can rely on it
         }
 
         return tree;

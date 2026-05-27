@@ -48,7 +48,7 @@ namespace B33p
         // Mutator runs against a copy of the selected event; the
         // resulting Pattern is pushed as a SetPatternAction so the
         // edit is undoable. No-op if the selection is invalid.
-        void pushEdit(std::function<void(Event&)> mutator,
+        void pushEdit(const std::function<void(Event&)>& mutator,
                        const juce::String& transactionName);
 
         // Pulls the currently-selected event out of the pattern.

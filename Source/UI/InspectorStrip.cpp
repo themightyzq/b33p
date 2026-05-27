@@ -240,7 +240,7 @@ namespace B33p
             c->setEnabled(enabled);
     }
 
-    void InspectorStrip::pushEdit(std::function<void(Event&)> mutator,
+    void InspectorStrip::pushEdit(const std::function<void(Event&)>& mutator,
                                    const juce::String& transactionName)
     {
         if (! currentSelection.valid() || ! mutator)

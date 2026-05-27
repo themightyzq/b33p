@@ -20,6 +20,9 @@ namespace B33p
         {
             for (auto* child : component.getChildren())
             {
+                if (child == nullptr)
+                    continue;
+
                 if (auto* slider = dynamic_cast<juce::Slider*>(child))
                 {
                     slider->setColour(juce::Slider::rotarySliderFillColourId, accent);
