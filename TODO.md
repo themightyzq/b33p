@@ -377,6 +377,17 @@ From the 2026-05-27 craft/design pass (`REVIEW-DESIGN.md`). The two Criticals we
 
 ---
 
+## Randomize controls rework (2026-05-27)
+
+Spun out of the design-review work-down: the randomize controls were ambiguously named and could drive the output into hard clipping.
+
+- [x] **Master "Randomize Lane" → "Randomize All"** — rename only; scope is unchanged (rolls every unlocked parameter of the currently-selected lane). `MasterSection.cpp`: button text + transaction name ("Randomize All (lane N)") + tooltip. *Rationale: "all" now reads as "all of this lane's params," matching the master strip's per-lane focus.*
+- [x] **Pattern "Randomize All" → "Randomize Params" + clips-only scope** — renamed and rescoped to roll synth params only for lanes that currently hold clips (randomizing a silent lane's voice is wasted motion). Empty pattern falls back to rolling every lane so the button is never dead. `PatternSection.{h,cpp}`: member `randomizeAllButton` → `randomizeParamsButton`; handler builds the param-ID list from lanes with events, then `rollMany(..., "Randomize Params")`.
+- [x] **New "Randomize Pattern" button** — scatters fresh random clips across all four lanes in one undoable transaction. `PatternGrid`: extracted `fillLaneWithRandomEvents(Pattern&, lane, rng)` (the no-undo body the Lane menu already used) and added `generateRandomPatternAllLanes()` that fills every lane and pushes a single `SetPatternAction` ("Randomize pattern"). `PatternSection` wires the button + layout (toolbar single-row threshold 1440→1600 for the wider action cluster).
+- [x] **Clip/peak on randomization** — the four lane voices + MIDI pool summed into the output with no headroom or limiting (`B33pProcessor::processBlock`), so a dense/randomized pattern pushed the sum past ±1.0 and hard-clipped (and tripped the meter's clip latch at ≥0.999). Fixed with a memoryless output soft-clip safety: new `Source/DSP/OutputLimiter.{h,cpp}` — identity below a −3 dBFS knee, exponential soft-knee above it asymptoting to a −0.3 dBFS ceiling (always ≤ ceiling < full-scale), C1-continuous at the knee. Applied per-sample to the summed output; unit-tested (`Tests/DSP/OutputLimiterTests.cpp` — passthrough below knee, C1 continuity, bounded under overload, odd, monotonic, no-prepare silence, reset no-op). 209/209 tests pass; verified live on macOS (build + launch, both new buttons render untruncated, "Randomize All" in master).
+
+---
+
 ## Deferred regressions
 
 Features that were lost when the build target switched from `juce_add_gui_app` to `juce_add_plugin`. JUCE's `StandaloneFilterApp` wrapper produces the standalone `b33p.app` now and replaced our custom Application class; restoring each one means subclassing the wrapper via `JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP` and carrying the original behaviour into the override.

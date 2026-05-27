@@ -2,6 +2,7 @@
 
 #include "DSP/LFO.h"
 #include "DSP/ModulationMatrix.h"
+#include "DSP/OutputLimiter.h"
 #include "DSP/Voice.h"
 #include "Pattern/Pattern.h"
 #include "Pattern/PatternSnapshot.h"
@@ -375,6 +376,10 @@ namespace B33p
         // reads currentValue() before deciding which Voice setters
         // to call with modulated values.
         std::array<std::array<LFO, kNumLfosPerLane>, Pattern::kNumLanes> lfos;
+
+        // Soft-clip safety on the summed output (voices sum with no
+        // headroom, so a dense / randomized pattern could hard-clip).
+        OutputLimiter outputLimiter;
 
         // Per-lane "currently active per-event overrides" mirror.
         // Loaded from Event::overrides in triggerVoiceFromEvent and

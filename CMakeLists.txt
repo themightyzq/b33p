@@ -172,6 +172,7 @@ target_sources(B33p PRIVATE
     Source/DSP/ModulationEffect.cpp
     Source/DSP/Bitcrush.cpp
     Source/DSP/Distortion.cpp
+    Source/DSP/OutputLimiter.cpp
     Source/DSP/Voice.cpp
     Source/Pattern/Pattern.cpp
     Source/Pattern/PatternRenderer.cpp

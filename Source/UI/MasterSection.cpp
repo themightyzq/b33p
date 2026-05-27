@@ -18,24 +18,26 @@ namespace B33p
         };
         addAndMakeVisible(auditionButton);
 
-        // "Randomize Lane" rolls every unlocked parameter for the
-        // currently-selected lane only. Rolling all four lanes at
-        // once lives in the pattern editor + the Lane menu so the
+        // "Randomize All" rolls every unlocked parameter for the
+        // currently-selected lane. The scope is the selected lane —
+        // "all" refers to all of that lane's parameters. Rolling
+        // parameters across multiple lanes lives in the pattern
+        // editor's "Randomize Params" button + the Lane menu, so the
         // more frequent single-lane action stays in the master strip.
-        diceAllButton.setButtonText("Randomize Lane");
+        diceAllButton.setButtonText("Randomize All");
         diceAllButton.onClick = [this]
         {
             juce::Random rng;
             const int lane = processor.getSelectedLane();
             processor.getRandomizer().rollMany(
                 ParameterIDs::allForLane(lane), rng,
-                "Randomize Lane " + juce::String(lane + 1));
+                "Randomize All (lane " + juce::String(lane + 1) + ")");
         };
         addAndMakeVisible(diceAllButton);
 
         gainSlider    .setTooltip("Master output level");
         auditionButton.setTooltip("Play a single beep with the current settings (Shift+Space)");
-        diceAllButton .setTooltip("Randomize every unlocked parameter on the currently-selected lane");
+        diceAllButton .setTooltip("Randomize all unlocked parameters on the currently-selected lane");
 
         // ---- A/B compare buttons ----------------------------------
         abButtonA.setClickingTogglesState(false);

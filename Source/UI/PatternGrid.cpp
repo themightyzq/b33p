@@ -337,7 +337,8 @@ namespace B33p
                                  pattern));
     }
 
-    void PatternGrid::generateRandomPatternInLane(int lane)
+    void PatternGrid::fillLaneWithRandomEvents(Pattern& pattern, int lane,
+                                               juce::Random& rng)
     {
         if (lane < 0 || lane >= Pattern::kNumLanes)
             return;
@@ -349,8 +350,7 @@ namespace B33p
         // clipped against the next start so events can't overlap —
         // overlapping events on a monophonic lane retrigger the voice
         // mid-note, which sounds glitchy rather than rhythmic.
-        juce::Random rng;
-        const double length = processor.getPattern().getLengthSeconds();
+        const double length = pattern.getLengthSeconds();
         const int    count  = 4 + rng.nextInt(5);
 
         std::vector<double> starts;
@@ -362,8 +362,7 @@ namespace B33p
             [](double a, double b) { return std::abs(a - b) < 1e-6; }),
             starts.end());
 
-        Pattern before = processor.getPattern();
-        processor.getPattern().clearLane(lane);
+        pattern.clearLane(lane);
         for (size_t i = 0; i < starts.size(); ++i)
         {
             Event ev;
@@ -383,8 +382,18 @@ namespace B33p
             ev.durationSeconds = std::max(0.02, dur);
             ev.pitchOffsetSemitones = 0.0f;
             ev.velocity = 0.5f + rng.nextFloat() * 0.5f;
-            processor.getPattern().addEvent(lane, ev);
+            pattern.addEvent(lane, ev);
         }
+    }
+
+    void PatternGrid::generateRandomPatternInLane(int lane)
+    {
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return;
+
+        juce::Random rng;
+        Pattern before = processor.getPattern();
+        fillLaneWithRandomEvents(processor.getPattern(), lane, rng);
 
         if (processor.getPattern() == before)
             return;
@@ -394,6 +403,27 @@ namespace B33p
         repaint();
 
         processor.getUndoManager().beginNewTransaction("Generate lane pattern");
+        processor.getUndoManager().perform(
+            new SetPatternAction(processor, this,
+                                 std::move(before),
+                                 processor.getPattern()));
+    }
+
+    void PatternGrid::generateRandomPatternAllLanes()
+    {
+        juce::Random rng;
+        Pattern before = processor.getPattern();
+        for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+            fillLaneWithRandomEvents(processor.getPattern(), lane, rng);
+
+        if (processor.getPattern() == before)
+            return;
+
+        processor.markDirty();
+        clearSelection();
+        repaint();
+
+        processor.getUndoManager().beginNewTransaction("Randomize pattern");
         processor.getUndoManager().perform(
             new SetPatternAction(processor, this,
                                  std::move(before),
