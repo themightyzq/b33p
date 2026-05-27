@@ -333,6 +333,27 @@ The 2026-05-25 plugin-designer pass (`docs/REVIEW.md`, P1–P38) was mostly work
 
 ---
 
+## REVIEW-USER findings
+
+From the 2026-05-27 fresh end-user review (`REVIEW-USER.md`). The #1 user blocker — *"I can't actually download it; the Releases page is empty"* (B1/B2/M1) — is **not relisted here**: it's the existing release-publish hold (see "Release in flight — v0.2.0" at the top). N1 (preset tags/search) is already tracked as REVIEW Pass 2 **P19**. The new items:
+
+### Major
+- [ ] **M2 — no way to export a single sound; export is pattern-only.** *User impact: "The tagline says make tiny sounds fast, but I have to learn the grid and place an event before I can export even one beep — sfxr/Bfxr just export the current sound."* Add an "export current voice as a one-shot," or auto-render one hit + tail when Export runs on an empty pattern. [major]
+- [ ] **C1 — the "each lane is its own voice" model isn't obvious in-app.** *User impact: "I didn't realize clicking a pattern lane swaps the whole voice editor — the only clue is the tiny '(Lane 1)' on the Oscillator title."* Add a first-run one-liner or persistent micro-hint tying the 4 lanes to the voice editor. [major]
+
+### Minor
+- [ ] **B3 — `docs/USAGE.md:193` points at a "Lane" menu that no longer exists** (it's `Edit ▸ Lane` now; the menu bar is File · Edit · Help). *User impact: "The guide told me to use a menu that isn't there."* Doc fix — update the line (USAGE already uses `Edit ▸ Lane` correctly elsewhere). [minor]
+- [ ] **M3 — no in-app onboarding.** *User impact: "A 'fast iteration' tool opened as a full modular synth with no 'start here.'"* A one-time welcome panel or `Help ▸ Quick start` mirroring the README quickstart. [minor]
+- [ ] **C2 — the most useful pattern actions are right-click-only and invisible** (generate / clear / rename lane, park playhead, edit overrides). *User impact: "I never found these because nothing on screen hints they exist."* Surface the top one or two in the empty-state hint or a small affordance. [minor]
+- [ ] **C3 — pressing Play on an empty pattern is silent with no feedback.** *User impact: "I hit Play, heard nothing, and assumed it was broken."* When Play starts on an empty pattern, flash a hint ("draw a clip, or Shift+Space to audition"). [minor]
+
+### Polish / nice-to-have
+- [ ] **M4 — no documented uninstall / data-location story.** *User impact: "I couldn't find where presets/settings live to remove them."* Add an "Uninstall / where your data lives" note to `docs/USAGE.md`. [polish]
+- [ ] **N2 — custom controls may lack screen-reader labels.** *User impact (inferred): UI automation couldn't find the preset `< >` buttons by accessible name, suggesting some JUCE custom controls don't expose names to assistive tech.* Audit accessibility names on custom buttons/controls. [polish]
+- [ ] **N3 — no troubleshooting/FAQ.** *User impact: "Common 'no sound? / plugin not in my DAW? / where are my presets?' questions aren't answered in the docs."* Add a short FAQ section to README/USAGE. [polish]
+
+---
+
 ## Deferred regressions
 
 Features that were lost when the build target switched from `juce_add_gui_app` to `juce_add_plugin`. JUCE's `StandaloneFilterApp` wrapper produces the standalone `b33p.app` now and replaced our custom Application class; restoring each one means subclassing the wrapper via `JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP` and carrying the original behaviour into the override.
