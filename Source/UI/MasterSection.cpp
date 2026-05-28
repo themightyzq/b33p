@@ -32,6 +32,8 @@ namespace B33p
             processor.getRandomizer().rollMany(
                 ParameterIDs::allForLane(lane), rng,
                 "Randomize All (lane " + juce::String(lane + 1) + ")");
+            // Audible-randomize rule: never leave the lane silent.
+            processor.ensureLaneAudibleAfterRandomize(lane, rng);
         };
         addAndMakeVisible(diceAllButton);
 

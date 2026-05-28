@@ -1,5 +1,6 @@
 #include "B33pProcessor.h"
 
+#include "AudibilityCheck.h"
 #include "Core/ParameterIDs.h"
 #include "DSP/Oscillator.h"
 #include "ParameterLayout.h"
@@ -330,6 +331,41 @@ namespace B33p
     void B33pProcessor::triggerAudition()
     {
         pendingAudition.store(true, std::memory_order_release);
+    }
+
+    void B33pProcessor::ensureLaneAudibleAfterRandomize(int lane, juce::Random& rng)
+    {
+        // Long-standing project rule: every randomize button must leave
+        // the lane within human hearing. Per-knob dice rolls are NOT
+        // wired here (those are single-parameter exploratory actions
+        // the user controls knob-by-knob); the bulk-randomize entry
+        // points are.
+        if (lane < 0 || lane >= Pattern::kNumLanes)
+            return;
+
+        const double sr = currentSampleRate > 0.0 ? currentSampleRate : 48000.0;
+        constexpr int kMaxReRollAttempts = 5;
+
+        for (int attempt = 0; attempt < kMaxReRollAttempts; ++attempt)
+        {
+            const float peak = AudibilityCheck::measureLanePeakOffline(
+                apvts, lane, sr, kAuditionDurationSeconds);
+            if (! AudibilityCheck::isNearSilent(peak))
+                return;
+
+            // Patch is near-silent. Re-roll the level-critical params on
+            // this lane (no transaction boundary — the re-roll is part
+            // of the same logical "Randomize ..." action the caller
+            // already opened).
+            for (const auto& id : AudibilityCheck::levelCriticalParamsForLane(lane))
+                randomizer.rollOneNoTransaction(id, rng);
+        }
+
+        // Re-rolling didn't recover audibility (very rare — a hostile
+        // combination of resonant filter and Mod FX would have to keep
+        // landing). Force the level-critical params to known-audible
+        // safe values so the rule still holds.
+        AudibilityCheck::forceLaneToAudibleFallback(apvts, lane);
     }
 
     void B33pProcessor::startPlayback()

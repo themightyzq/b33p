@@ -27,6 +27,7 @@ add_executable(B33pTests
     DSP/OutputLimiterTests.cpp
     DSP/VoiceTests.cpp
     Core/CommandLineFilesTests.cpp
+    State/AudibilityCheckTests.cpp
     State/ParameterLayoutTests.cpp
     State/ParameterRandomizerTests.cpp
     State/ProjectStateTests.cpp
@@ -39,6 +40,7 @@ add_executable(B33pTests
     Harness/VoiceRendererTests.cpp
     ${B33P_DSP_SOURCES}
     ${CMAKE_SOURCE_DIR}/Source/Core/CommandLineFiles.cpp
+    ${CMAKE_SOURCE_DIR}/Source/State/AudibilityCheck.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/ParameterLayout.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/ParameterRandomizer.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/ProjectFileManager.cpp
