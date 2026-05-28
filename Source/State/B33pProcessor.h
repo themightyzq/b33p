@@ -272,6 +272,13 @@ namespace B33p
         float  getSelectedLaneAmpEnvValue()   const { return selectedLaneAmpEnvValue  .load(); }
         float  getSelectedLanePitchEnvValue() const { return selectedLanePitchEnvValue.load(); }
 
+        // True iff the selected lane's voice is currently producing
+        // audio (active amp env). The modulation-glow halos read this
+        // as a gate so the UI only shows what's actually shaping the
+        // current playback — idle = no glow, matching the user's
+        // troubleshooting mental model.
+        bool   isSelectedLaneVoiceActive() const { return selectedLaneVoiceActive.load(); }
+
         // Lets the UI park the playhead at a specific time (e.g. by
         // clicking on the pattern grid ruler). Clamped to
         // [0, pattern length). Used as the paste-target time for
@@ -442,6 +449,12 @@ namespace B33p
         // from processBlock; UI sections read at 30 Hz.
         std::atomic<float> selectedLaneAmpEnvValue   { 0.0f };
         std::atomic<float> selectedLanePitchEnvValue { 0.0f };
+
+        // Gate for the modulation glow: true while the selected lane's
+        // voice is producing audio (any amp-env stage other than idle).
+        // The glow disappears when the gate falls so the user only sees
+        // what's currently shaping playback, not the latent wiring.
+        std::atomic<bool>  selectedLaneVoiceActive   { false };
 
         // Pattern snapshot lives behind atomic_load/store — see
         // class-level comment for the threading model.

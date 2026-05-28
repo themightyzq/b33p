@@ -67,6 +67,13 @@ namespace B33p
 
     void EffectsSection::timerCallback()
     {
+        // Gate: glow reflects current playback only.
+        if (! processor.isSelectedLaneVoiceActive())
+        {
+            driveSlider.setModulationIntensity(0.0f);
+            return;
+        }
+
         const float lfo1 = processor.getSelectedLaneLfoValue(0);
         const float lfo2 = processor.getSelectedLaneLfoValue(1);
         driveSlider.setModulationIntensity(

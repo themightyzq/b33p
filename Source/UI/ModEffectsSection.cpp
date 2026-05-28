@@ -137,16 +137,29 @@ namespace B33p
 
     void ModEffectsSection::timerCallback()
     {
+        // Gate: glow reflects current playback only. Without audio
+        // moving through the effect there's no warble to surface, so
+        // the section stays dark — which was the user's complaint with
+        // the first cut (Mod FX = Chorus glowed continuously even when
+        // nothing was playing).
+        if (! processor.isSelectedLaneVoiceActive())
+        {
+            p1Slider .setModulationIntensity(0.0f);
+            p2Slider .setModulationIntensity(0.0f);
+            mixSlider.setModulationIntensity(0.0f);
+            activityPhase = 0.0f;   // restart pulse when playback resumes
+            return;
+        }
+
         const float lfo1 = processor.getSelectedLaneLfoValue(0);
         const float lfo2 = processor.getSelectedLaneLfoValue(1);
         auto& apvts = processor.getApvts();
 
         // Mod FX activity pulse. When the active type has an internal
-        // LFO (chorus/flanger/phaser), this pulses at the effect's rate
-        // so the user can SEE which section is producing the warble —
-        // the user's complaint that triggered this work was warbling
-        // they couldn't trace to its source. Combined with matrix
-        // intensity via max so a routed LFO still shows through.
+        // LFO (chorus/flanger/phaser) AND audio is playing through it,
+        // pulses at the effect's rate so the user can SEE which section
+        // is producing the warble. Combined with matrix intensity via
+        // max so a routed LFO still shows through.
         const float activity = computeModFxActivity();
 
         const auto applyGlow = [&](LabeledSlider& slider, ModDestination dest)

@@ -1215,5 +1215,11 @@ namespace B33p
         // are plenty for a 30 Hz UI repaint.
         selectedLaneAmpEnvValue  .store(voices[static_cast<size_t>(sel)].getAmpEnvelopeLevel());
         selectedLanePitchEnvValue.store(voices[static_cast<size_t>(sel)].getPitchEnvelopeValue());
+
+        // Playback gate for the modulation glow: only show the halo
+        // while the selected lane is actually producing audio, so the
+        // user sees what's shaping CURRENT playback rather than the
+        // latent wiring of an idle synth.
+        selectedLaneVoiceActive  .store(voices[static_cast<size_t>(sel)].isActive());
     }
 }
