@@ -33,9 +33,19 @@ namespace B33p
         // Live modulation magnitude for slot (|LFO × amount|, 0..1) when
         // its routing is active, else a negative sentinel meaning "not
         // routed". Drives the per-row activity indicator (REVIEW.md P14).
+        // Returns 0 (routed-but-idle, drawn as a steady minimum-alpha
+        // fill) when no audio is currently being produced — the
+        // accessibility rule that nothing in the UI should animate
+        // while the synth is silent.
         float slotActivity (int slot) const;
 
         int currentLane { 0 };
+        // Edge-tracks playback state across timer ticks so the indicator
+        // strip gets one final repaint on the playing→idle transition,
+        // settling the visuals to their static state instead of freezing
+        // mid-pulse. Without this the LFO indicators kept their last
+        // pulsed alpha after Stop and read as "still doing something."
+        bool wasPlayingLastTick { false };
         std::array<juce::Rectangle<int>, kNumModSlots> slotIndicatorBounds;
 
         struct LfoControls
