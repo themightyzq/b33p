@@ -11,6 +11,7 @@
 namespace B33p
 {
     class EffectsSection : public Section
+                         , private juce::Timer
     {
     public:
         explicit EffectsSection(B33pProcessor& processor);
@@ -20,8 +21,10 @@ namespace B33p
         void retargetLane(int lane);
 
     private:
+        void timerCallback() override;
 
         B33pProcessor& processor;
+        int            currentLane { 0 };
 
         LabeledSlider bitDepthSlider  { "Bits"  };
         LabeledSlider crushRateSlider { "Rate"  };

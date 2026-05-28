@@ -1,6 +1,7 @@
 #include "OscillatorSection.h"
 
 #include "Core/ParameterIDs.h"
+#include "ModulationGlow.h"
 #include "RandomizerWiring.h"
 #include "SliderFormatting.h"
 
@@ -47,6 +48,7 @@ namespace B33p
         ringMixSlider   .setTooltip("Ring mode: 0 = clean carrier sine, 1 = full ring-modulated product");
 
         retargetLane(processor.getSelectedLane());
+        startTimerHz(30);
     }
 
     void OscillatorSection::onWaveformChanged()
@@ -101,6 +103,7 @@ namespace B33p
 
     void OscillatorSection::retargetLane(int lane)
     {
+        currentLane = lane;
         // Drop the old attachments first; constructing a new one
         // immediately starts pushing parameter values into the
         // controls, which is what we want.
@@ -282,5 +285,25 @@ namespace B33p
             if (i < n - 1)
                 bounds.removeFromLeft(kSliderGap);
         }
+    }
+
+    void OscillatorSection::timerCallback()
+    {
+        const float lfo1 = processor.getSelectedLaneLfoValue(0);
+        const float lfo2 = processor.getSelectedLaneLfoValue(1);
+        auto& apvts = processor.getApvts();
+
+        basePitchSlider.setModulationIntensity(
+            ModulationGlow::computeMatrixIntensity(
+                apvts, currentLane, ModDestination::OscBasePitch, lfo1, lfo2));
+        morphSlider.setModulationIntensity(
+            ModulationGlow::computeMatrixIntensity(
+                apvts, currentLane, ModDestination::WavetableMorph, lfo1, lfo2));
+        fmDepthSlider.setModulationIntensity(
+            ModulationGlow::computeMatrixIntensity(
+                apvts, currentLane, ModDestination::FmDepth, lfo1, lfo2));
+        ringMixSlider.setModulationIntensity(
+            ModulationGlow::computeMatrixIntensity(
+                apvts, currentLane, ModDestination::RingMix, lfo1, lfo2));
     }
 }

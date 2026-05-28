@@ -162,6 +162,7 @@ target_sources(B33p PRIVATE
     Source/UI/PitchEnvSection.cpp
     Source/UI/PresetBrowserDialog.cpp
     Source/UI/RandomizerWiring.cpp
+    Source/UI/ModulationGlow.cpp
     Source/UI/PitchEnvelopeEditor.cpp
     Source/UI/Section.cpp
     Source/UI/WaveformEditor.cpp

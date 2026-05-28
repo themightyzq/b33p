@@ -17,6 +17,7 @@ namespace B33p
     // The slider labels update on every type change so a fresh user
     // can tell what each knob is currently doing.
     class ModEffectsSection : public Section
+                            , private juce::Timer
     {
     public:
         explicit ModEffectsSection(B33pProcessor& processor);
@@ -27,8 +28,10 @@ namespace B33p
 
     private:
         void onTypeChanged();
+        void timerCallback() override;
 
         B33pProcessor& processor;
+        int            currentLane { 0 };
 
         juce::ComboBox typeSelector;
         LabeledSlider  p1Slider  { "Param 1" };

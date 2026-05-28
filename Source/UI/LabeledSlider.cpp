@@ -109,6 +109,22 @@ namespace B33p
         label.setText(newLabelText, juce::dontSendNotification);
     }
 
+    void LabeledSlider::setModulationIntensity(float intensity01)
+    {
+        const float clamped = juce::jlimit(0.0f, 1.0f, intensity01);
+        // Short-circuit when nothing visible changed — 30 Hz timers on
+        // every modulatable knob would otherwise repaint constantly even
+        // when no LFO is routed and the value would round to the same
+        // pixel anyway. The threshold matches drawRotarySlider's gate.
+        if (std::abs(clamped - lastModulationIntensity) < 0.005f
+            && clamped < 0.01f && lastModulationIntensity < 0.01f)
+            return;
+
+        lastModulationIntensity = clamped;
+        slider.getProperties().set("modulationIntensity", clamped);
+        slider.repaint();
+    }
+
     void LabeledSlider::resized()
     {
         auto bounds = getLocalBounds();

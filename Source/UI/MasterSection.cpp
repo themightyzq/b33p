@@ -1,6 +1,7 @@
 #include "MasterSection.h"
 
 #include "Core/ParameterIDs.h"
+#include "ModulationGlow.h"
 #include "SliderFormatting.h"
 
 namespace B33p
@@ -155,6 +156,18 @@ namespace B33p
         {
             auditionButton.removeColour(juce::TextButton::buttonColourId);
             auditionFlashActive = false;
+        }
+
+        // Modulation-glow halo on the (selected lane's) gain knob. The
+        // gain slider is the only modulatable destination owned by the
+        // master strip; matrix LFO routings to VoiceGain light it up.
+        {
+            const float lfo1 = processor.getSelectedLaneLfoValue(0);
+            const float lfo2 = processor.getSelectedLaneLfoValue(1);
+            gainSlider.setModulationIntensity(
+                ModulationGlow::computeMatrixIntensity(
+                    processor.getApvts(), processor.getSelectedLane(),
+                    ModDestination::VoiceGain, lfo1, lfo2));
         }
 
         // Pull the latest output peak; only repaint the meter when something
