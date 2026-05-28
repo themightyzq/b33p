@@ -289,6 +289,17 @@ namespace B33p
 
     void OscillatorSection::timerCallback()
     {
+        // Gate: the glow only shows what's shaping CURRENT playback,
+        // not the latent wiring of an idle synth.
+        if (! processor.isSelectedLaneVoiceActive())
+        {
+            basePitchSlider.setModulationIntensity(0.0f);
+            morphSlider    .setModulationIntensity(0.0f);
+            fmDepthSlider  .setModulationIntensity(0.0f);
+            ringMixSlider  .setModulationIntensity(0.0f);
+            return;
+        }
+
         const float lfo1 = processor.getSelectedLaneLfoValue(0);
         const float lfo2 = processor.getSelectedLaneLfoValue(1);
         auto& apvts = processor.getApvts();

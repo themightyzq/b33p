@@ -158,14 +158,17 @@ namespace B33p
             auditionFlashActive = false;
         }
 
-        // Modulation-glow halo on the (selected lane's) gain knob. Two
-        // sources contribute: matrix LFO routings to VoiceGain and the
-        // amp envelope itself (which always modulates gain over the
-        // course of a note). Combined via max so a routed LFO still
-        // shows through during the sustain plateau. The amp env value
-        // is 0..1 — when no note plays the env is idle at zero, so
-        // the glow only appears while a beep is actually sounding,
-        // which is what makes the gain knob visibly track the note.
+        // Modulation-glow halo on the (selected lane's) gain knob.
+        // Gated by `isSelectedLaneVoiceActive` — the halo only shows
+        // what's shaping CURRENT playback so the user can troubleshoot
+        // what they're actually hearing rather than what's potentially
+        // wired up. Two sources contribute during playback: matrix LFO
+        // routings to VoiceGain and the amp envelope itself.
+        if (! processor.isSelectedLaneVoiceActive())
+        {
+            gainSlider.setModulationIntensity(0.0f);
+        }
+        else
         {
             const float lfo1 = processor.getSelectedLaneLfoValue(0);
             const float lfo2 = processor.getSelectedLaneLfoValue(1);
