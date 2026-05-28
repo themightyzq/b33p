@@ -116,6 +116,15 @@ namespace B33p
 
         bool isActive() const;
 
+        // Snapshots of the internal envelopes' current output, used by
+        // the UI's modulation-glow halos on the gain + base-pitch knobs.
+        // Const accessors; safe to call from any thread relative to
+        // processSample as long as the caller tolerates a one-sample
+        // race (the read is racey by design — UI just needs a recent
+        // sample for the pulse, not a synchronised one).
+        float getAmpEnvelopeLevel()  const { return ampEnvelope  .getCurrentLevel(); }
+        float getPitchEnvelopeValue() const { return pitchEnvelope.getCurrentValue(); }
+
     private:
         Oscillator       oscillator;
         AmpEnvelope      ampEnvelope;

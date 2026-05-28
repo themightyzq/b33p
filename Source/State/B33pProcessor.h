@@ -263,6 +263,15 @@ namespace B33p
                        : 0.0f;
         }
 
+        // Selected-lane envelope mirrors for the modulation-glow halos.
+        // Updated block-rate from the audio thread; read by section
+        // timers at 30 Hz. Returns 0 when the voice is idle. AmpEnv
+        // is 0..1 (amplitude); PitchEnv is in semitones (typically
+        // within +/-24, but caller should treat as unbounded and
+        // normalise as appropriate).
+        float  getSelectedLaneAmpEnvValue()   const { return selectedLaneAmpEnvValue  .load(); }
+        float  getSelectedLanePitchEnvValue() const { return selectedLanePitchEnvValue.load(); }
+
         // Lets the UI park the playhead at a specific time (e.g. by
         // clicking on the pattern grid ruler). Clamped to
         // [0, pattern length). Used as the paste-target time for
@@ -426,6 +435,13 @@ namespace B33p
         std::atomic<float>  outputPeak            { 0.0f  };
         // Live LFO outputs for the selected lane (P14 mod-activity cue).
         std::array<std::atomic<float>, kNumLfosPerLane> selectedLaneLfoValues {};
+
+        // Live envelope outputs for the selected lane — drive the
+        // modulation-glow halos on the gain knob (amp env, 0..1) and
+        // the base-pitch knob (pitch env, semitones). Block-rate stores
+        // from processBlock; UI sections read at 30 Hz.
+        std::atomic<float> selectedLaneAmpEnvValue   { 0.0f };
+        std::atomic<float> selectedLanePitchEnvValue { 0.0f };
 
         // Pattern snapshot lives behind atomic_load/store — see
         // class-level comment for the threading model.

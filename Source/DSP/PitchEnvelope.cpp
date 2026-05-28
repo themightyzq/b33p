@@ -15,6 +15,7 @@ namespace B33p
         stage         = Stage::Idle;
         currentTime   = 0.0;
         timeIncrement = 0.0;
+        lastValue     = 0.0f;
     }
 
     void PitchEnvelope::setCurve(const std::vector<PitchEnvelopePoint>& points)
@@ -67,28 +68,33 @@ namespace B33p
 
     float PitchEnvelope::processSample()
     {
+        // Compute once, capture in lastValue so the UI's modulation
+        // glow can read the latest semitone offset out-of-band.
+        float out = 0.0f;
         switch (stage)
         {
             case Stage::Idle:
-                return 0.0f;
+                out = 0.0f;
+                break;
 
             case Stage::Holding:
-                return interpolateAt(1.0);
+                out = interpolateAt(1.0);
+                break;
 
             case Stage::Active:
             {
-                const float out = interpolateAt(currentTime);
+                out = interpolateAt(currentTime);
                 currentTime += timeIncrement;
                 if (currentTime >= 1.0)
                 {
                     currentTime = 1.0;
                     stage       = Stage::Holding;
                 }
-                return out;
+                break;
             }
         }
-
-        return 0.0f;
+        lastValue = out;
+        return out;
     }
 
     float PitchEnvelope::interpolateAt(double normalizedTime) const
