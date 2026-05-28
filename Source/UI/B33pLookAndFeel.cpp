@@ -113,6 +113,44 @@ namespace B33p
                                      centre.y - arcR * std::cos(toAngle));
         g.setColour(accent.brighter(0.35f));
         g.fillEllipse(juce::Rectangle<float>(lineW * 1.5f, lineW * 1.5f).withCentre(dot));
+
+        // Modulation glow — outer halo whose intensity tracks how hard the
+        // knob's parameter is currently being modulated (matrix LFO and,
+        // later, envelopes / Mod FX activity). Painted on top so it reads
+        // clearly without obscuring the value arc, at a larger radius so
+        // the dynamic ring sits outside the static control. The owning
+        // section's timer writes "modulationIntensity" (0..1) to the
+        // slider's Component properties each tick; zero or unset = no
+        // glow, no cost.
+        const float modIntensity = juce::jlimit(0.0f, 1.0f,
+            static_cast<float>(slider.getProperties()
+                                      .getWithDefault("modulationIntensity", 0.0f)));
+        if (enabled && modIntensity > 0.01f)
+        {
+            // Two concentric rings for a soft falloff: a brighter inner
+            // ring tight against the value arc + a fainter, wider outer
+            // ring giving a glow tail. Both fade with intensity.
+            const float innerR  = arcR + lineW * 1.0f;
+            const float outerR  = arcR + lineW * 1.9f;
+            const float innerW  = lineW * 1.1f;
+            const float outerW  = lineW * 1.6f;
+
+            juce::Path inner;
+            inner.addCentredArc(centre.x, centre.y, innerR, innerR, 0.0f,
+                                startAngle, endAngle, true);
+            g.setColour(accent.withAlpha(0.55f * modIntensity));
+            g.strokePath(inner, juce::PathStrokeType(innerW,
+                                                      juce::PathStrokeType::curved,
+                                                      juce::PathStrokeType::rounded));
+
+            juce::Path outer;
+            outer.addCentredArc(centre.x, centre.y, outerR, outerR, 0.0f,
+                                startAngle, endAngle, true);
+            g.setColour(accent.withAlpha(0.22f * modIntensity));
+            g.strokePath(outer, juce::PathStrokeType(outerW,
+                                                      juce::PathStrokeType::curved,
+                                                      juce::PathStrokeType::rounded));
+        }
     }
 
     void B33pLookAndFeel::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,

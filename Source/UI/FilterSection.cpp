@@ -1,6 +1,7 @@
 #include "FilterSection.h"
 
 #include "Core/ParameterIDs.h"
+#include "ModulationGlow.h"
 #include "SliderFormatting.h"
 
 #include <vector>
@@ -34,6 +35,11 @@ namespace B33p
         vowelSlider    .setTooltip("Formant mode: 0 = A, 1 = U with E / I / O at quarter steps in between");
 
         retargetLane(processor.getSelectedLane());
+
+        // 30 Hz — fast enough that an LFO at the maximum rate still reads
+        // as a smooth pulse, slow enough to be cheap when nothing's
+        // routed (setModulationIntensity short-circuits on zero).
+        startTimerHz(30);
     }
 
     void FilterSection::onTypeChanged()
@@ -53,6 +59,7 @@ namespace B33p
 
     void FilterSection::retargetLane(int lane)
     {
+        currentLane = lane;
         typeAttachment.reset();
         cutoffAttachment.reset();
         resonanceAttachment.reset();
@@ -134,5 +141,19 @@ namespace B33p
             if (i < n - 1)
                 bounds.removeFromLeft(kSliderGap);
         }
+    }
+
+    void FilterSection::timerCallback()
+    {
+        const float lfo1 = processor.getSelectedLaneLfoValue(0);
+        const float lfo2 = processor.getSelectedLaneLfoValue(1);
+        auto& apvts = processor.getApvts();
+
+        cutoffSlider.setModulationIntensity(
+            ModulationGlow::computeMatrixIntensity(
+                apvts, currentLane, ModDestination::FilterCutoff, lfo1, lfo2));
+        resonanceSlider.setModulationIntensity(
+            ModulationGlow::computeMatrixIntensity(
+                apvts, currentLane, ModDestination::FilterResonance, lfo1, lfo2));
     }
 }

@@ -63,6 +63,15 @@ namespace B33p
         // effect type).
         void setLabelText(const juce::String& newLabelText);
 
+        // Drives the modulation-glow halo painted by `B33pLookAndFeel::
+        // drawRotarySlider`. The owning section's timer calls this each
+        // tick with the current modulation intensity (0..1) for this
+        // knob's destination — matrix LFO routings on the selected lane
+        // for now, envelopes / Mod FX in a follow-up. The glow alpha
+        // tracks the value; a zero / unchanged value short-circuits the
+        // repaint so quiescent knobs cost nothing.
+        void setModulationIntensity(float intensity01);
+
         void resized() override;
 
     private:
@@ -71,6 +80,7 @@ namespace B33p
         IconButton   diceButton { IconButton::Glyph::Die  };
         IconButton   lockButton { IconButton::Glyph::Lock };
         bool         randomizerVisible { true };
+        float        lastModulationIntensity { 0.0f };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LabeledSlider)
     };

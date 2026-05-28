@@ -12,6 +12,7 @@
 namespace B33p
 {
     class FilterSection : public Section
+                        , private juce::Timer
     {
     public:
         explicit FilterSection(B33pProcessor& processor);
@@ -22,8 +23,13 @@ namespace B33p
 
     private:
         void onTypeChanged();
+        // Modulation-glow driver — reads the selected-lane LFO mirror
+        // values + the matrix slot config, writes a per-knob intensity
+        // that drives the halo painted by `B33pLookAndFeel`.
+        void timerCallback() override;
 
         B33pProcessor& processor;
+        int            currentLane { 0 };
 
         FilterResponseVisualizer visualizer;
         juce::ComboBox typeSelector;

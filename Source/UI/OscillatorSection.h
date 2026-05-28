@@ -13,6 +13,7 @@
 namespace B33p
 {
     class OscillatorSection : public Section
+                            , private juce::Timer
     {
     public:
         explicit OscillatorSection(B33pProcessor& processor);
@@ -24,9 +25,13 @@ namespace B33p
     private:
 
         B33pProcessor& processor;
+        int            currentLane { 0 };
 
         void onWaveformChanged();
         void openCustomWaveformEditor();
+        // Drives the modulation-glow halo on the modulatable knobs
+        // (base pitch / morph / FM depth / ring mix).
+        void timerCallback() override;
 
         juce::ComboBox   waveformSelector;
         IconButton       waveformDice { IconButton::Glyph::Die  };

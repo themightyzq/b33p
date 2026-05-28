@@ -1,6 +1,7 @@
 #include "EffectsSection.h"
 
 #include "Core/ParameterIDs.h"
+#include "ModulationGlow.h"
 #include "SliderFormatting.h"
 
 namespace B33p
@@ -18,10 +19,12 @@ namespace B33p
         driveSlider    .setTooltip("Distortion drive: pushes the signal into soft clipping");
 
         retargetLane(processor.getSelectedLane());
+        startTimerHz(30);   // modulation-glow tick (only distortion drive is a destination)
     }
 
     void EffectsSection::retargetLane(int lane)
     {
+        currentLane = lane;
         bitDepthAttachment.reset();
         crushRateAttachment.reset();
         driveAttachment.reset();
@@ -60,5 +63,15 @@ namespace B33p
         crushRateSlider.setBounds(bounds.removeFromLeft(cellWidth));
         bounds.removeFromLeft(kGap);
         driveSlider.setBounds(bounds);
+    }
+
+    void EffectsSection::timerCallback()
+    {
+        const float lfo1 = processor.getSelectedLaneLfoValue(0);
+        const float lfo2 = processor.getSelectedLaneLfoValue(1);
+        driveSlider.setModulationIntensity(
+            ModulationGlow::computeMatrixIntensity(
+                processor.getApvts(), currentLane,
+                ModDestination::DistortionDrive, lfo1, lfo2));
     }
 }

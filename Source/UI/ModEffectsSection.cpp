@@ -2,6 +2,7 @@
 
 #include "Core/ParameterIDs.h"
 #include "DSP/ModulationEffect.h"
+#include "ModulationGlow.h"
 #include "SliderFormatting.h"
 
 namespace B33p
@@ -57,6 +58,7 @@ namespace B33p
         mixSlider.setTooltip("Wet/dry blend; 0 keeps the dry signal, 1 = full wet");
 
         retargetLane(processor.getSelectedLane());
+        startTimerHz(30);
     }
 
     void ModEffectsSection::onTypeChanged()
@@ -80,6 +82,7 @@ namespace B33p
 
     void ModEffectsSection::retargetLane(int lane)
     {
+        currentLane = lane;
         typeAttachment.reset();
         p1Attachment.reset();
         p2Attachment.reset();
@@ -130,5 +133,22 @@ namespace B33p
         p2Slider.setBounds(bounds.removeFromLeft(cellWidth));
         bounds.removeFromLeft(kSliderGap);
         mixSlider.setBounds(bounds);
+    }
+
+    void ModEffectsSection::timerCallback()
+    {
+        const float lfo1 = processor.getSelectedLaneLfoValue(0);
+        const float lfo2 = processor.getSelectedLaneLfoValue(1);
+        auto& apvts = processor.getApvts();
+
+        p1Slider.setModulationIntensity(
+            ModulationGlow::computeMatrixIntensity(
+                apvts, currentLane, ModDestination::ModEffectParam1, lfo1, lfo2));
+        p2Slider.setModulationIntensity(
+            ModulationGlow::computeMatrixIntensity(
+                apvts, currentLane, ModDestination::ModEffectParam2, lfo1, lfo2));
+        mixSlider.setModulationIntensity(
+            ModulationGlow::computeMatrixIntensity(
+                apvts, currentLane, ModDestination::ModEffectMix, lfo1, lfo2));
     }
 }
