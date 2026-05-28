@@ -58,6 +58,18 @@ namespace B33p
         // an auto-noteOff after the audition duration elapses.
         void triggerAudition();
 
+        // Audible-randomize rule: the randomizer rolls each param
+        // independently with no whole-patch check, so silence can
+        // emerge from combinations (filter closed, amp sustain ~0,
+        // Mod FX wet kills the dry). Call this from every UI
+        // randomize entry point AFTER the roll, once per touched
+        // lane: it offline-renders the audition, and if the patch is
+        // near-silent it re-rolls the level-critical parameters up
+        // to a few times and falls back to known-audible safe values
+        // as a last resort. See AudibilityCheck + project memory
+        // [[rule-randomize-must-be-audible]] for the rule's intent.
+        void ensureLaneAudibleAfterRandomize(int lane, juce::Random& rng);
+
         // The drawn pitch envelope curve. Unlike the other parameters,
         // the curve is not an APVTS value — it is a variable-length
         // breakpoint list and will move into the project ValueTree in

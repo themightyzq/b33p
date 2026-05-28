@@ -260,22 +260,27 @@ namespace B33p
         randomizeParamsButton.onClick = [this]
         {
             juce::Random rng;
-            std::vector<juce::String> ids;
+            std::vector<int> lanesToRoll;
             for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
                 if (! processor.getPattern().getEvents(lane).empty())
-                {
-                    const auto laneIds = ParameterIDs::allForLane(lane);
-                    ids.insert(ids.end(), laneIds.begin(), laneIds.end());
-                }
-
-            if (ids.empty())
+                    lanesToRoll.push_back(lane);
+            if (lanesToRoll.empty())
                 for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
-                {
-                    const auto laneIds = ParameterIDs::allForLane(lane);
-                    ids.insert(ids.end(), laneIds.begin(), laneIds.end());
-                }
+                    lanesToRoll.push_back(lane);
 
+            std::vector<juce::String> ids;
+            for (int lane : lanesToRoll)
+            {
+                const auto laneIds = ParameterIDs::allForLane(lane);
+                ids.insert(ids.end(), laneIds.begin(), laneIds.end());
+            }
             processor.getRandomizer().rollMany(ids, rng, "Randomize Params");
+
+            // Audible-randomize rule: every rolled lane must stay within
+            // human hearing. The guard offline-renders and re-rolls the
+            // level-critical params per lane, with a safe-value fallback.
+            for (int lane : lanesToRoll)
+                processor.ensureLaneAudibleAfterRandomize(lane, rng);
         };
         addAndMakeVisible(randomizeParamsButton);
 

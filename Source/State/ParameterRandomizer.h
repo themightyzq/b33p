@@ -57,9 +57,15 @@ namespace B33p
                       juce::Random& rng,
                       const juce::String& transactionName);
 
-    private:
-        // Shared core used by both public entry points so the batch
-        // call doesn't fragment its transaction.
+        // Rolls one parameter without opening its own UndoManager
+        // transaction. The caller is responsible for owning the
+        // surrounding transaction so the roll lands in the right
+        // undoable group. Used by the audibility guard's re-roll
+        // loop (see `B33pProcessor::ensureLaneAudibleAfterRandomize`):
+        // the guard fires after `rollMany` has opened the user-facing
+        // "Randomize ..." transaction, and any corrective re-rolls
+        // must extend that same transaction rather than fragmenting
+        // undo into one step per re-rolled parameter.
         bool rollOneNoTransaction(const juce::String& parameterID, juce::Random& rng);
 
         juce::AudioProcessorValueTreeState& apvts;
