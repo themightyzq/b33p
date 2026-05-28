@@ -29,9 +29,19 @@ namespace B33p
     private:
         void onTypeChanged();
         void timerCallback() override;
+        // Returns the Mod FX "activity" pulse (0..1) for the current
+        // effect — a UI-side phase clock at the effect's internal LFO
+        // rate, scaled by Mix so a dry effect doesn't glow. Returns 0
+        // for None / Reverb / Delay (those modes don't warble).
+        float computeModFxActivity();
 
         B33pProcessor& processor;
         int            currentLane { 0 };
+
+        // UI-side phase for the activity-glow pulse. Lives at -infty..2π;
+        // wrapped per tick. Resets to 0 whenever the type leaves the
+        // chorus / flanger / phaser group so re-entering starts clean.
+        float          activityPhase { 0.0f };
 
         juce::ComboBox typeSelector;
         LabeledSlider  p1Slider  { "Param 1" };

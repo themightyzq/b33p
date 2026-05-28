@@ -141,14 +141,74 @@ namespace B33p
         const float lfo2 = processor.getSelectedLaneLfoValue(1);
         auto& apvts = processor.getApvts();
 
-        p1Slider.setModulationIntensity(
-            ModulationGlow::computeMatrixIntensity(
-                apvts, currentLane, ModDestination::ModEffectParam1, lfo1, lfo2));
-        p2Slider.setModulationIntensity(
-            ModulationGlow::computeMatrixIntensity(
-                apvts, currentLane, ModDestination::ModEffectParam2, lfo1, lfo2));
-        mixSlider.setModulationIntensity(
-            ModulationGlow::computeMatrixIntensity(
-                apvts, currentLane, ModDestination::ModEffectMix, lfo1, lfo2));
+        // Mod FX activity pulse. When the active type has an internal
+        // LFO (chorus/flanger/phaser), this pulses at the effect's rate
+        // so the user can SEE which section is producing the warble —
+        // the user's complaint that triggered this work was warbling
+        // they couldn't trace to its source. Combined with matrix
+        // intensity via max so a routed LFO still shows through.
+        const float activity = computeModFxActivity();
+
+        const auto applyGlow = [&](LabeledSlider& slider, ModDestination dest)
+        {
+            const float matrix = ModulationGlow::computeMatrixIntensity(
+                apvts, currentLane, dest, lfo1, lfo2);
+            slider.setModulationIntensity(std::max(matrix, activity));
+        };
+
+        applyGlow(p1Slider,  ModDestination::ModEffectParam1);
+        applyGlow(p2Slider,  ModDestination::ModEffectParam2);
+        applyGlow(mixSlider, ModDestination::ModEffectMix);
+    }
+
+    float ModEffectsSection::computeModFxActivity()
+    {
+        auto& apvts = processor.getApvts();
+        const auto* typeRaw = apvts.getRawParameterValue(
+            ParameterIDs::modEffectType(currentLane));
+        if (typeRaw == nullptr)
+            return 0.0f;
+
+        const int typeIndex = static_cast<int>(typeRaw->load());
+        const bool hasInternalLfo =
+               typeIndex == static_cast<int>(ModulationEffect::Type::Chorus)
+            || typeIndex == static_cast<int>(ModulationEffect::Type::Flanger)
+            || typeIndex == static_cast<int>(ModulationEffect::Type::Phaser);
+
+        if (! hasInternalLfo)
+        {
+            activityPhase = 0.0f;
+            return 0.0f;
+        }
+
+        const auto* p1Raw  = apvts.getRawParameterValue(
+            ParameterIDs::modEffectParam1(currentLane));
+        const auto* mixRaw = apvts.getRawParameterValue(
+            ParameterIDs::modEffectMix(currentLane));
+        if (p1Raw == nullptr || mixRaw == nullptr)
+            return 0.0f;
+
+        const float p1  = juce::jlimit(0.0f, 1.0f, p1Raw->load());
+        const float mix = juce::jlimit(0.0f, 1.0f, mixRaw->load());
+
+        // Rate ranges per ModulationEffect.h: Chorus 0.1..5 Hz, Flanger
+        // 0.1..3 Hz, Phaser 0.1..5 Hz. UI is a phase clock, not the
+        // audio LFO itself — so it'll drift in phase from the actual
+        // effect, but it tracks the rate, which is what makes the
+        // pulse visibly correlate with the warble.
+        const float maxRate = (typeIndex == static_cast<int>(ModulationEffect::Type::Flanger))
+                                ? 3.0f : 5.0f;
+        const float rateHz  = 0.1f + p1 * (maxRate - 0.1f);
+
+        constexpr float kTimerHz = 30.0f;
+        activityPhase += juce::MathConstants<float>::twoPi * rateHz / kTimerHz;
+        while (activityPhase > juce::MathConstants<float>::twoPi)
+            activityPhase -= juce::MathConstants<float>::twoPi;
+
+        // Bell-shaped 0..1 pulse via (1+sin)/2. Scale by mix so a
+        // fully-dry effect — which can't actually warble the output —
+        // doesn't glow.
+        const float pulse = 0.5f * (1.0f + std::sin(activityPhase));
+        return pulse * mix;
     }
 }
