@@ -222,6 +222,14 @@ namespace B33p
         if (source <= 0 || dest <= 0)
             return -1.0f;
 
+        // Accessibility: routed but no audio playing → return 0 so the
+        // indicator renders as a steady, minimum-brightness fill (the
+        // user can still SEE the slot is wired up at a glance — paint
+        // draws the accent frame + min-alpha fill for activity >= 0 —
+        // but nothing animates while the synth is silent.
+        if (! processor.isSelectedLaneVoiceActive())
+            return 0.0f;
+
         const float amount = apvts.getRawParameterValue(
             ParameterIDs::modSlotAmount(currentLane, slot))->load();
         const float lfo = processor.getSelectedLaneLfoValue(source - 1);   // 1=LFO1→0, 2=LFO2→1
@@ -230,10 +238,16 @@ namespace B33p
 
     void ModulationSection::timerCallback()
     {
-        // Repaint just the thin indicator strips so routed slots pulse with
-        // their live modulation. Cheap enough to do unconditionally.
-        for (const auto& r : slotIndicatorBounds)
-            repaint(r);
+        // Accessibility: only repaint indicator strips while audio is
+        // being produced. Repaint once more on the playing→idle edge so
+        // the strips settle to their static configured-but-idle state
+        // (otherwise they'd freeze at whatever pulse value was on at
+        // the moment of transition and read as "still doing something").
+        const bool playing = processor.isSelectedLaneVoiceActive();
+        if (playing || wasPlayingLastTick)
+            for (const auto& r : slotIndicatorBounds)
+                repaint(r);
+        wasPlayingLastTick = playing;
     }
 
     void ModulationSection::paint(juce::Graphics& g)
