@@ -93,6 +93,20 @@ namespace B33p
             slider.setDoubleClickReturnValue(true,
                 (double) p->convertFrom0to1(p->getDefaultValue()));
 
+        // (Re-)register as a RollListener so randomize events on this
+        // parameter trigger the change-flash. Re-attaching to a new lane
+        // unhooks the previous registration first so we don't double-fire.
+        auto& randomizer = processor.getRandomizer();
+        if (rollListenerRegisteredWith != nullptr
+            && rollListenerRegisteredWith != &randomizer)
+            rollListenerRegisteredWith->removeRollListener(this);
+        if (rollListenerRegisteredWith != &randomizer)
+        {
+            randomizer.addRollListener(this);
+            rollListenerRegisteredWith = &randomizer;
+        }
+        attachedParamId = parameterID;
+
         if (! randomizerVisible)
             return;
         wireRandomizerButtons(processor, diceButton, lockButton, parameterID);
@@ -107,6 +121,50 @@ namespace B33p
     void LabeledSlider::setLabelText(const juce::String& newLabelText)
     {
         label.setText(newLabelText, juce::dontSendNotification);
+    }
+
+    LabeledSlider::~LabeledSlider()
+    {
+        if (rollListenerRegisteredWith != nullptr)
+            rollListenerRegisteredWith->removeRollListener(this);
+    }
+
+    void LabeledSlider::parameterRolled(const juce::String& parameterID)
+    {
+        // Only flash on a match: every roll fires this for every
+        // attached slider, and the broadcaster doesn't pre-filter.
+        if (parameterID != attachedParamId)
+            return;
+
+        flashStartMs = juce::Time::currentTimeMillis();
+        slider.getProperties().set("changeFlashAlpha", 1.0f);
+        slider.repaint();
+        if (! isTimerRunning())
+            startTimerHz(30);
+    }
+
+    void LabeledSlider::timerCallback()
+    {
+        // ~800 ms ease-out decay so the eye catches the flash without
+        // it lingering. The timer stops itself when the flash hits zero
+        // so an idle synth has no animation (accessibility rule).
+        constexpr juce::int64 kFlashDurationMs = 800;
+        const auto elapsed = juce::Time::currentTimeMillis() - flashStartMs;
+        if (elapsed >= kFlashDurationMs)
+        {
+            slider.getProperties().set("changeFlashAlpha", 0.0f);
+            slider.repaint();
+            stopTimer();
+            return;
+        }
+
+        // Quadratic ease-out: bright at the start, fades quickly, lingers
+        // briefly near zero — feels like a transient pop, not a continuous
+        // pulse (which would read as "still doing something").
+        const float t      = static_cast<float>(elapsed) / kFlashDurationMs;
+        const float alpha  = (1.0f - t) * (1.0f - t);
+        slider.getProperties().set("changeFlashAlpha", alpha);
+        slider.repaint();
     }
 
     void LabeledSlider::setModulationIntensity(float intensity01)

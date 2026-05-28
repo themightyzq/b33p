@@ -102,6 +102,7 @@ namespace B33p
             // the full range" behaviour exactly so existing tests
             // and rolls don't shift their distribution.
             param->setValueNotifyingHost(rng.nextFloat() * ceiling);
+            rollListeners.call([&](RollListener& l) { l.parameterRolled(parameterID); });
             return true;
         }
 
@@ -111,6 +112,7 @@ namespace B33p
         const float hi = juce::jmin(ceiling,  current + halfWindow);
         const float rolled = lo + rng.nextFloat() * (hi - lo);
         param->setValueNotifyingHost(rolled);
+        rollListeners.call([&](RollListener& l) { l.parameterRolled(parameterID); });
         return true;
     }
 

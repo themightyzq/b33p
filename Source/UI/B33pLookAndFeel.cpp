@@ -151,6 +151,26 @@ namespace B33p
                                                       juce::PathStrokeType::curved,
                                                       juce::PathStrokeType::rounded));
         }
+
+        // Change-flash halo (P35) — brief bright pulse painted when the
+        // parameter just got randomized, so the user sees which knobs
+        // moved. Distinct from the modulation glow: brighter colour
+        // (accent.brighter), full-sweep ring at the value-arc radius,
+        // alpha is a one-shot decay driven by LabeledSlider's timer
+        // (so it fades to zero and stops — no idle motion).
+        const float flashAlpha = juce::jlimit(0.0f, 1.0f,
+            static_cast<float>(slider.getProperties()
+                                      .getWithDefault("changeFlashAlpha", 0.0f)));
+        if (enabled && flashAlpha > 0.01f)
+        {
+            juce::Path flash;
+            flash.addCentredArc(centre.x, centre.y, arcR, arcR, 0.0f,
+                                startAngle, endAngle, true);
+            g.setColour(accent.brighter(0.6f).withAlpha(0.85f * flashAlpha));
+            g.strokePath(flash, juce::PathStrokeType(lineW * 1.7f,
+                                                     juce::PathStrokeType::curved,
+                                                     juce::PathStrokeType::rounded));
+        }
     }
 
     void B33pLookAndFeel::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
