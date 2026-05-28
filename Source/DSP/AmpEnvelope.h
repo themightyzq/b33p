@@ -40,6 +40,13 @@ namespace B33p
 
         bool isActive() const;
 
+        // Snapshot of the envelope's current output level (0..1). Const
+        // accessor used by the UI's modulation-glow halo on the gain
+        // knob — surfaces the live amp envelope so the user can see
+        // the note's amplitude evolving over its lifetime without
+        // hunting through curve editors. Returns 0 when idle.
+        float getCurrentLevel() const { return currentLevel; }
+
     private:
         void beginAttack();
         void beginDecay();

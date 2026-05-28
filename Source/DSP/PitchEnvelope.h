@@ -71,6 +71,12 @@ namespace B33p
 
         bool isActive() const;
 
+        // Snapshot of the last semitone offset returned by processSample.
+        // Const accessor for the UI's modulation-glow halo on the base-
+        // pitch knob — the live pitch envelope value lets the user see
+        // when the curve is bending pitch. Returns 0 when idle.
+        float getCurrentValue() const { return lastValue; }
+
     private:
         float interpolateAt(double normalizedTime) const;
 
@@ -79,5 +85,6 @@ namespace B33p
         Stage                           stage         { Stage::Idle };
         double                          currentTime   { 0.0 };
         double                          timeIncrement { 0.0 };
+        float                           lastValue     { 0.0f };
     };
 }

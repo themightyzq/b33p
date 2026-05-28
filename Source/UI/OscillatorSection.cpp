@@ -293,9 +293,19 @@ namespace B33p
         const float lfo2 = processor.getSelectedLaneLfoValue(1);
         auto& apvts = processor.getApvts();
 
-        basePitchSlider.setModulationIntensity(
+        // Base-pitch knob combines matrix LFO intensity with the pitch
+        // envelope's live deflection: |semitones| / 12 = full glow at
+        // an octave's deflection, so smaller pitch curves still register
+        // proportionally. Max with the matrix so a routed LFO during the
+        // curve's hold still shows.
+        const float pitchEnvSemis = processor.getSelectedLanePitchEnvValue();
+        const float pitchEnv = juce::jlimit(0.0f, 1.0f,
+            std::fabs(pitchEnvSemis) / 12.0f);
+        basePitchSlider.setModulationIntensity(std::max(
             ModulationGlow::computeMatrixIntensity(
-                apvts, currentLane, ModDestination::OscBasePitch, lfo1, lfo2));
+                apvts, currentLane, ModDestination::OscBasePitch, lfo1, lfo2),
+            pitchEnv));
+
         morphSlider.setModulationIntensity(
             ModulationGlow::computeMatrixIntensity(
                 apvts, currentLane, ModDestination::WavetableMorph, lfo1, lfo2));

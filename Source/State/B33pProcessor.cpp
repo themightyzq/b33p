@@ -1207,5 +1207,13 @@ namespace B33p
         for (int i = 0; i < kNumLfosPerLane; ++i)
             selectedLaneLfoValues[static_cast<size_t>(i)].store(
                 lfos[static_cast<size_t>(sel)][static_cast<size_t>(i)].currentValue());
+
+        // Mirror the selected lane's envelope outputs too — the
+        // gain knob and the base-pitch knob glow with the live amp /
+        // pitch envelope values, so the user sees the note's amplitude
+        // and pitch shape evolving in real time. Block-rate stores
+        // are plenty for a 30 Hz UI repaint.
+        selectedLaneAmpEnvValue  .store(voices[static_cast<size_t>(sel)].getAmpEnvelopeLevel());
+        selectedLanePitchEnvValue.store(voices[static_cast<size_t>(sel)].getPitchEnvelopeValue());
     }
 }

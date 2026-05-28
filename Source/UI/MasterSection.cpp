@@ -158,16 +158,23 @@ namespace B33p
             auditionFlashActive = false;
         }
 
-        // Modulation-glow halo on the (selected lane's) gain knob. The
-        // gain slider is the only modulatable destination owned by the
-        // master strip; matrix LFO routings to VoiceGain light it up.
+        // Modulation-glow halo on the (selected lane's) gain knob. Two
+        // sources contribute: matrix LFO routings to VoiceGain and the
+        // amp envelope itself (which always modulates gain over the
+        // course of a note). Combined via max so a routed LFO still
+        // shows through during the sustain plateau. The amp env value
+        // is 0..1 — when no note plays the env is idle at zero, so
+        // the glow only appears while a beep is actually sounding,
+        // which is what makes the gain knob visibly track the note.
         {
             const float lfo1 = processor.getSelectedLaneLfoValue(0);
             const float lfo2 = processor.getSelectedLaneLfoValue(1);
-            gainSlider.setModulationIntensity(
-                ModulationGlow::computeMatrixIntensity(
-                    processor.getApvts(), processor.getSelectedLane(),
-                    ModDestination::VoiceGain, lfo1, lfo2));
+            const float matrix = ModulationGlow::computeMatrixIntensity(
+                processor.getApvts(), processor.getSelectedLane(),
+                ModDestination::VoiceGain, lfo1, lfo2);
+            const float ampEnv = juce::jlimit(0.0f, 1.0f,
+                processor.getSelectedLaneAmpEnvValue());
+            gainSlider.setModulationIntensity(std::max(matrix, ampEnv));
         }
 
         // Pull the latest output peak; only repaint the meter when something
