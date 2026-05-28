@@ -7,6 +7,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <algorithm>
 #include <set>
 
 using Catch::Approx;
@@ -187,4 +188,71 @@ TEST_CASE("ParameterRandomizer: lock state persists across rolls", "[state][rand
 
     randomizer.setLocked(B33p::ParameterIDs::voiceGain(0), false);
     REQUIRE_FALSE(randomizer.isLocked(B33p::ParameterIDs::voiceGain(0)));
+}
+
+namespace
+{
+    // Test double for ParameterRandomizer::RollListener — captures every
+    // parameterRolled(id) callback so tests can assert which IDs were
+    // broadcast (P35 change-flash plumbing).
+    struct CapturingRollListener : B33p::ParameterRandomizer::RollListener
+    {
+        std::vector<juce::String> rolled;
+        void parameterRolled(const juce::String& id) override { rolled.push_back(id); }
+    };
+}
+
+TEST_CASE("ParameterRandomizer: RollListener fires once per successful roll", "[state][randomizer][p35]")
+{
+    B33p::B33pProcessor processor;
+    auto& randomizer = processor.getRandomizer();
+    CapturingRollListener listener;
+    randomizer.addRollListener(&listener);
+    juce::Random rng(13);
+
+    REQUIRE(randomizer.rollOne(B33p::ParameterIDs::filterCutoffHz(0), rng));
+    REQUIRE(listener.rolled.size() == 1);
+    REQUIRE(listener.rolled.back() == B33p::ParameterIDs::filterCutoffHz(0));
+
+    randomizer.removeRollListener(&listener);
+}
+
+TEST_CASE("ParameterRandomizer: RollListener doesn't fire for locked params", "[state][randomizer][p35]")
+{
+    B33p::B33pProcessor processor;
+    auto& randomizer = processor.getRandomizer();
+    CapturingRollListener listener;
+    randomizer.addRollListener(&listener);
+    juce::Random rng(13);
+
+    const auto id = B33p::ParameterIDs::filterCutoffHz(0);
+    randomizer.setLocked(id, true);
+
+    REQUIRE_FALSE(randomizer.rollOne(id, rng));
+    REQUIRE(listener.rolled.empty());
+
+    randomizer.removeRollListener(&listener);
+}
+
+TEST_CASE("ParameterRandomizer: rollMany broadcasts every rolled param ID once", "[state][randomizer][p35]")
+{
+    B33p::B33pProcessor processor;
+    auto& randomizer = processor.getRandomizer();
+    CapturingRollListener listener;
+    randomizer.addRollListener(&listener);
+    juce::Random rng(13);
+
+    const std::vector<juce::String> ids = {
+        B33p::ParameterIDs::filterCutoffHz(0),
+        B33p::ParameterIDs::distortionDrive(0),
+        B33p::ParameterIDs::ampAttack(0),
+    };
+    randomizer.rollMany(ids, rng, "test");
+
+    REQUIRE(listener.rolled.size() == ids.size());
+    for (const auto& expected : ids)
+        REQUIRE(std::find(listener.rolled.begin(), listener.rolled.end(), expected)
+                != listener.rolled.end());
+
+    randomizer.removeRollListener(&listener);
 }

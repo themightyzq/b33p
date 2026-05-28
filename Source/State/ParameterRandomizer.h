@@ -28,6 +28,22 @@ namespace B33p
     class ParameterRandomizer
     {
     public:
+        // Notification interface for "this parameter just got rolled."
+        // Fires synchronously on the thread that called the roll
+        // (always the message thread in practice). Used by the UI's
+        // change-flash on randomize (P35): each LabeledSlider listens,
+        // and on a matching param ID paints a brief halo so the user
+        // sees what moved when they hit Randomize.
+        class RollListener
+        {
+        public:
+            virtual ~RollListener() = default;
+            virtual void parameterRolled(const juce::String& parameterID) = 0;
+        };
+
+        void addRollListener   (RollListener* l) { rollListeners.add   (l); }
+        void removeRollListener(RollListener* l) { rollListeners.remove(l); }
+
         explicit ParameterRandomizer(juce::AudioProcessorValueTreeState& apvts);
 
         bool isLocked(const juce::String& parameterID) const;
@@ -70,5 +86,6 @@ namespace B33p
 
         juce::AudioProcessorValueTreeState& apvts;
         std::unordered_set<std::string>     lockedIds;
+        juce::ListenerList<RollListener>    rollListeners;
     };
 }

@@ -2,6 +2,7 @@
 
 #include "IconButton.h"
 #include "State/B33pProcessor.h"
+#include "State/ParameterRandomizer.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -34,7 +35,15 @@ namespace B33p
     // section via SliderAttachment. The dice and lock buttons are
     // wired to the ParameterRandomizer by calling attachRandomizer()
     // once the LabeledSlider is parented.
+    //
+    // Inherits ParameterRandomizer::RollListener (P35) so randomize
+    // events for this slider's parameter trigger a brief change-flash
+    // halo painted by `B33pLookAndFeel::drawRotarySlider` — gives the
+    // user visual feedback for which knobs moved when they hit
+    // Randomize.
     class LabeledSlider : public juce::Component
+                        , private juce::Timer
+                        , private ParameterRandomizer::RollListener
     {
     public:
         // showRandomizer = false suppresses the dice + lock buttons
@@ -43,6 +52,7 @@ namespace B33p
         // gain, where a sudden +20 dB jump would blow ears out.
         explicit LabeledSlider(const juce::String& name,
                                bool showRandomizer = true);
+        ~LabeledSlider() override;
 
         juce::Slider& getSlider() { return slider; }
 
@@ -75,12 +85,29 @@ namespace B33p
         void resized() override;
 
     private:
+        // ParameterRandomizer::RollListener — matches `parameterID`
+        // against `attachedParamId` and kicks the change-flash timer
+        // on a match.
+        void parameterRolled(const juce::String& parameterID) override;
+        // juce::Timer — drives the change-flash decay. Only runs while
+        // a flash is fading; stops itself when alpha reaches zero so
+        // an idle synth still has no animation (accessibility rule).
+        void timerCallback() override;
+
         B33pSlider   slider;
         juce::Label  label;
         IconButton   diceButton { IconButton::Glyph::Die  };
         IconButton   lockButton { IconButton::Glyph::Lock };
         bool         randomizerVisible { true };
         float        lastModulationIntensity { 0.0f };
+
+        // P35 change-flash bookkeeping. attachedParamId is set by
+        // attachRandomizer; rollListenerRegisteredWith is the randomizer
+        // the slider is currently registered with (for un-registering
+        // on the next attach or in the destructor).
+        juce::String         attachedParamId;
+        ParameterRandomizer* rollListenerRegisteredWith { nullptr };
+        juce::int64          flashStartMs               { 0 };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LabeledSlider)
     };
