@@ -172,8 +172,15 @@ namespace B33p
             const int seedSlots = isWavetable ? Oscillator::kNumWavetableSlots : 1;
             for (int slot = 0; slot < seedSlots; ++slot)
             {
-                auto current = std::atomic_load(
-                    &wavetableSlots[static_cast<size_t>(lane)][static_cast<size_t>(slot)]);
+                // Message-thread read under the wavetable lock — matches
+                // the new threading model. Held briefly for a single
+                // pointer copy.
+                WavetableSlotPtr current;
+                {
+                    const juce::SpinLock::ScopedLockType lock(wavetableLock);
+                    current = wavetableSlots[static_cast<size_t>(lane)]
+                                            [static_cast<size_t>(slot)];
+                }
                 if (current != nullptr && ! current->empty())
                     continue;   // slot already has a user-edited table
                 setWavetableSlot(lane, slot, sineCycle());
@@ -259,9 +266,11 @@ namespace B33p
         if (slot < 0 || slot >= Oscillator::kNumWavetableSlots)
             return;
         auto next = std::make_shared<const std::vector<float>>(std::move(samples));
-        std::atomic_store(&wavetableSlots[static_cast<size_t>(lane)]
-                                         [static_cast<size_t>(slot)],
-                          next);
+        {
+            const juce::SpinLock::ScopedLockType lock(wavetableLock);
+            wavetableSlots[static_cast<size_t>(lane)]
+                          [static_cast<size_t>(slot)] = std::move(next);
+        }
         markDirty();
     }
 
@@ -271,8 +280,13 @@ namespace B33p
             return {};
         if (slot < 0 || slot >= Oscillator::kNumWavetableSlots)
             return {};
-        auto current = std::atomic_load(&wavetableSlots[static_cast<size_t>(lane)]
-                                                       [static_cast<size_t>(slot)]);
+        // Message-thread reader: hold the lock for the shared_ptr copy.
+        WavetableSlotPtr current;
+        {
+            const juce::SpinLock::ScopedLockType lock(wavetableLock);
+            current = wavetableSlots[static_cast<size_t>(lane)]
+                                    [static_cast<size_t>(slot)];
+        }
         return current ? *current : std::vector<float>{};
     }
 
@@ -373,10 +387,13 @@ namespace B33p
         // Build the snapshot, swap it into the audio-thread slot,
         // reset the playhead, then signal "playing". The release of
         // playing happens-before the audio thread's acquire; the
-        // shared_ptr atomic_store provides its own ordering for
-        // pointer reads.
+        // SpinLock release on snapshotLock provides ordering for the
+        // shared_ptr read the audio thread performs under TryLock.
         auto snapshot = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern, snapshotRng));
-        std::atomic_store(&snapshotSlot, snapshot);
+        {
+            const juce::SpinLock::ScopedLockType lock(snapshotLock);
+            snapshotSlot = std::move(snapshot);
+        }
         playheadSeconds.store(0.0);
         playing.store(true, std::memory_order_release);
     }
@@ -395,7 +412,8 @@ namespace B33p
     void B33pProcessor::refreshPatternSnapshot()
     {
         auto snap = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern, snapshotRng));
-        std::atomic_store(&snapshotSlot, snap);
+        const juce::SpinLock::ScopedLockType lock(snapshotLock);
+        snapshotSlot = std::move(snap);
     }
 
     void B33pProcessor::setLooping(bool shouldLoop)
@@ -826,21 +844,29 @@ namespace B33p
         v.setRingMix             (modulated(ModDestination::RingMix,         ParameterIDs::ringMix(lane)));
 
         // Push every slot only when its shared_ptr has changed since
-        // last push — keeps the common no-edit path zero-cost (one
-        // atomic_load + pointer compare per slot).
-        for (int slot = 0; slot < Oscillator::kNumWavetableSlots; ++slot)
+        // last push — keeps the common no-edit path zero-cost.
+        // Single ScopedTryLockType around all four slot reads; on
+        // contention (the message thread is mid-write on some slot)
+        // we keep the cached `lastPushedWavetableSlots` and pick up
+        // the new pointer next block. Worst case: a wavetable edit
+        // that lands mid-write is visible one block late.
+        const juce::SpinLock::ScopedTryLockType tryLock(wavetableLock);
+        if (tryLock.isLocked())
         {
-            auto current = std::atomic_load(
-                &wavetableSlots[static_cast<size_t>(lane)][static_cast<size_t>(slot)]);
-            auto& last = lastPushedWavetableSlots[static_cast<size_t>(lane)]
-                                                 [static_cast<size_t>(slot)];
-            if (current == last)
-                continue;
-            if (current != nullptr)
-                v.setWavetableSlot(slot, *current);
-            else
-                v.setWavetableSlot(slot, {});
-            last = current;
+            for (int slot = 0; slot < Oscillator::kNumWavetableSlots; ++slot)
+            {
+                auto current = wavetableSlots[static_cast<size_t>(lane)]
+                                             [static_cast<size_t>(slot)];
+                auto& last = lastPushedWavetableSlots[static_cast<size_t>(lane)]
+                                                     [static_cast<size_t>(slot)];
+                if (current == last)
+                    continue;
+                if (current != nullptr)
+                    v.setWavetableSlot(slot, *current);
+                else
+                    v.setWavetableSlot(slot, {});
+                last = current;
+            }
         }
         v.setAmpAttack           (apvts.getRawParameterValue(ParameterIDs::ampAttack(lane))->load());
         v.setAmpDecay            (apvts.getRawParameterValue(ParameterIDs::ampDecay(lane))->load());
@@ -1027,7 +1053,13 @@ namespace B33p
                                     : playing.load(std::memory_order_acquire);
         if (nowPlaying && ! audioThreadPlaying)
         {
-            activeSnapshot      = std::atomic_load(&snapshotSlot);
+            // First snapshot read at playback start — try-lock and fall
+            // through on contention; the audio thread keeps its prior
+            // activeSnapshot (nullptr on cold start, which the !=
+            // nullptr guards below already handle).
+            const juce::SpinLock::ScopedTryLockType tryLock(snapshotLock);
+            if (tryLock.isLocked())
+                activeSnapshot = snapshotSlot;
             nextEventIndex      = 0;
             // Internal play starts the pattern at zero; host-follow
             // honours wherever the host's playhead lands.
@@ -1051,10 +1083,19 @@ namespace B33p
         // have already played in this loop iteration.
         if (audioThreadPlaying)
         {
-            auto latest = std::atomic_load(&snapshotSlot);
+            // Audio-thread try-lock for the snapshot pointer. If the
+            // message thread is mid-write we keep activeSnapshot and
+            // pick the new one up next block — single-block stale is
+            // far cheaper than blocking the audio callback.
+            std::shared_ptr<const PatternSnapshot> latest = activeSnapshot;
+            {
+                const juce::SpinLock::ScopedTryLockType tryLock(snapshotLock);
+                if (tryLock.isLocked())
+                    latest = snapshotSlot;
+            }
             if (latest != activeSnapshot)
             {
-                activeSnapshot = latest;
+                activeSnapshot = std::move(latest);
                 nextEventIndex = 0;
                 if (activeSnapshot != nullptr)
                 {

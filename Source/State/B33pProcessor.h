@@ -472,8 +472,14 @@ namespace B33p
         std::atomic<int>   selectedLaneAmpEnvStage       { 0 };
         std::atomic<float> selectedLaneAmpEnvElapsedSec  { 0.0f };
 
-        // Pattern snapshot lives behind atomic_load/store — see
-        // class-level comment for the threading model.
+        // Pattern snapshot hand-off message → audio thread. Guarded by
+        // snapshotLock: writers (message thread) take
+        // SpinLock::ScopedLockType, the audio thread takes
+        // ScopedTryLockType and falls through to its cached
+        // `activeSnapshot` on contention. Replaces an earlier
+        // `std::atomic_load(std::shared_ptr*)` design whose blocking
+        // behaviour is implementation-defined (REVIEW-AUDIO #2).
+        mutable juce::SpinLock                 snapshotLock;
         std::shared_ptr<const PatternSnapshot> snapshotSlot;
 
         // Cached raw-parameter pointer for host bypass. Set once in
@@ -499,16 +505,18 @@ namespace B33p
         double                                 currentSampleRate   { 44100.0 };
 
         // Per-lane wavetable slot storage. Message thread writes via
-        // atomic shared_ptr store; audio thread loads each block and
-        // pushes the corresponding slot to the voice only if the
-        // pointer changed since last push (avoids per-block vector
-        // copies when the user isn't editing). One inner array per
-        // lane, one shared_ptr per slot. Custom mode reads slot 0;
-        // Wavetable mode reads all four blended by the morph param.
+        // SpinLock::ScopedLockType + shared_ptr assignment; audio thread
+        // (pushParametersToLane) takes one ScopedTryLockType per lane
+        // around all four slot reads, falling through to the cached
+        // `lastPushedWavetableSlots` snapshot on contention. Replaces
+        // an earlier `std::atomic_load(std::shared_ptr*)` design
+        // (REVIEW-AUDIO #2). Custom mode reads slot 0; Wavetable mode
+        // reads all four blended by the morph param.
         using WavetableSlotPtr = std::shared_ptr<const std::vector<float>>;
         using WavetableSlotArray = std::array<WavetableSlotPtr,
                                               Oscillator::kNumWavetableSlots>;
 
+        mutable juce::SpinLock                             wavetableLock;
         std::array<WavetableSlotArray, Pattern::kNumLanes> wavetableSlots;
         std::array<WavetableSlotArray, Pattern::kNumLanes> lastPushedWavetableSlots;
 
