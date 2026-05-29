@@ -103,6 +103,14 @@ namespace B33p
         if (type == newType)
             return;
         type = newType;
+        // Clear residual state from the previous mode so the switch
+        // doesn't replay biquad / comb / formant memory through the
+        // new mode's coefficients (audible as a click on type swap).
+        // The smoothed cutoff / resonance / vowel values continue
+        // unchanged — only the filter's internal memory is cleared.
+        // (REVIEW-AUDIO #9 — partial mitigation; a true parallel-
+        // running crossfade is a separate larger feature.)
+        reset();
         updateCoefficients();
     }
 
