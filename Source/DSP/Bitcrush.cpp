@@ -1,5 +1,7 @@
 #include "Bitcrush.h"
 
+#include "SmoothingHelpers.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -23,24 +25,23 @@ namespace B33p
     {
         phase      = 1.0;
         heldSample = 0.0f;
+        // Re-arm the snap-on-first-set flag — matches prepare()'s
+        // post-condition that the next setX snaps.
+        firstSetAfterPrepare = true;
     }
 
     void Bitcrush::setBitDepth(float bits)
     {
-        const float clamped = std::clamp(bits, 1.0f, 16.0f);
-        if (firstSetAfterPrepare)
-            bitDepthSmoother.setCurrentAndTargetValue(clamped);
-        else
-            bitDepthSmoother.setTargetValue(clamped);
+        setSmoothedTarget(bitDepthSmoother,
+                          std::clamp(bits, 1.0f, 16.0f),
+                          firstSetAfterPrepare);
     }
 
     void Bitcrush::setTargetSampleRate(float hz)
     {
-        const float clamped = std::max(20.0f, hz);
-        if (firstSetAfterPrepare)
-            targetHzSmoother.setCurrentAndTargetValue(clamped);
-        else
-            targetHzSmoother.setTargetValue(clamped);
+        setSmoothedTarget(targetHzSmoother,
+                          std::max(20.0f, hz),
+                          firstSetAfterPrepare);
     }
 
     float Bitcrush::processSample(float input)

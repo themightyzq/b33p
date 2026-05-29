@@ -380,6 +380,23 @@ namespace B33p
     private:
         void pushParametersToVoices();
         void pushParametersToLane(int lane);
+
+        // Retire-list workers (audit RT-1). Each call drops every entry
+        // currently in the list (those are old enough that the audio
+        // thread has moved past them) and then appends the just-handed-
+        // off pointer for the NEXT call to drop. Destruction of the
+        // freshly-handed-off pointer is therefore deferred to the next
+        // message-thread write, guaranteed to be off the audio thread.
+        // Both helpers run on the message thread only.
+        void retireSnapshotPointer  (std::shared_ptr<const PatternSnapshot> p);
+        void retireWavetablePointer (std::shared_ptr<const std::vector<float>> p);
+
+        // End-of-block bookkeeping that publishes per-lane state to the
+        // UI thread (LFO outputs, envelope outputs, voice-active gate,
+        // amp env stage + elapsed packed snapshot). Extracted from the
+        // tail of `processBlock` so the audio loop stays readable
+        // (audit QUAL-1). Runs once per block on the audio thread.
+        void publishUiMirrors(int selectedLaneIndex);
         // Lower-level worker: push the lane's APVTS values + matrix
         // modulation into the supplied Voice. applyOverrides toggles
         // whether per-event override slots win; MIDI keyboard voices
@@ -526,8 +543,19 @@ namespace B33p
         // `activeSnapshot` on contention. Replaces an earlier
         // `std::atomic_load(std::shared_ptr*)` design whose blocking
         // behaviour is implementation-defined (REVIEW-AUDIO #2).
-        mutable juce::SpinLock                 snapshotLock;
-        std::shared_ptr<const PatternSnapshot> snapshotSlot;
+        //
+        // `retiredSnapshots` is the message-thread retire list that
+        // keeps destruction OFF the audio thread (audit RT-1). Every
+        // write to `snapshotSlot` pushes the previous pointer here;
+        // the next write drops everything older, on the message
+        // thread (the previous write was at least one full message-
+        // thread timer interval ago — 33 ms at the UI's 30 Hz cadence
+        // — so the audio thread has run many blocks and moved past
+        // the old pointer, meaning the retired pointer's destruction
+        // here is guaranteed to be the last reference).
+        mutable juce::SpinLock                              snapshotLock;
+        std::shared_ptr<const PatternSnapshot>              snapshotSlot;
+        std::vector<std::shared_ptr<const PatternSnapshot>> retiredSnapshots;
 
         // Cached raw-parameter pointer for host bypass. Set once in
         // the constructor from apvts.getRawParameterValue(); checked
@@ -563,9 +591,15 @@ namespace B33p
         using WavetableSlotArray = std::array<WavetableSlotPtr,
                                               Oscillator::kNumWavetableSlots>;
 
+        // `retiredWavetableSlots` is the same retire-list pattern as
+        // `retiredSnapshots` above (audit RT-1). Wavetable writes are
+        // user-driven (rare); each write retires the previously-active
+        // pointer here, and the next write drops everything older on
+        // the message thread.
         mutable juce::SpinLock                             wavetableLock;
         std::array<WavetableSlotArray, Pattern::kNumLanes> wavetableSlots;
         std::array<WavetableSlotArray, Pattern::kNumLanes> lastPushedWavetableSlots;
+        std::vector<WavetableSlotPtr>                      retiredWavetableSlots;
 
         // Unsaved-changes flag + listener.
         std::atomic<bool>     dirty                       { false };

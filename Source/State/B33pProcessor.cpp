@@ -281,12 +281,22 @@ namespace B33p
             return;
         if (slot < 0 || slot >= Oscillator::kNumWavetableSlots)
             return;
+        // Retire-list pattern (audit RT-1): grab the old slot under
+        // the lock, then move it into the retire list outside the
+        // lock so destruction of the PREVIOUS retired entry (now
+        // safe — audio thread has moved past it since the last
+        // wavetable edit) happens on the message thread, not the
+        // audio thread.
         auto next = std::make_shared<const std::vector<float>>(std::move(samples));
+        WavetableSlotPtr retiring;
         {
             const juce::SpinLock::ScopedLockType lock(wavetableLock);
+            retiring = std::move(wavetableSlots[static_cast<size_t>(lane)]
+                                               [static_cast<size_t>(slot)]);
             wavetableSlots[static_cast<size_t>(lane)]
                           [static_cast<size_t>(slot)] = std::move(next);
         }
+        retireWavetablePointer(std::move(retiring));
         markDirty();
     }
 
@@ -405,11 +415,21 @@ namespace B33p
         // playing happens-before the audio thread's acquire; the
         // SpinLock release on snapshotLock provides ordering for the
         // shared_ptr read the audio thread performs under TryLock.
+        //
+        // The retire-list pattern keeps shared_ptr destruction off the
+        // audio thread (audit RT-1): grab the OLD pointer under the
+        // lock, move it into the retire list, drop everything older
+        // than the previous entry on the message thread (the previous
+        // write was at least one message-thread interval ago, so the
+        // audio thread has moved past those pointers).
         auto snapshot = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern, snapshotRng));
+        std::shared_ptr<const PatternSnapshot> retiring;
         {
             const juce::SpinLock::ScopedLockType lock(snapshotLock);
+            retiring = std::move(snapshotSlot);
             snapshotSlot = std::move(snapshot);
         }
+        retireSnapshotPointer(std::move(retiring));
         playheadSeconds.store(0.0);
         playing.store(true, std::memory_order_release);
     }
@@ -427,9 +447,47 @@ namespace B33p
 
     void B33pProcessor::refreshPatternSnapshot()
     {
+        // Same retire-list pattern as startPlayback (audit RT-1).
         auto snap = std::make_shared<const PatternSnapshot>(makeSnapshot(pattern, snapshotRng));
-        const juce::SpinLock::ScopedLockType lock(snapshotLock);
-        snapshotSlot = std::move(snap);
+        std::shared_ptr<const PatternSnapshot> retiring;
+        {
+            const juce::SpinLock::ScopedLockType lock(snapshotLock);
+            retiring = std::move(snapshotSlot);
+            snapshotSlot = std::move(snap);
+        }
+        retireSnapshotPointer(std::move(retiring));
+    }
+
+    void B33pProcessor::retireSnapshotPointer(std::shared_ptr<const PatternSnapshot> p)
+    {
+        // Drop everything currently retired BEFORE appending the new
+        // entry. The old entries were pushed on the *previous* message-
+        // thread write to snapshotSlot; since then the audio thread has
+        // run many blocks (at the UI's 30 Hz refresh cadence vs. typical
+        // 5 ms audio blocks: ~6 blocks per refresh) and has moved past
+        // those pointers — their `activeSnapshot` / `lastPushed` caches
+        // have been overwritten with the new pointer. Local `toDrop`
+        // goes out of scope at the end of this function, running each
+        // shared_ptr's destructor on the message thread, NOT the audio
+        // thread.
+        auto toDrop = std::move(retiredSnapshots);
+        retiredSnapshots.clear();   // ensure empty after the move
+        if (p)
+            retiredSnapshots.push_back(std::move(p));
+        // toDrop's destructor fires here, on the message thread.
+    }
+
+    void B33pProcessor::retireWavetablePointer(std::shared_ptr<const std::vector<float>> p)
+    {
+        // Same pattern as retireSnapshotPointer above. Wavetable writes
+        // are user-driven (a mouse interaction in the wavetable editor),
+        // so the previous write was at least one user-action ago and
+        // the audio thread has definitely moved past — destruction of
+        // the retired entries here runs on the message thread.
+        auto toDrop = std::move(retiredWavetableSlots);
+        retiredWavetableSlots.clear();
+        if (p)
+            retiredWavetableSlots.push_back(std::move(p));
     }
 
     void B33pProcessor::setLooping(bool shouldLoop)
@@ -1264,19 +1322,24 @@ namespace B33p
             for (auto& lfo : laneLfos)
                 lfo.advance(numSamples);
 
+        const int sel = juce::jlimit(0, Pattern::kNumLanes - 1, selectedLane.load());
+        publishUiMirrors(sel);
+    }
+
+    void B33pProcessor::publishUiMirrors(int sel)
+    {
         // Mirror the selected lane's LFO outputs for the modulation
         // editor's live-activity cue (P14). Cheap atomic stores; the
         // editor reads them on its Timer.
-        const int sel = juce::jlimit(0, Pattern::kNumLanes - 1, selectedLane.load());
         for (int i = 0; i < kNumLfosPerLane; ++i)
             selectedLaneLfoValues[static_cast<size_t>(i)].store(
                 lfos[static_cast<size_t>(sel)][static_cast<size_t>(i)].currentValue());
 
-        // Mirror the selected lane's envelope outputs too — the
-        // gain knob and the base-pitch knob glow with the live amp /
-        // pitch envelope values, so the user sees the note's amplitude
-        // and pitch shape evolving in real time. Block-rate stores
-        // are plenty for a 30 Hz UI repaint.
+        // Mirror the selected lane's envelope outputs — the gain knob
+        // and the base-pitch knob glow with the live amp / pitch
+        // envelope values, so the user sees the note's amplitude and
+        // pitch shape evolving in real time. Block-rate stores are
+        // plenty for a 30 Hz UI repaint.
         selectedLaneAmpEnvValue  .store(voices[static_cast<size_t>(sel)].getAmpEnvelopeLevel());
         selectedLanePitchEnvValue.store(voices[static_cast<size_t>(sel)].getPitchEnvelopeValue());
 

@@ -1,5 +1,7 @@
 #include "ModulationEffect.h"
 
+#include "SmoothingHelpers.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -54,6 +56,9 @@ namespace B33p
         phaser.reset();
         delayLine.reset();
         reverb.reset();
+        // Re-arm the snap-on-first-set flag — matches prepare()'s
+        // post-condition that the next setX snaps.
+        firstSetAfterPrepare = true;
     }
 
     void ModulationEffect::setType(Type newType)
@@ -70,29 +75,23 @@ namespace B33p
 
     void ModulationEffect::setParam1(float v01)
     {
-        const float clamped = std::clamp(v01, 0.0f, 1.0f);
-        if (firstSetAfterPrepare)
-            p1Smoother.setCurrentAndTargetValue(clamped);
-        else
-            p1Smoother.setTargetValue(clamped);
+        setSmoothedTarget(p1Smoother,
+                          std::clamp(v01, 0.0f, 1.0f),
+                          firstSetAfterPrepare);
     }
 
     void ModulationEffect::setParam2(float v01)
     {
-        const float clamped = std::clamp(v01, 0.0f, 1.0f);
-        if (firstSetAfterPrepare)
-            p2Smoother.setCurrentAndTargetValue(clamped);
-        else
-            p2Smoother.setTargetValue(clamped);
+        setSmoothedTarget(p2Smoother,
+                          std::clamp(v01, 0.0f, 1.0f),
+                          firstSetAfterPrepare);
     }
 
     void ModulationEffect::setMix(float v01)
     {
-        const float clamped = std::clamp(v01, 0.0f, 1.0f);
-        if (firstSetAfterPrepare)
-            mixSmoother.setCurrentAndTargetValue(clamped);
-        else
-            mixSmoother.setTargetValue(clamped);
+        setSmoothedTarget(mixSmoother,
+                          std::clamp(v01, 0.0f, 1.0f),
+                          firstSetAfterPrepare);
     }
 
     float ModulationEffect::delaySamplesFromP1() const

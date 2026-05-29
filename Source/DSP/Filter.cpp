@@ -1,5 +1,7 @@
 #include "Filter.h"
 
+#include "SmoothingHelpers.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -96,6 +98,11 @@ namespace B33p
             b.reset();
         std::fill(combBuffer.begin(), combBuffer.end(), 0.0f);
         combWriteIx = 0;
+        // Re-arm the snap-on-first-set flag so the next setX after a
+        // reset() snaps the smoother to the requested value (consistent
+        // with prepare()'s post-condition — reset() means "fresh state
+        // from this moment").
+        firstSetAfterPrepare = true;
     }
 
     void Filter::setType(Type newType)
@@ -121,27 +128,17 @@ namespace B33p
         // off the latest smoothed value. The first setX after prepare
         // snaps so the initial pushParametersToLane (and tests) get
         // the requested value immediately.
-        if (firstSetAfterPrepare)
-            cutoffSmoother.setCurrentAndTargetValue(hz);
-        else
-            cutoffSmoother.setTargetValue(hz);
+        setSmoothedTarget(cutoffSmoother, hz, firstSetAfterPrepare);
     }
 
     void Filter::setResonance(float q)
     {
-        if (firstSetAfterPrepare)
-            resonanceSmoother.setCurrentAndTargetValue(q);
-        else
-            resonanceSmoother.setTargetValue(q);
+        setSmoothedTarget(resonanceSmoother, q, firstSetAfterPrepare);
     }
 
     void Filter::setVowel(float v01)
     {
-        const float clamped = std::clamp(v01, 0.0f, 1.0f);
-        if (firstSetAfterPrepare)
-            vowelSmoother.setCurrentAndTargetValue(clamped);
-        else
-            vowelSmoother.setTargetValue(clamped);
+        setSmoothedTarget(vowelSmoother, std::clamp(v01, 0.0f, 1.0f), firstSetAfterPrepare);
     }
 
     float Filter::combFeedbackFromQ() const
