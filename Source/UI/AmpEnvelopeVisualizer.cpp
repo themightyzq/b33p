@@ -157,30 +157,31 @@ namespace B33p
         const float xSustainEnd = xDecayEnd  + sustainSeconds * pxPerSec;
         const float xReleaseEnd = xSustainEnd + r * pxPerSec;
 
-        float playheadX = plotArea.getX();
-        switch (stage)
+        // Compute the playhead x directly from the active stage. IIFE
+        // (immediately-invoked lambda) avoids the "init then overwrite"
+        // shape clang-tidy's deadcode.DeadStores check (rightly) flags
+        // as a wasted assignment. Sustain parks at the start of the
+        // sustain region — sustain holds a constant level by definition,
+        // so a walking playhead there would just be motion for its own
+        // sake; the stationary playhead reads as "holding here."
+        const float playheadXRaw = [&]() -> float
         {
-            case AmpEnvelope::Stage::Idle:
-                return;   // guarded above, but defensive
-            case AmpEnvelope::Stage::Attack:
-                playheadX = plotArea.getX() + std::min(elapsed, a) * pxPerSec;
-                break;
-            case AmpEnvelope::Stage::Decay:
-                playheadX = xAttackEnd + std::min(elapsed, d) * pxPerSec;
-                break;
-            case AmpEnvelope::Stage::Sustain:
-                // Park at the start of the sustain region — sustain holds
-                // a constant level by definition, so showing the playhead
-                // walking across it would just be motion for its own
-                // sake. The "we're holding here" state reads as a
-                // stationary playhead, which matches the mental model.
-                playheadX = xDecayEnd;
-                break;
-            case AmpEnvelope::Stage::Release:
-                playheadX = xSustainEnd + std::min(elapsed, r) * pxPerSec;
-                break;
-        }
-        playheadX = juce::jlimit(plotArea.getX(), xReleaseEnd, playheadX);
+            switch (stage)
+            {
+                case AmpEnvelope::Stage::Attack:
+                    return plotArea.getX() + std::min(elapsed, a) * pxPerSec;
+                case AmpEnvelope::Stage::Decay:
+                    return xAttackEnd + std::min(elapsed, d) * pxPerSec;
+                case AmpEnvelope::Stage::Sustain:
+                    return xDecayEnd;
+                case AmpEnvelope::Stage::Release:
+                    return xSustainEnd + std::min(elapsed, r) * pxPerSec;
+                case AmpEnvelope::Stage::Idle:
+                    break;   // unreachable — gated above — fall through
+            }
+            return plotArea.getX();   // defensive default for the Idle / unreachable case
+        }();
+        const float playheadX = juce::jlimit(plotArea.getX(), xReleaseEnd, playheadXRaw);
 
         g.setColour(juce::Colour::fromRGB(220, 235, 255).withAlpha(0.85f));
         g.fillRect(juce::Rectangle<float>(playheadX - kPlayheadWidth * 0.5f,
