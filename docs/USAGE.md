@@ -1,6 +1,16 @@
 # Using b33p
 
-This is the long-form user guide. The README has the elevator pitch and a quickstart; this file goes deeper. A condensed shortcut reference also lives in the in-app **Help → Keyboard Shortcuts…** dialog, and credits/version in **Help → About b33p**.
+This is the long-form user guide. The README has the elevator pitch and a quickstart; this file goes deeper. Common "I don't hear anything" / "plugin not in my DAW" / "where are my presets" / "how do I uninstall" questions live in [`FAQ.md`](FAQ.md). A condensed shortcut reference also lives in the in-app **Help → Keyboard Shortcuts…** dialog, and credits/version in **Help → About b33p**.
+
+## Quickstart (30 seconds)
+
+1. **Launch b33p.** Standalone, VST3, or AU — same UI.
+2. **Press Audition** (or `Shift+Space`). You'll hear a default beep on Lane 1 / 440 Hz / triangle wave.
+3. **Drag a knob to taste** — `Pitch` (oscillator), `Cutoff` (filter), `Drive` (effects), or `Mix` (Mod FX). Drags ramp smoothly.
+4. **Hit Randomize Voice** in the Master strip — every unlocked parameter on the current lane gets rolled. The audibility guard guarantees the result is in the realm of human hearing.
+5. **Hit Audition again** to hear the rolled patch. Repeat from step 4 until something surprises you.
+
+Beyond that: see **Pattern editing** below to sequence the beep, **MIDI input** to play from a keyboard, **Exporting audio** to render a WAV.
 
 ## The mental model in one paragraph
 
@@ -67,14 +77,16 @@ In Formant mode the Cutoff / Resonance sliders disappear and a single Vowel slid
 - **Distortion** sits after bitcrush. Drive (0.1..100) feeds a soft clipper; rolls are capped at 20 for randomization safety.
 - **Mod FX** is a single wet-effect slot at the end of the chain (Chorus / Reverb / Delay / Flanger / Phaser / None). The three normalised P1 / P2 / Mix sliders re-label themselves per type:
 
-  | Type    | P1     | P2          | Mix     |
-  | ------- | ------ | ----------- | ------- |
-  | Chorus  | Rate   | Depth       | Wet/dry |
-  | Reverb  | Size   | Damping     | Wet     |
-  | Delay   | Time   | Feedback    | Wet/dry |
-  | Flanger | Rate   | Depth       | Wet/dry |
-  | Phaser  | Rate   | Depth       | Wet/dry |
-  | None    | (greyed) | (greyed) | (greyed) — bypass |
+The on-screen knob labels are abbreviated to fit the section width, matching the table below. The semantics column on the right says what each knob does in full.
+
+  | Type    | P1 (on-screen)   | P2 (on-screen)    | Mix    | Semantics                                       |
+  | ------- | ---------------- | ----------------- | ------ | ----------------------------------------------- |
+  | Chorus  | Rate             | Depth             | Mix    | Modulator rate (0.1–5 Hz) · modulation depth · wet/dry |
+  | Reverb  | Size             | Damp              | Mix    | Room size · high-frequency damping · wet level  |
+  | Delay   | Time             | Fback             | Mix    | Delay time (1–2000 ms, log) · feedback (0–0.95) · wet/dry |
+  | Flanger | Rate             | Depth             | Mix    | Modulator rate (0.1–3 Hz) · depth · wet/dry (feedback fixed at 0.7) |
+  | Phaser  | Rate             | Depth             | Mix    | Modulator rate (0.1–5 Hz) · depth · wet/dry     |
+  | None    | —                | —                 | —      | Bypass (knobs greyed)                           |
 
 ### LFOs and modulation matrix
 
@@ -138,7 +150,7 @@ All of these freeze the moment playback ends — nothing in the UI animates whil
 - **Drag a clip's top edge** — set the event's velocity. Top of the lane = velocity 1.0; centre of the lane = 0.
 - **Click in the grid's top ruler row** — park the playhead at that time. `Cmd+V` then pastes the clipboard there.
 - **Right-click on a clip** — Delete / Duplicate / Edit overrides…
-- **Right-click on empty lane area** — Generate Random Pattern / Clear all events (also reachable from the **Lane** menu).
+- **Right-click on empty lane area** — Generate Random Pattern / Clear all events (also reachable from **Edit ▸ Lane**).
 - **Double-click on a lane label** (the "1" / "2" / ... at the left) — rename the lane. Names are persisted in the `.beep`.
 - **Click the M / S buttons** next to a lane label — Mute / Solo. Solo wins over mute if both are on; while any lane is soloed, only soloed lanes play.
 
