@@ -401,6 +401,39 @@ Driven by user feedback re-establishing two long-standing project rules: (1) eve
 
 ---
 
+## REVIEW-AUDIO findings (2026-05-29)
+
+Audio-programmer / sound-designer review of b33p commit `2b044ea`. Findings live in the gitignored local `REVIEW-AUDIO.md`. Triaged top-down per user direction.
+
+### Critical (done)
+
+- [x] **#1 — No parameter smoothing.** (`8652869`) Per-sample `juce::SmoothedValue<float>` on every continuous voice parameter (Filter cutoff/Q/vowel, Distortion drive, Bitcrush bit-depth + target rate, Oscillator freq + morph + FM/ring depth + ratios, ModulationEffect p1/p2/mix, Voice gain). Per-param ramp times from CLAUDE.md's new "Parameter smoothing" budget. Snap-on-first-set-after-prepare so the initial `pushParametersToLane` doesn't ramp from a stale default and tests retain their "set → observe immediately" semantics. Filter coefficient + ModulationEffect param push throttled to every 16 samples to keep CPU sane. 218/218 tests pass.
+- [x] **#2 — `std::shared_ptr` atomic_load on the audio thread.** (`a771092`) Replaced with `juce::SpinLock` + `ScopedTryLockType` on the audio thread (matches the existing `pitchCurveLock` pattern). Snapshot + wavetable hand-offs are now lock-free in practice and not implementation-defined. Cached state fallback on contention; new pointer visible one block late at worst.
+- [x] **#3 + Section 0 — CLAUDE.md audio contracts.** (local, CLAUDE.md is gitignored) New "Audio contracts" section declares supported SR (44.1–192 kHz), buffer (32–2048), latency budget (zero, gated through `setLatencySamples`), CPU target (16 instances on 2017 MacBook Pro), channel-layout policy, parameter-smoothing budgets, real-time safety audit checklist (extends the JUCE rules with the no-shared_ptr-atomic_load rule), and the pluginval / auval CI gates.
+
+### High Impact
+
+- [x] **#4 — Mono bus support.** (`62e9c47`) New `isBusesLayoutSupported` accepts mono OR stereo. Non-breaking — stereo bus still gets the existing L = R output (voices are still mono); mono bus gets a single honest channel. A genuinely-stereo per-voice signal path (per-lane pan + stereo Mod FX + stereo dry through limiter) is a separate larger feature; see Nice to Have #12 below for the related Reverb-mono follow-up.
+- [ ] **#5 — No oversampling on the nonlinear path.** Already roadmapped as **P17** above — `juce::dsp::Oversampling` on the Oscillator → Distortion path, default 2×, user-toggleable.
+- [x] **#6 — Bypass un-engage click.** (`62e9c47`) `juce::SmoothedValue<float> bypassFadeGain` snaps to 0 on bypass entry (buffer is cleared anyway) and ramps to 1 over 10 ms on bypass exit. Applied as a per-sample multiply after the output limiter — steady-state cost is a 1.0 multiply.
+- [x] **#7 — Drive top half dead zone.** (`62e9c47`) `distortionDrive` slider now uses `skewedRange(0.1, 100, centre=5)` so drive ≈ 5 sits at the midpoint; the musically-useful 0.1–20 region covers ~60 % of the slider travel. Param range stays [0.1, 100] so older `.beep` files load unchanged.
+- [x] **#8 — Tail length too short.** (`62e9c47`) `getTailLengthSeconds()` bumped 4 s → 10 s. Catches typical reverb (6–8 s) and delay (3–5 s) tails. Pathological feedback (delay 0.95 + time 2 s ≈ 30+ s) is the user's responsibility. A per-parameter dynamic computation is a follow-up.
+- [x] **#9 — Filter type-switch click** (partial). (`14b3490`) `Filter::setType` now clears the previous mode's biquad / comb / formant memory before installing the new mode's coefficients (eliminates the residual-state-through-new-coefficients click). True parallel-running crossfade (two filter instances + a 5–10 ms crossfade) is a separate larger feature. ModulationEffect already crossfades; Oscillator phase-continuity-across-waveform-change is the documented design.
+- [x] **#10 — pluginval / auval in CI.** (`14b3490`) Two new informational steps per build job: `pluginval --strictness-level 5 --validate-in-process` on the VST3 across all three platforms; `auval -strict` on the AU on macOS only. Both `continue-on-error: true` — flip to blocking after one clean pass on every platform per CLAUDE.md.
+
+### Nice to Have (roadmapped, not done)
+
+- [ ] **#11 — PitchEnvelope retrigger pitch click.** Curve doesn't start at zero → fast retrigger of an audible-pitch-bend voice clicks. Add a 1 ms ramp from `lastValue` to `interpolateAt(0)` on `trigger()`, or document the limitation.
+- [ ] **#12 — Reverb mono.** `juce::Reverb::processMono` — tied to #4's full-stereo follow-up. When per-voice stereo lands, swap to `processStereo` for decorrelation.
+- [ ] **#13 — Mod FX activity glow phase drift.** UI-side phase clock at the effect's rate; not bit-locked to the audio LFO. Functional but not synchronous — document in USAGE.
+- [ ] **#14 — No bit-identical-across-buffer-size test.** New CI test: render the same pattern at buffer = 32 / 256 / 1024 / 2048; assert hashes match.
+- [ ] **#15 — No long-run cumulative-error test.** 30+ minutes of silence after a 5-s burst through Mod FX = Reverb (full feedback) + Delay (0.95 feedback); assert DC mean < 1e-5 and peak doesn't grow.
+- [ ] **#16, #17, #18** — preset metadata / CPU display / focus ring — already roadmapped above (P19, P16, REVIEW-DESIGN High deferred).
+- [ ] **#19 — State save/load round-trip test.** Save → reset processor → load → assert every APVTS value + non-APVTS state (pitch curve, wavetable slots, randomizer locks, A/B slot state) matches the pre-save snapshot.
+- [ ] **#20 — Multi-instance safety verification.** Load 16 b33p instances under TSan, automate each, render, assert no data races. Catches static-table races that the single-instance suite would miss.
+
+---
+
 ## Deferred regressions
 
 Features that were lost when the build target switched from `juce_add_gui_app` to `juce_add_plugin`. JUCE's `StandaloneFilterApp` wrapper produces the standalone `b33p.app` now and replaced our custom Application class; restoring each one means subclassing the wrapper via `JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP` and carrying the original behaviour into the override.
