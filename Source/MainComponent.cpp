@@ -85,7 +85,15 @@ namespace B33p
         // every launch.
         presetManager.seedFactoryPresetsIfMissing();
 
+       #if JUCE_MAC
+        usingMacMainMenu = juce::JUCEApplicationBase::isStandaloneApp();
+        if (usingMacMainMenu)
+            juce::MenuBarModel::setMacMainMenu(this);
+        else
+            addAndMakeVisible(menuBar);
+       #else
         addAndMakeVisible(menuBar);
+       #endif
         addAndMakeVisible(oscillatorSection);
         addAndMakeVisible(ampEnvelopeSection);
         addAndMakeVisible(filterSection);
@@ -153,8 +161,9 @@ namespace B33p
         // fits a 1080p display instead of overflowing it. The standalone
         // window additionally clamps to the screen on launch — see
         // StandaloneApp.cpp.
+        const int reservedMenuBarHeight = usingMacMainMenu ? 0 : kMenuBarHeight;
         setSize(1500,
-                kMenuBarHeight + 2 * kOuterPadding
+                reservedMenuBarHeight + 2 * kOuterPadding
               + kTopRowHeight + kGap
               + kMidRowHeight + kGap
               + kModulationRowHeight + kGap
@@ -169,7 +178,15 @@ namespace B33p
     void MainComponent::resized()
     {
         auto fullBounds = getLocalBounds();
-        menuBar.setBounds(fullBounds.removeFromTop(kMenuBarHeight));
+        if (usingMacMainMenu)
+        {
+            // Screen-top menu owns dispatch — no strip to lay out, no
+            // height to reserve.
+        }
+        else
+        {
+            menuBar.setBounds(fullBounds.removeFromTop(kMenuBarHeight));
+        }
 
         auto bounds = fullBounds.reduced(kOuterPadding);
 
@@ -330,6 +347,11 @@ namespace B33p
     {
         if (auto* host = keyListenerHost.getComponent())
             host->removeKeyListener(this);
+
+       #if JUCE_MAC
+        if (usingMacMainMenu)
+            juce::MenuBarModel::setMacMainMenu(nullptr);
+       #endif
     }
 
     void MainComponent::parentHierarchyChanged()
@@ -351,6 +373,26 @@ namespace B33p
                 prev->removeKeyListener(this);
             tlw->addKeyListener(this);
             keyListenerHost = tlw;
+        }
+
+        // First-launch welcome (REVIEW-USER B-CONFUSING-1 / C-CONFUSING-2).
+        // Standalone-only: hosts have their own onboarding flow and a
+        // modal popover inside a plugin window is hostile. Deferred to
+        // an async call so the window has a chance to paint first; a
+        // local guard makes the welcome a once-per-process event even
+        // if parentHierarchyChanged fires more than once.
+        if (! welcomeOfferedThisRun
+            && isShowing()
+            && juce::JUCEApplicationBase::isStandaloneApp()
+            && ! fileManager.hasShownWelcome())
+        {
+            welcomeOfferedThisRun = true;
+            juce::Component::SafePointer<MainComponent> self { this };
+            juce::MessageManager::callAsync([self]
+            {
+                if (self != nullptr)
+                    self->showWelcomeIfNeeded();
+            });
         }
     }
 
@@ -854,6 +896,48 @@ namespace B33p
             {
                 if (result == 2)
                     juce::URL("https://github.com/themightyzq/b33p").launchInDefaultBrowser();
+            });
+    }
+
+    void MainComponent::showWelcomeIfNeeded()
+    {
+        // Hard guard — even though parentHierarchyChanged checks the same
+        // flag, callAsync can fire after a user has already gone through
+        // the popover (Help ▸ About launching, etc.). Cheap to re-check.
+        if (fileManager.hasShownWelcome())
+            return;
+
+        const juce::String body =
+            juce::String("Welcome to b33p.\n\n")
+          + "b33p makes short synthesized sounds. Four pattern lanes, each\n"
+          + "with its own voice. Click a lane (or any event) to switch which\n"
+          + "lane the editors target — the section headers say \"(Lane N)\"\n"
+          + "so you always know what you're editing.\n\n"
+          + "------ 30-second quickstart ------\n"
+          + "1. Press the orange Audition button to hear the current voice.\n"
+          + "2. In the Master strip, press Randomize Voice for a fresh patch.\n"
+          + "3. Drag in an empty pattern lane to draw a note;\n"
+          + "   press Play (or Space) to roll the pattern.\n"
+          + "4. Save your patch via File > Save Preset...\n\n"
+          + "Help > Keyboard Shortcuts and the FAQ in docs/ have more.\n"
+          + "This window only appears on first launch.";
+
+        juce::AlertWindow::showAsync(
+            juce::MessageBoxOptions()
+                .withIconType(juce::MessageBoxIconType::InfoIcon)
+                .withTitle("Welcome to b33p")
+                .withMessage(body)
+                .withButton("Get Started")
+                .withButton("Read the FAQ"),
+            [this](int result)
+            {
+                // Mark seen regardless — Read the FAQ is also a deliberate
+                // acknowledgement, and a user who dismissed via the window
+                // close button (result 0) doesn't want it back next launch.
+                fileManager.markWelcomeShown();
+                if (result == 2)
+                    juce::URL("https://github.com/themightyzq/b33p/blob/main/docs/FAQ.md")
+                        .launchInDefaultBrowser();
             });
     }
 

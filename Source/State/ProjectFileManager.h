@@ -74,6 +74,14 @@ namespace B33p
         // Empties the MRU list and persists the change.
         void clearRecentFiles();
 
+        // First-launch welcome (REVIEW-USER B-CONFUSING-1 / C-CONFUSING-2).
+        // Returns true the first time it's called on a given machine; the
+        // flag flips on the call site invoking markWelcomeShown(). Stored
+        // in the same per-user properties file as the recent-files list
+        // so the user can also clear it by deleting that file.
+        bool hasShownWelcome() const;
+        void markWelcomeShown();
+
     private:
         void writeAndReport(const juce::File& destination,
                             const OnSaveComplete& onComplete = {});

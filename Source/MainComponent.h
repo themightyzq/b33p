@@ -76,6 +76,12 @@ namespace B33p
         void showAboutDialog();
         void showKeyboardShortcutsDialog();
         void showAudioSettingsHelpDialog();
+        // First-launch welcome (REVIEW-USER B-CONFUSING-1 / C-CONFUSING-2).
+        // Standalone-only orientation popover, gated on the welcomeShown
+        // flag persisted by ProjectFileManager. Safe to call multiple
+        // times: it no-ops if the flag is already set, and marks it set
+        // whichever way the dialog is dismissed.
+        void showWelcomeIfNeeded();
         void showPresetBrowser();
         void promptSavePreset();
         // Writes the preset and handles the success (browser refresh) /
@@ -95,6 +101,13 @@ namespace B33p
         void updatePresetNameDisplay();
         juce::File currentPresetFile;
 
+        // Guards against re-firing the welcome popover if
+        // parentHierarchyChanged fires more than once per process —
+        // the persisted flag is also rechecked there, but this avoids
+        // racing two async dialogs if the user closes the first
+        // between the two callbacks.
+        bool welcomeOfferedThisRun { false };
+
         // The top-level component we registered the KeyListener on,
         // kept so the destructor can deregister cleanly even after
         // the window is mid-teardown.
@@ -112,10 +125,16 @@ namespace B33p
         // tooltip text gets picked up automatically.
         juce::TooltipWindow tooltipWindow { this, 700 };
 
-        // In-window menu bar — kept in the window rather than
-        // setMacMainMenu so the layout is identical on every OS
-        // and we don't need an #ifdef __APPLE__ here.
+        // Menu bar wiring. On macOS standalone we install ourselves as
+        // the screen-top menu (setMacMainMenu) since that's the native
+        // expectation; usingMacMainMenu records that choice so the
+        // destructor can detach correctly and resized() can skip the
+        // in-window strip. Everywhere else (Windows / Linux, and
+        // macOS-as-a-plugin where the host owns the screen menu) we
+        // use the embedded MenuBarComponent so the layout is identical
+        // and self-contained. (REVIEW-USER J-CONFUSING-5.)
         juce::MenuBarComponent menuBar { this };
+        bool usingMacMainMenu = false;
 
         OscillatorSection oscillatorSection;
         AmpEnvSection     ampEnvelopeSection;

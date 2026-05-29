@@ -77,6 +77,12 @@ namespace B33p
         // (-12 / -6 / -3 / 0) — also computed in resized() (P18).
         juce::Rectangle<int> meterScaleBounds;
 
+        // Bounding box around the A | B | Copy cluster, used by paint()
+        // to draw a thin rounded outline so the three buttons read as a
+        // single A/B-compare unit rather than three peers of Undo / Redo /
+        // preset arrows on the same row. (REVIEW-USER L-CONFUSING-7.)
+        juce::Rectangle<int> abClusterBounds;
+
         // Meter feedback (REVIEW.md P18). Peak-hold draws a bright tick at
         // the recent maximum, decaying after ~1.5 s so transients stay
         // readable. The clip latch lights a red cap at the meter's right end
