@@ -74,6 +74,66 @@ jobs:
         working-directory: build
         run: ctest --output-on-failure --build-config ${{ env.CMAKE_BUILD_TYPE }}
 
+      # pluginval — format-conformance check on the built VST3.
+      # REVIEW-AUDIO #10. Informational for now (continue-on-error);
+      # flip to blocking after one clean pass on every platform.
+      # `--strictness-level 5` is the typical release gate;
+      # --validate-in-process keeps the report alongside the runner log.
+      - name: pluginval (VST3) — informational
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -e
+          PV_DIR="$RUNNER_TEMP/pluginval"
+          mkdir -p "$PV_DIR"
+          case "${{ runner.os }}" in
+            Linux)
+              curl -sL https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Linux.zip -o "$PV_DIR/pv.zip"
+              unzip -q "$PV_DIR/pv.zip" -d "$PV_DIR"
+              chmod +x "$PV_DIR/pluginval"
+              PV="$PV_DIR/pluginval"
+              VST3=$(find build/B33p_artefacts/Release/VST3 -name 'b33p.vst3' | head -1)
+              ;;
+            macOS)
+              curl -sL https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip -o "$PV_DIR/pv.zip"
+              unzip -q "$PV_DIR/pv.zip" -d "$PV_DIR"
+              PV="$PV_DIR/pluginval.app/Contents/MacOS/pluginval"
+              VST3=$(find build/B33p_artefacts/Release/VST3 -name 'b33p.vst3' -type d | head -1)
+              ;;
+            Windows)
+              curl -sL https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip -o "$PV_DIR/pv.zip"
+              powershell -Command "Expand-Archive -Path '$PV_DIR/pv.zip' -DestinationPath '$PV_DIR'"
+              PV="$PV_DIR/pluginval.exe"
+              VST3=$(find build/B33p_artefacts/Release/VST3 -name 'b33p.vst3' -type d | head -1)
+              ;;
+          esac
+          echo "pluginval: $PV"
+          echo "VST3:      $VST3"
+          "$PV" --strictness-level 5 --validate-in-process --validate "$VST3" || echo "pluginval finished non-zero (informational)"
+
+      # auval — macOS-only AU conformance. Also informational while we
+      # bring the report clean. Requires installing the AU into the
+      # user's Components folder for the runner to see it.
+      - name: auval (AU, macOS) — informational
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set -e
+          AU_SRC=$(find build/B33p_artefacts/Release/AU -name 'b33p.component' -type d | head -1)
+          AU_DEST="$HOME/Library/Audio/Plug-Ins/Components/b33p.component"
+          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
+          rsync -a --delete "$AU_SRC/" "$AU_DEST/"
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          # Extract type / subtype / manuf from the Info.plist so this
+          # job doesn't have to hard-code them and stay in sync with
+          # juce_add_plugin's PRODUCT_NAME / manufacturer.
+          PLIST="$AU_DEST/Contents/Info.plist"
+          TYPE=$(plutil -extract "AudioComponents.0.type"            raw -o - "$PLIST")
+          SUB=$(plutil -extract  "AudioComponents.0.subtype"         raw -o - "$PLIST")
+          MFR=$(plutil -extract  "AudioComponents.0.manufacturer"    raw -o - "$PLIST")
+          echo "auval: -strict -v $TYPE $SUB $MFR"
+          auval -strict -v "$TYPE" "$SUB" "$MFR" || echo "auval finished non-zero (informational)"
+
       - name: Upload bundles
         uses: actions/upload-artifact@v7
         with:
