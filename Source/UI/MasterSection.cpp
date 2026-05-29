@@ -235,6 +235,17 @@ namespace B33p
     {
         Section::paint(g);
 
+        // Group outline around the A | B | Copy cluster — the three
+        // buttons share an A/B-compare purpose and shouldn't read as
+        // peers of Undo / Redo / preset arrows on the same row.
+        // (REVIEW-USER L-CONFUSING-7.)
+        if (! abClusterBounds.isEmpty())
+        {
+            auto frame = abClusterBounds.toFloat().expanded(3.0f);
+            g.setColour(juce::Colour::fromRGB(60, 60, 64));
+            g.drawRoundedRectangle(frame, 4.0f, 1.0f);
+        }
+
         if (meterBounds.isEmpty())
             return;
 
@@ -333,12 +344,17 @@ namespace B33p
         auto abRow = bounds.removeFromTop(kAbRowHeight);
         bounds.removeFromTop(kRowGap);
 
-        // Right side: A | B | Copy
+        // Right side: A | B | Copy.
+        // Record the cluster's union for paint() so we can outline
+        // it as a single A/B unit (REVIEW-USER L-CONFUSING-7).
         abCopyButton.setBounds(abRow.removeFromRight(kAbCopyW));
         abRow.removeFromRight(kAbGap);
         abButtonB.setBounds(abRow.removeFromRight(kAbButtonW));
         abRow.removeFromRight(kAbGap);
         abButtonA.setBounds(abRow.removeFromRight(kAbButtonW));
+        abClusterBounds = abButtonA.getBounds()
+                            .getUnion(abButtonB.getBounds())
+                            .getUnion(abCopyButton.getBounds());
 
         // Left side: Undo | Redo
         constexpr int kUndoW = 48;

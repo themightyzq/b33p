@@ -8,7 +8,8 @@ namespace B33p
     namespace
     {
         constexpr const char* kFilePattern    = "*.beep";
-        constexpr const char* kRecentFilesKey = "recentFiles";
+        constexpr const char* kRecentFilesKey  = "recentFiles";
+        constexpr const char* kWelcomeShownKey = "welcomeShown";
         constexpr int         kMaxRecentFiles = 10;
 
         juce::File defaultStartLocation(const juce::File& currentFile)
@@ -170,6 +171,17 @@ namespace B33p
     void ProjectFileManager::persistRecentFiles()
     {
         properties->setValue(kRecentFilesKey, recentFiles.toString());
+        properties->saveIfNeeded();
+    }
+
+    bool ProjectFileManager::hasShownWelcome() const
+    {
+        return properties->getBoolValue(kWelcomeShownKey, false);
+    }
+
+    void ProjectFileManager::markWelcomeShown()
+    {
+        properties->setValue(kWelcomeShownKey, true);
         properties->saveIfNeeded();
     }
 
