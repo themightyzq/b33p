@@ -16,11 +16,11 @@ Built for sound designers, game developers, and synth hobbyists who want a tight
 - **Per-lane voice design** — 4 lanes, 4 independently-tuneable timbres. Pick a lane in the pattern grid; the voice editor retargets to that lane's parameters.
 - **Multi-mode oscillator** — sine, square, triangle, saw, noise, **drawable custom single-cycle waveform**, **wavetable** (4 morphable slots per lane), **FM** (two-operator sine), **ring modulation** (sine carrier × sine modulator + wet/dry).
 - **Drawn pitch envelope** — click in the curve to add points, drag to shape, right-click to delete. Shared across lanes.
-- **ADSR amp envelope** with a live visualiser.
+- **ADSR amp envelope** with a live visualiser including a playhead that walks the curve during playback.
 - **Multi-mode filter** — Lowpass / Highpass / Bandpass (12 dB/oct biquad), feedback Comb, Formant (5-vowel interpolation A/E/I/O/U). Live response visualiser plots whichever mode you're in.
 - **Bitcrush + distortion** in the dry chain.
 - **Modulation effect slot** at the end of the chain — Chorus / Reverb / Delay / Flanger / Phaser, three per-mode parameters.
-- **LFOs and modulation matrix** — 2 free-running LFOs per lane (Sine / Triangle / Saw / Square, 0..30 Hz), 4 matrix slots routing either LFO to any of 11 voice destinations with a bipolar amount.
+- **LFOs and modulation matrix** — 2 free-running LFOs per lane (Sine / Triangle / Saw / Square, 0..30 Hz), 4 matrix slots routing either LFO to any of 11 voice destinations with a bipolar amount. **Modulated knobs glow live during playback**, intensity tracking the active modulation, so you can see what's shaping the sound at a glance. Mod FX section pulses at the chorus / flanger / phaser rate when active.
 - **Per-event parameter overrides** — pin up to 4 voice parameters per pattern hit. Right-click a clip → *Edit overrides...*.
 - **Per-event probability / ratcheting / humanize** — every event carries a 0..1 probability, a 1..8 ratchet count, and a 0..1 humanize amount.
 
@@ -37,7 +37,9 @@ Built for sound designers, game developers, and synth hobbyists who want a tight
 ### Randomization
 - **Per-knob dice + lock** on every parameter (except master gain — random rolls there are too good a way to blow ears).
 - **Randomization Scope slider** — 0.05..1.0 multiplier on every roll. 1.0 = full range; smaller values cluster rolls around the current value for subtle variation.
-- **Randomize Lane / Randomize All** entry points respect locks and the safety caps on attack / release / resonance / drive.
+- **Randomize All** (selected lane) / **Randomize Params** (lanes with clips) / **Randomize Pattern** (scatters clips across all lanes) entry points respect locks and the safety caps on attack / release / resonance / drive.
+- **Audibility guard** — bulk Randomize buttons offline-render each touched lane and re-roll level-critical params (or fall back to a known-audible patch) if the roll comes back near-silent. Randomize never produces a silent patch.
+- **Change-flash** — every knob that just moved briefly glows brighter so you can see what changed.
 
 ### Presets + project state
 - **Preset browser** — Save Preset / Browse Presets in the File menu. Per-user presets directory under `~/Library/Application Support/b33p/Presets` (or platform equivalent). Saving over an existing name asks before overwriting; **Restore Factory Presets** rewrites the four shipped patches if you've changed them.

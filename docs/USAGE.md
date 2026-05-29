@@ -87,18 +87,19 @@ Modulation is evaluated per audio block. A slot with non-None source + dest cont
 
 ### Randomization Scope and the dice path
 
-Three randomize entry points:
+Four randomize entry points:
 
-- The **Randomize Lane** button in the Master strip rolls every unlocked parameter on the currently-selected lane.
-- The **Randomize All** button in the Pattern controls row rolls every unlocked parameter across all four lanes.
-- Per-knob dice rolls just that knob.
+- **Randomize All** (Master strip) rolls every unlocked parameter on the currently-selected lane.
+- **Randomize Params** (Pattern controls row) rolls voice parameters for every lane that currently holds clips — randomizing a silent lane's voice is wasted motion. Empty pattern falls back to rolling all four lanes.
+- **Randomize Pattern** (Pattern controls row) scatters fresh random clips across all four lanes in one undoable step. Doesn't touch voice parameters.
+- **Per-knob dice** rolls just that knob.
 
 The **Scope** slider in the Pattern controls row scales how wild the rolls get:
 
 - **Scope = 1.0** — full range (legacy behaviour). Each roll picks any value in the parameter's range.
 - **Scope < 1.0** — rolls are constrained to a window centred on the current value. Scope 0.1 = ±5% of the parameter's normalised range. Use it when you've found a good patch and want gentle variations.
 
-All three roll paths respect locks and the safety caps on parameters that can produce inaudible / painful sounds when randomized:
+All roll paths respect locks and the safety caps on parameters that can produce inaudible / painful sounds when randomized:
 
 | Parameter | Random cap | Slider cap |
 | --- | --- | --- |
@@ -108,6 +109,22 @@ All three roll paths respect locks and the safety caps on parameters that can pr
 | Distortion Drive | 20 | 100 |
 
 Manual editing always has the full slider range. Only random rolls are clamped.
+
+The bulk Randomize All / Randomize Params buttons also run an **audibility guard** — after the roll, the synth offline-renders the audition for each touched lane and re-rolls level-critical parameters (amp env, filter cutoff/Q, Mod FX mix, FM depth, ring mix) if the result is near-silent, falling back to a known-audible safe patch if the re-rolls can't recover. So Randomize never produces a silent patch. Per-knob dice are left alone — they're deliberate single-parameter exploration.
+
+When Randomize fires, every knob that just moved briefly flashes a brighter accent ring so you can see what changed.
+
+### Seeing what's shaping the sound
+
+When the synth is producing audio, knobs that are being actively modulated paint a soft accent halo whose intensity tracks the live modulation. Combined sources show through (max), so you'll see the strongest contributor at any instant.
+
+- **Mod-matrix LFO routings** light their destination knob — turn the slot's amount up, watch the cutoff (or whichever destination) pulse at the LFO's rate. The mod-matrix slot's own indicator strip mirrors it.
+- **The amp envelope** lights the **Gain** knob over the course of every note — you see attack rise, decay drop to sustain, sustain hold, release fade.
+- **The pitch envelope** lights the **Pitch** knob whenever the drawn curve deflects from zero (intensity = `|semitones| / 12`, so an octave bend reads as a full glow).
+- **The Mod FX section** — when the type is Chorus, Flanger, or Phaser, the section's three knobs pulse at the effect's actual rate (the warble's source, made visible). None / Reverb / Delay don't pulse.
+- **The Amp Envelope visualizer** also paints a vertical playhead that walks left-to-right through the A/D/S/R curve as the note progresses, so you can see exactly where the envelope is.
+
+All of these freeze the moment playback ends — nothing in the UI animates while the synth is silent, so motion is reserved for "this is shaping the sound you're hearing right now."
 
 ## Pattern editing
 
@@ -190,7 +207,9 @@ The pattern grid's ruler shows seconds along the top and bar/beat ticks along th
 
 ### Generate Random Pattern
 
-Right-click any empty area in a lane and pick **Generate Random Pattern in this lane** (or use **Lane → Generate Random Pattern in Lane N** from the menu bar). Drops 4–8 events with random positions snapped to the current grid (or free if grid is "Off"), durations 50–200 ms (or 1–3 grid steps if a grid is set), velocities 0.5–1.0. Pitch offsets stay at 0 — use Randomize Lane afterwards to also roll the voice settings.
+Right-click any empty area in a lane and pick **Generate Random Pattern in this lane** (or use **Edit ▸ Lane ▸ Generate Random Pattern in Lane N** from the menu bar). Drops 4–8 events with random positions snapped to the current grid (or free if grid is "Off"), durations 50–200 ms (or 1–3 grid steps if a grid is set), velocities 0.5–1.0. Pitch offsets stay at 0 — use **Randomize All** (Master section) afterwards to also roll the voice settings.
+
+The pattern toolbar has the all-lanes equivalent: **Randomize Pattern** scatters fresh random clips across every lane in one undoable step.
 
 Each generation is a single undoable transaction (`Cmd+Z` reverts the whole batch).
 
