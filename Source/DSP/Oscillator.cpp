@@ -80,6 +80,23 @@ namespace B33p
     {
         sampleRate = newSampleRate;
         updatePhaseIncrement();
+
+        // Smoother ramps — pitch is the most-audible param, so it gets
+        // the shortest ramp (20 ms). Morph / depth / mix / ratios get
+        // 30 ms — matches the rest of the synth's smoothing budget.
+        freqSmoother     .reset(sampleRate, 0.020);
+        morphSmoother    .reset(sampleRate, 0.030);
+        fmRatioSmoother  .reset(sampleRate, 0.030);
+        fmDepthSmoother  .reset(sampleRate, 0.030);
+        ringRatioSmoother.reset(sampleRate, 0.030);
+        ringMixSmoother  .reset(sampleRate, 0.030);
+        freqSmoother     .setCurrentAndTargetValue(frequencyHz);
+        morphSmoother    .setCurrentAndTargetValue(wavetableMorph);
+        fmRatioSmoother  .setCurrentAndTargetValue(fmRatio);
+        fmDepthSmoother  .setCurrentAndTargetValue(fmDepth);
+        ringRatioSmoother.setCurrentAndTargetValue(ringRatio);
+        ringMixSmoother  .setCurrentAndTargetValue(ringMix);
+        firstSetAfterPrepare = true;
     }
 
     void Oscillator::reset()
@@ -96,8 +113,10 @@ namespace B33p
 
     void Oscillator::setFrequency(float hz)
     {
-        frequencyHz = hz;
-        updatePhaseIncrement();
+        if (firstSetAfterPrepare)
+            freqSmoother.setCurrentAndTargetValue(hz);
+        else
+            freqSmoother.setTargetValue(hz);
     }
 
     void Oscillator::setCustomTable(const std::vector<float>& samples)
@@ -114,15 +133,20 @@ namespace B33p
 
     void Oscillator::setWavetableMorph(float morph01)
     {
-        wavetableMorph = std::clamp(morph01, 0.0f, 1.0f);
+        const float clamped = std::clamp(morph01, 0.0f, 1.0f);
+        if (firstSetAfterPrepare)
+            morphSmoother.setCurrentAndTargetValue(clamped);
+        else
+            morphSmoother.setTargetValue(clamped);
     }
 
     void Oscillator::setFmRatio(float ratio)
     {
-        // 0.1 .. 16: covers sub-octave (0.5), unison (1.0), and the
-        // common harmonic ratios (2..16) without letting a runaway
-        // value alias hard.
-        fmRatio = std::clamp(ratio, 0.1f, 16.0f);
+        const float clamped = std::clamp(ratio, 0.1f, 16.0f);
+        if (firstSetAfterPrepare)
+            fmRatioSmoother.setCurrentAndTargetValue(clamped);
+        else
+            fmRatioSmoother.setTargetValue(clamped);
     }
 
     void Oscillator::setFmDepth(float depth)
@@ -130,20 +154,29 @@ namespace B33p
         // 0..10: 0 = pure carrier, ~1 = mild "vocal" sidebands,
         // 5+ starts pushing into bell / DX-style territory. Above
         // 10 the spectrum quickly devolves into noise; cap there.
-        fmDepth = std::clamp(depth, 0.0f, 10.0f);
+        const float clamped = std::clamp(depth, 0.0f, 10.0f);
+        if (firstSetAfterPrepare)
+            fmDepthSmoother.setCurrentAndTargetValue(clamped);
+        else
+            fmDepthSmoother.setTargetValue(clamped);
     }
 
     void Oscillator::setRingRatio(float ratio)
     {
-        // Same range as fmRatio — sub-octave to four-octaves-up
-        // covers everything from "tremolo-like" (ratio < 1) through
-        // classic bell ratios (e.g. 1.41, 2.76).
-        ringRatio = std::clamp(ratio, 0.1f, 16.0f);
+        const float clamped = std::clamp(ratio, 0.1f, 16.0f);
+        if (firstSetAfterPrepare)
+            ringRatioSmoother.setCurrentAndTargetValue(clamped);
+        else
+            ringRatioSmoother.setTargetValue(clamped);
     }
 
     void Oscillator::setRingMix(float mix01)
     {
-        ringMix = std::clamp(mix01, 0.0f, 1.0f);
+        const float clamped = std::clamp(mix01, 0.0f, 1.0f);
+        if (firstSetAfterPrepare)
+            ringMixSmoother.setCurrentAndTargetValue(clamped);
+        else
+            ringMixSmoother.setTargetValue(clamped);
     }
 
     void Oscillator::updatePhaseIncrement()
@@ -157,6 +190,20 @@ namespace B33p
     {
         if (sampleRate <= 0.0)
             return 0.0f;
+
+        // Advance every smoother once per sample so the phase
+        // accumulator + modulators read the just-ramped value. The
+        // freq smoother also feeds back through updatePhaseIncrement
+        // — cheap (single divide). All other smoothed values are
+        // consumed in the waveform branches below.
+        frequencyHz    = freqSmoother     .getNextValue();
+        wavetableMorph = morphSmoother    .getNextValue();
+        fmRatio        = fmRatioSmoother  .getNextValue();
+        fmDepth        = fmDepthSmoother  .getNextValue();
+        ringRatio      = ringRatioSmoother.getNextValue();
+        ringMix        = ringMixSmoother  .getNextValue();
+        firstSetAfterPrepare = false;
+        updatePhaseIncrement();
 
         if (waveform == Waveform::Noise)
             return noiseDist(rng);

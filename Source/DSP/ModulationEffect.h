@@ -78,6 +78,19 @@ namespace B33p
         // sample-at-a-time interface — processMono on a 1-sample
         // buffer. Plenty for our purposes.
         juce::Reverb              reverb;
+
+        // Per-sample smoothers on p1/p2/mix so fast automation doesn't
+        // zipper the active type's parameters (CLAUDE.md "Parameter
+        // smoothing"). pushParamsToActiveType is throttled to every
+        // kPushIntervalSamples since the juce::dsp wrappers' setters
+        // (chorus.setRate / phaser.setDepth / reverb.setParameters
+        // etc.) aren't cheap per-sample.
+        juce::SmoothedValue<float> p1Smoother;
+        juce::SmoothedValue<float> p2Smoother;
+        juce::SmoothedValue<float> mixSmoother;
+        int                        samplesUntilPush { 0 };
+        static constexpr int       kPushIntervalSamples = 16;
+        bool                       firstSetAfterPrepare { true };
         juce::Reverb::Parameters  reverbParams;
     };
 }

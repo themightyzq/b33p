@@ -67,6 +67,27 @@ namespace B33p
         float  vowel01    { 0.0f };
         bool   prepared   { false };
 
+        // Per-sample smoothers on the continuous parameters so fast
+        // automation doesn't zipper at the block-rate quantum (CLAUDE.md
+        // "Parameter smoothing" contract). Coefficient recompute is
+        // throttled to every kCoeffUpdateIntervalSamples — the smoother
+        // values themselves track per-sample (cutoffHz/resonanceQ/vowel01
+        // are written each processSample from the smoothers), so the
+        // throttle only affects how often the biquad / formant biquads
+        // pick up a new coefficient set.
+        juce::SmoothedValue<float> cutoffSmoother;
+        juce::SmoothedValue<float> resonanceSmoother;
+        juce::SmoothedValue<float> vowelSmoother;
+        int                        samplesUntilCoeffUpdate { 0 };
+        static constexpr int       kCoeffUpdateIntervalSamples = 16;
+        // Snap-on-first-set: between prepare() and the first processSample
+        // every setX snaps via setCurrentAndTargetValue so the smoother
+        // doesn't ramp from a stale default. After the first processSample
+        // subsequent setX calls ramp. Matches both live audio (the first
+        // pushParametersToLane block snaps, later blocks ramp) and the
+        // test pattern (prepare → setX → processSample → assert).
+        bool                       firstSetAfterPrepare { true };
+
         // Single biquad used by LP/HP/BP. For Comb/Formant it is
         // reset and bypassed.
         juce::dsp::IIR::Filter<float> biquad;

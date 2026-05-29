@@ -1,5 +1,7 @@
 #pragma once
 
+#include <juce_audio_basics/juce_audio_basics.h>
+
 namespace B33p
 {
     // Sample-and-hold sample-rate reduction combined with uniform
@@ -46,5 +48,12 @@ namespace B33p
         double phase          { 1.0 };
         float  heldSample     { 0.0f };
         bool   prepared       { false };
+
+        // Per-sample smoothers — fast automation otherwise zippers both
+        // params (quantStep jumps at bitDepth edges, phaseIncrement
+        // jumps at targetHz edges). CLAUDE.md "Parameter smoothing".
+        juce::SmoothedValue<float> bitDepthSmoother;
+        juce::SmoothedValue<float> targetHzSmoother;
+        bool                       firstSetAfterPrepare { true };
     };
 }

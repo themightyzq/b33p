@@ -145,5 +145,12 @@ namespace B33p
         float gain                 { 1.0f };
         float triggerVelocity      { 1.0f };
         bool  prepared             { false };
+
+        // Per-sample gain smoother — 10 ms ramp. Fast voice_gain
+        // automation otherwise zippers the final stage of the voice
+        // (CLAUDE.md "Parameter smoothing"; voice_gain is excluded
+        // from the randomizer but the user can still automate it).
+        juce::SmoothedValue<float> gainSmoother;
+        bool                       firstGainSetAfterPrepare { true };
     };
 }

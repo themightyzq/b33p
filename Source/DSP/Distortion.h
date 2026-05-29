@@ -1,5 +1,7 @@
 #pragma once
 
+#include <juce_audio_basics/juce_audio_basics.h>
+
 namespace B33p
 {
     // Memoryless tanh waveshaper: processSample(x) = tanh(drive * x).
@@ -26,7 +28,11 @@ namespace B33p
         float processSample(float input);
 
     private:
-        float drive    { 1.0f };
-        bool  prepared { false };
+        float                      drive         { 1.0f };
+        bool                       prepared      { false };
+        // Drive smoother — 20 ms ramp. Fast drive automation otherwise
+        // zippers the tanh waveshape (CLAUDE.md "Parameter smoothing").
+        juce::SmoothedValue<float> driveSmoother;
+        bool                       firstSetAfterPrepare { true };
     };
 }

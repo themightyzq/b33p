@@ -30,6 +30,18 @@ namespace B33p
 
         reverb.setSampleRate(sampleRate);
 
+        // Smoothers — 30 ms ramp on every continuous param so a fast
+        // Mix automation doesn't click the wet/dry, and Param 1/2
+        // automation doesn't step the active sub-effect.
+        p1Smoother .reset(sampleRate, 0.030);
+        p2Smoother .reset(sampleRate, 0.030);
+        mixSmoother.reset(sampleRate, 0.030);
+        p1Smoother .setCurrentAndTargetValue(p1);
+        p2Smoother .setCurrentAndTargetValue(p2);
+        mixSmoother.setCurrentAndTargetValue(mix);
+        samplesUntilPush     = 0;
+        firstSetAfterPrepare = true;
+
         // Push current parameters into whichever effect is active —
         // setters might have been called before prepare().
         pushParamsToActiveType();
@@ -58,20 +70,29 @@ namespace B33p
 
     void ModulationEffect::setParam1(float v01)
     {
-        p1 = std::clamp(v01, 0.0f, 1.0f);
-        pushParamsToActiveType();
+        const float clamped = std::clamp(v01, 0.0f, 1.0f);
+        if (firstSetAfterPrepare)
+            p1Smoother.setCurrentAndTargetValue(clamped);
+        else
+            p1Smoother.setTargetValue(clamped);
     }
 
     void ModulationEffect::setParam2(float v01)
     {
-        p2 = std::clamp(v01, 0.0f, 1.0f);
-        pushParamsToActiveType();
+        const float clamped = std::clamp(v01, 0.0f, 1.0f);
+        if (firstSetAfterPrepare)
+            p2Smoother.setCurrentAndTargetValue(clamped);
+        else
+            p2Smoother.setTargetValue(clamped);
     }
 
     void ModulationEffect::setMix(float v01)
     {
-        mix = std::clamp(v01, 0.0f, 1.0f);
-        pushParamsToActiveType();
+        const float clamped = std::clamp(v01, 0.0f, 1.0f);
+        if (firstSetAfterPrepare)
+            mixSmoother.setCurrentAndTargetValue(clamped);
+        else
+            mixSmoother.setTargetValue(clamped);
     }
 
     float ModulationEffect::delaySamplesFromP1() const
@@ -146,6 +167,21 @@ namespace B33p
     {
         if (! prepared)
             return input;
+
+        // Advance smoothers per sample, push smoothed values to the
+        // active sub-effect every kPushIntervalSamples. Per-sample push
+        // would call chorus.setRate / phaser.setDepth / reverb.setParameters
+        // every sample — ~16x more work than is needed for an audibly-
+        // smooth ramp at typical ramp times.
+        p1  = p1Smoother .getNextValue();
+        p2  = p2Smoother .getNextValue();
+        mix = mixSmoother.getNextValue();
+        if (--samplesUntilPush <= 0)
+        {
+            pushParamsToActiveType();
+            samplesUntilPush = kPushIntervalSamples;
+        }
+        firstSetAfterPrepare = false;
 
         switch (type)
         {
