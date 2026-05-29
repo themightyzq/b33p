@@ -94,6 +94,7 @@ repo-hygiene.md
 # was committed deliberately at the time and pre-dates this rule.
 REVIEW-USER.md
 REVIEW-DESIGN.md
+REVIEW-AUDIO.md
 .claude/
 .anthropic/
 .cursor/
