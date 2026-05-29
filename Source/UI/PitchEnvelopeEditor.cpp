@@ -121,9 +121,19 @@ namespace B33p
         label("0",   area.getCentreY());
         label("-12", area.getBottom() - 6.0f);
 
-        if (curve.empty())
+        // First-run hint — shown when the curve is effectively flat (the
+        // default state is two boundary points at 0 semitones, which
+        // draws as the zero baseline above and looks like "nothing's
+        // here" to a fresh user). The hint disappears the moment any
+        // point has a non-zero semitone value OR the user has added a
+        // third point. (REVIEW-USER M-MISSING-3 — the empty-state hint
+        // existed but its old `curve.empty()` condition never triggered
+        // because the default curve has two zero-pitch points.)
+        const bool curveIsFlat = curve.size() <= 2 && std::all_of(
+            curve.begin(), curve.end(),
+            [](const PitchEnvelopePoint& p) { return std::abs(p.semitones) < 1e-3f; });
+        if (curve.empty() || curveIsFlat)
         {
-            // First-run hint — fades the moment a single point is added.
             g.setColour(juce::Colour::fromRGB(140, 140, 140));
             g.setFont(juce::FontOptions(12.0f));
             g.drawText("Click anywhere to add a pitch point. Drag to shape; right-click a point to delete.",

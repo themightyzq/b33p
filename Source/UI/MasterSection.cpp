@@ -19,20 +19,20 @@ namespace B33p
         };
         addAndMakeVisible(auditionButton);
 
-        // "Randomize All" rolls every unlocked parameter for the
-        // currently-selected lane. The scope is the selected lane —
-        // "all" refers to all of that lane's parameters. Rolling
-        // parameters across multiple lanes lives in the pattern
-        // editor's "Randomize Params" button + the Lane menu, so the
-        // more frequent single-lane action stays in the master strip.
-        diceAllButton.setButtonText("Randomize All");
+        // "Randomize Voice" rolls every unlocked parameter for the
+        // currently-selected lane. The previous label "Randomize All"
+        // read as "randomize ALL lanes" to first-time users (REVIEW-USER
+        // D-CONFUSING-3) — "Voice" makes the scope obvious. Rolling
+        // parameters across multiple lanes lives in the pattern editor's
+        // "Randomize Params" button; this stays the per-voice action.
+        diceAllButton.setButtonText("Randomize Voice");
         diceAllButton.onClick = [this]
         {
             juce::Random rng;
             const int lane = processor.getSelectedLane();
             processor.getRandomizer().rollMany(
                 ParameterIDs::allForLane(lane), rng,
-                "Randomize All (lane " + juce::String(lane + 1) + ")");
+                "Randomize Voice (lane " + juce::String(lane + 1) + ")");
             // Audible-randomize rule: never leave the lane silent.
             processor.ensureLaneAudibleAfterRandomize(lane, rng);
         };
@@ -40,7 +40,7 @@ namespace B33p
 
         gainSlider    .setTooltip("Master output level");
         auditionButton.setTooltip("Play a single beep with the current settings (Shift+Space)");
-        diceAllButton .setTooltip("Randomize all unlocked parameters on the currently-selected lane");
+        diceAllButton .setTooltip("Randomize every unlocked parameter on the currently-selected lane's voice");
 
         // ---- A/B compare buttons ----------------------------------
         abButtonA.setClickingTogglesState(false);

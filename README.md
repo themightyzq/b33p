@@ -6,9 +6,20 @@
 
 Built for sound designers, game developers, and synth hobbyists who want a tight workflow for one specific problem: making a lot of good tiny sounds, quickly.
 
+## Make a beep in 30 seconds
+
+1. Launch b33p (Standalone, VST3, or AU — same UI).
+2. Press **Audition** (or `Shift+Space`) in the Master strip — you'll hear a default sine beep.
+3. Drag any knob to taste — pitch, filter cutoff, drive, mod-FX mix. Knob drags ramp smoothly, no zipper.
+4. Hit **Randomize Voice** to roll the dice on the current lane's voice settings until something surprises you. Hit Audition again to hear it.
+
+That's the loop. From there: draw clips in the pattern grid to sequence the beep, or play it from a MIDI keyboard. See [docs/USAGE.md](docs/USAGE.md) for the full reference, or [docs/FAQ.md](docs/FAQ.md) for common "I don't hear anything" / "plugin not in my DAW" / "where are my presets" / "how do I uninstall" answers.
+
 ## Status
 
-**Active development.** The post-MVP feature set has landed: full modulation engine, multi-mode oscillator and filter, per-event overrides, presets, MIDI input, polyphony, plugin formats. See [TODO.md](TODO.md) for what remains. Built binaries for macOS, Linux, and Windows are attached to each [GitHub Actions run on `main`](https://github.com/themightyzq/b33p/actions/workflows/build.yml).
+**Active development.** The post-MVP feature set has landed: full modulation engine, multi-mode oscillator and filter, per-event overrides, presets, MIDI input, polyphony, plugin formats. See [TODO.md](TODO.md) for what remains.
+
+Built binaries for macOS, Linux, and Windows are attached to each [GitHub Actions run on `main`](https://github.com/themightyzq/b33p/actions/workflows/build.yml). Tagged releases (currently marked as pre-releases while the synth iterates ahead of a 1.0) are published to the [Releases page](https://github.com/themightyzq/b33p/releases) — the "pre-release" label means "not yet 1.0," not "unstable." The latest `main` build is the closest to what the docs describe.
 
 ## Features
 

@@ -251,11 +251,17 @@ namespace B33p
         // Button index in the result: 1 = Save, 2 = Discard, 0 = Cancel.
         // JUCE assigns 1..N for the order they're added; "Cancel" is
         // mapped to 0 by withButton when it is the last/escape choice.
+        // `confirmDiscardThen` is the single dirty-state gate for
+        // File ▸ New, File ▸ Open, Open Recent, Load Preset, and
+        // dropped-in .beep files — the previous "before closing?" copy
+        // was misleading for every caller except quit. Action-agnostic
+        // phrasing fits all entry points; the Save / Discard buttons
+        // make the next step obvious. (REVIEW-USER G-CONFUSING-4.)
         juce::AlertWindow::showAsync(
             juce::MessageBoxOptions()
                 .withIconType(juce::MessageBoxIconType::WarningIcon)
                 .withTitle("Unsaved changes")
-                .withMessage("Save changes to " + fileName + " before closing?")
+                .withMessage("Save changes to " + fileName + "?")
                 .withButton("Save")
                 .withButton("Discard")
                 .withButton("Cancel"),

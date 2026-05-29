@@ -110,6 +110,7 @@ namespace B33p
         SliderFormatting::applyDoubleClickReset(p2Slider .getSlider(), processor.getApvts(), ParameterIDs::modEffectParam2(lane));
         SliderFormatting::applyDoubleClickReset(mixSlider.getSlider(), processor.getApvts(), ParameterIDs::modEffectMix(lane));
 
+        setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6
         setAccentColour(processor.laneAccentColour(lane));
 
         typeSelector.onChange = [this] { onTypeChanged(); };

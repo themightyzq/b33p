@@ -131,6 +131,7 @@ namespace B33p
             SliderFormatting::applyBipolar(slot.amount);
         }
 
+        setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6
         setAccentColour(processor.laneAccentColour(lane));
     }
 
