@@ -1287,11 +1287,22 @@ namespace B33p
         selectedLaneVoiceActive  .store(voices[static_cast<size_t>(sel)].isActive());
 
         // Amp envelope stage + time-in-stage for the visualizer
-        // playhead (P31). Store as int (the underlying type of Stage
-        // is int by default for enum class).
-        selectedLaneAmpEnvStage     .store(static_cast<int>(
-            voices[static_cast<size_t>(sel)].getAmpEnvelopeStage()));
-        selectedLaneAmpEnvElapsedSec.store(
-            voices[static_cast<size_t>(sel)].getAmpEnvelopeStageElapsedSec());
+        // playhead (P31). Packed into one uint64 (stage in high 32
+        // bits, elapsed-in-microseconds in low 32 bits) so the UI's
+        // single atomic load returns a consistent snapshot. The
+        // earlier two-separate-stores design tore on the boundary —
+        // a UI read landing between the two stores saw the NEW stage
+        // with the OLD elapsed and computed a wildly wrong playhead
+        // x, producing the user-reported "skips around" symptom.
+        const auto stageInt = static_cast<std::int32_t>(
+            voices[static_cast<size_t>(sel)].getAmpEnvelopeStage());
+        const float elapsedSec = voices[static_cast<size_t>(sel)]
+                                     .getAmpEnvelopeStageElapsedSec();
+        const auto micros = static_cast<std::uint32_t>(
+            juce::jlimit(0.0f, 4000.0f, elapsedSec) * 1.0e6f);
+        const std::uint64_t packed =
+            (static_cast<std::uint64_t>(static_cast<std::uint32_t>(stageInt)) << 32)
+            | static_cast<std::uint64_t>(micros);
+        selectedLaneAmpEnvPacked.store(packed);
     }
 }
