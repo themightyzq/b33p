@@ -224,10 +224,26 @@ namespace B33p
             }
         outputLimiter.prepare(sampleRate);
         outputLimiter.reset();
+        // Bypass-exit fade-in. Initial state is "not bypassed" so
+        // the synth produces sound immediately on first run.
+        bypassFadeGain.reset(sampleRate, 0.010);
+        bypassFadeGain.setCurrentAndTargetValue(1.0f);
     }
 
     void B33pProcessor::releaseResources()
     {
+    }
+
+    bool B33pProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
+    {
+        // Output bus must be mono or stereo. There is no input bus
+        // (b33p is an instrument). The write path in processBlock
+        // already handles 1 or 2 output channels via per-channel
+        // pointer null-checks (numChannels > 0 / > 1), so accepting
+        // mono here is no-cost beyond the bus declaration.
+        const auto out = layouts.getMainOutputChannelSet();
+        return out == juce::AudioChannelSet::mono()
+            || out == juce::AudioChannelSet::stereo();
     }
 
     void B33pProcessor::setPitchCurve(std::vector<PitchEnvelopePoint> newCurve)
@@ -939,18 +955,21 @@ namespace B33p
         // Host bypass — JUCE 8 routes bypass through the parameter
         // returned by getBypassParameter(). For an instrument plugin
         // "bypass" means stop generating audio: clear the buffer and
-        // the MIDI through-pass. We don't bother crossfading — voices
-        // stop being triggered immediately, and their internal
-        // envelopes will quietly tail any sample already in flight on
-        // next un-bypass. Skipping the rest of the block also avoids
-        // advancing the pattern playhead and wasting CPU on muted
-        // voices.
+        // the MIDI through-pass. Skipping the rest of the block also
+        // avoids advancing the pattern playhead and wasting CPU on
+        // muted voices. On bypass exit, `bypassFadeGain` ramps from 0
+        // to 1 over 10 ms (set below), so a long-tail reverb / delay
+        // that was sounding at engage doesn't resume with a click.
         if (bypassParam != nullptr && bypassParam->load() > 0.5f)
         {
             buffer.clear();
             midi.clear();
+            bypassFadeGain.setCurrentAndTargetValue(0.0f);
             return;
         }
+        // Not bypassed — ensure the fade-gain target is 1. A no-op
+        // once already at 1; ramps from 0 if we just exited bypass.
+        bypassFadeGain.setTargetValue(1.0f);
 
         pushParametersToVoices();
 
@@ -1205,6 +1224,10 @@ namespace B33p
             // peaks toward a ceiling just below 0 dBFS so nothing hard-clips
             // (clean signal below the knee is untouched).
             s = outputLimiter.processSample(s);
+            // Bypass-exit fade-in. At steady state (not just-exited) this
+            // is a 1.0 multiply — free. Just after un-bypass it ramps
+            // from 0 to 1 over 10 ms.
+            s *= bypassFadeGain.getNextValue();
 
             if (left  != nullptr) left[i]  = s;
             if (right != nullptr) right[i] = s;

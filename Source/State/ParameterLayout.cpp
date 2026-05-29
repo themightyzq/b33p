@@ -158,9 +158,19 @@ namespace B33p
                                  skewedRange(1000.0f, 48000.0f, 8000.0f),
                                  48000.0f, "Hz"));
 
+            // Drive's musically-useful range is ~ 0.1 .. 20 (the
+            // randomizer caps at 20 for this reason — above that the
+            // tanh waveshape asymptotes and the top of the range
+            // produces effectively the same square wave). The skew
+            // puts drive ≈ 5 at the slider midpoint so the useful
+            // region covers ~60 % of the slider travel; the upper
+            // values stay reachable for sound-design extremes
+            // without dominating the slider. Param range stays
+            // [0.1, 100] so older .beep files load unchanged.
+            // (REVIEW-AUDIO #7.)
             layout.add(makeFloat(ParameterIDs::distortionDrive(lane),
                                  prefix + "Distortion Drive",
-                                 juce::NormalisableRange<float> { 0.1f, 100.0f },
+                                 skewedRange(0.1f, 100.0f, 5.0f),
                                  1.0f));
 
             // Modulation effect slot at the end of the chain. Type
