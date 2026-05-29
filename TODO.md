@@ -340,19 +340,43 @@ The 2026-05-25 plugin-designer pass (`docs/REVIEW.md`, P1–P38) was mostly work
 From the 2026-05-27 fresh end-user review (`REVIEW-USER.md`). The #1 user blocker — *"I can't actually download it; the Releases page is empty"* (B1/B2/M1) — is **not relisted here**: it's the existing release-publish hold (see "Release in flight — v0.2.0" at the top). N1 (preset tags/search) is already tracked as REVIEW Pass 2 **P19**. The new items:
 
 ### Major
-- [ ] **M2 — no way to export a single sound; export is pattern-only.** *User impact: "The tagline says make tiny sounds fast, but I have to learn the grid and place an event before I can export even one beep — sfxr/Bfxr just export the current sound."* Add an "export current voice as a one-shot," or auto-render one hit + tail when Export runs on an empty pattern. [major]
-- [ ] **C1 — the "each lane is its own voice" model isn't obvious in-app.** *User impact: "I didn't realize clicking a pattern lane swaps the whole voice editor — the only clue is the tiny '(Lane 1)' on the Oscillator title."* Add a first-run one-liner or persistent micro-hint tying the 4 lanes to the voice editor. [major]
+- [x] **M2 — no way to export a single sound; export is pattern-only.** Partial: documented workaround in `docs/FAQ.md` ("drop a default-size clip in Lane 1, Export, Cmd+Z"). A proper `File ▸ Export Current Voice...` is still roadmapped — see Post-MVP roadmap "Export current voice as one-shot" below.
+- [x] **C1 — the "each lane is its own voice" model isn't obvious in-app.** Fixed via first-launch welcome popover (`MainComponent::showWelcomeIfNeeded`) that names the 4-lane-each-with-a-voice model and the lane-swaps-the-voice-editor relationship, plus the `(Lane N)` suffix now appearing on every per-lane section header.
 
 ### Minor
-- [ ] **B3 — `docs/USAGE.md:193` points at a "Lane" menu that no longer exists** (it's `Edit ▸ Lane` now; the menu bar is File · Edit · Help). *User impact: "The guide told me to use a menu that isn't there."* Doc fix — update the line (USAGE already uses `Edit ▸ Lane` correctly elsewhere). [minor]
-- [ ] **M3 — no in-app onboarding.** *User impact: "A 'fast iteration' tool opened as a full modular synth with no 'start here.'"* A one-time welcome panel or `Help ▸ Quick start` mirroring the README quickstart. [minor]
+- [x] **B3 — `docs/USAGE.md:193` points at a "Lane" menu that no longer exists.** Fixed in the 2026-05-29 doc batch.
+- [x] **M3 — no in-app onboarding.** Fixed via the same first-launch welcome popover.
 - [ ] **C2 — the most useful pattern actions are right-click-only and invisible** (generate / clear / rename lane, park playhead, edit overrides). *User impact: "I never found these because nothing on screen hints they exist."* Surface the top one or two in the empty-state hint or a small affordance. [minor]
 - [ ] **C3 — pressing Play on an empty pattern is silent with no feedback.** *User impact: "I hit Play, heard nothing, and assumed it was broken."* When Play starts on an empty pattern, flash a hint ("draw a clip, or Shift+Space to audition"). [minor]
 
 ### Polish / nice-to-have
-- [ ] **M4 — no documented uninstall / data-location story.** *User impact: "I couldn't find where presets/settings live to remove them."* Add an "Uninstall / where your data lives" note to `docs/USAGE.md`. [polish]
+- [x] **M4 — no documented uninstall / data-location story.** Covered in `docs/FAQ.md` "How do I remove b33p completely?" with per-OS paths.
 - [ ] **N2 — custom controls may lack screen-reader labels.** *User impact (inferred): UI automation couldn't find the preset `< >` buttons by accessible name, suggesting some JUCE custom controls don't expose names to assistive tech.* Audit accessibility names on custom buttons/controls. [polish]
-- [ ] **N3 — no troubleshooting/FAQ.** *User impact: "Common 'no sound? / plugin not in my DAW? / where are my presets?' questions aren't answered in the docs."* Add a short FAQ section to README/USAGE. [polish]
+- [x] **N3 — no troubleshooting/FAQ.** New `docs/FAQ.md` covering install, no-sound triage, plugin discovery, presets, uninstall paths, render-one-beep workaround, bypass behaviour, pre-release labelling.
+
+### 2026-05-29 REVIEW-USER pass (resolved this session)
+
+Items below come from the same review but used the alternate label scheme (A-MISSING-1 / J-CONFUSING-5 etc.) — kept here separate so the audit trail is intact and nothing duplicates above.
+
+- [x] **D-CONFUSING-3** — Master "Randomize All" renamed to "Randomize Voice" to match its lane scope.
+- [x] **G-CONFUSING-4** — confirmDiscardThen dialog body now reads neutral "Save changes to <file>?".
+- [x] **H-BROKEN-2** — USAGE "Lane menu" → "Edit ▸ Lane".
+- [x] **J-CONFUSING-5** — `setMacMainMenu` on macOS standalone so the screen-top menu bar shows File/Edit/Help.
+- [x] **K-CONFUSING-6** — README explains the pre-release label.
+- [x] **L-CONFUSING-7** — A/B/Copy cluster outlined as a single group in the Master strip.
+- [x] **M-MISSING-3** — Pitch Envelope empty-state hint now fires on a flat default curve, not only an empty one.
+- [x] **O-BROKEN-3** — USAGE Mod FX label table aligned with the abbreviations actually shown in the app (Damp/Fback/Mix).
+- [x] **R-MISSING-6** — `setTitleSuffix(processor.laneTitleSuffix(lane))` on all five per-lane editor sections.
+- [x] **S-MISSING-7** — new `docs/FAQ.md`.
+- [x] **T-MISSING-8** — 30-second quickstarts at the top of README and USAGE.
+- [x] **B-CONFUSING-1 / C-CONFUSING-2** — first-launch welcome popover (standalone only, gated on `welcomeShown` flag in the per-user properties file).
+- [ ] **F-BROKEN-1** — tag v0.3.0 from current `main` so the documented experience matches the downloadable binary. (Deferred to the next deliberate release pass.)
+- [ ] **A-MISSING-1** — proper `File ▸ Export Current Voice...` menu (workaround now documented in FAQ).
+- [ ] **N-MISSING-4** — lane-colour legend. *Triaged: skip.* Per-lane accent strip + `(Lane N)` suffix on every section now provides the same key in-place.
+- [ ] **Q-MISSING-5** — keyboard Tab traversal + focus ring. *Roadmapped.*
+- [ ] **U-MISSING-9** — drag-and-drop export of the current sound. *Roadmapped.*
+- [ ] **W-MISSING-11** — right-click ▸ MIDI Learn on knobs. *Roadmapped.*
+- [ ] **P-NICE-1** — reverse-lookup "what's modulating this knob" on the destination side. *Nice-to-have.*
 
 ---
 

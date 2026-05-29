@@ -178,15 +178,11 @@ namespace B33p
     void MainComponent::resized()
     {
         auto fullBounds = getLocalBounds();
-        if (usingMacMainMenu)
-        {
-            // Screen-top menu owns dispatch — no strip to lay out, no
-            // height to reserve.
-        }
-        else
-        {
+        // When the screen-top menu (setMacMainMenu) is in use, the
+        // embedded MenuBarComponent stays hidden + invisible to the
+        // layout — nothing to lay out, no height to reserve.
+        if (! usingMacMainMenu)
             menuBar.setBounds(fullBounds.removeFromTop(kMenuBarHeight));
-        }
 
         auto bounds = fullBounds.reduced(kOuterPadding);
 
