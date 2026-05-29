@@ -47,6 +47,15 @@ namespace B33p
         // hunting through curve editors. Returns 0 when idle.
         float getCurrentLevel() const { return currentLevel; }
 
+        // Snapshots of which envelope stage is currently running and how
+        // far through it. Drives the AmpEnvelopeVisualizer's live
+        // playhead (P31): the UI maps (stage, elapsed) to an x position
+        // on the painted curve so the user can see where in the
+        // envelope the note currently is. Returns Stage::Idle / 0 when
+        // the envelope isn't running.
+        Stage getStage() const                   { return stage; }
+        float getStageElapsedSeconds() const     { return stageElapsedSeconds; }
+
     private:
         void beginAttack();
         void beginDecay();
@@ -59,8 +68,16 @@ namespace B33p
         float  sustainLevel   { 1.0f };
         float  releaseSeconds { 0.0f };
 
-        Stage  stage          { Stage::Idle };
-        float  currentLevel   { 0.0f };
-        float  stageIncrement { 0.0f };
+        Stage  stage                  { Stage::Idle };
+        float  currentLevel           { 0.0f };
+        float  stageIncrement         { 0.0f };
+        // Wall-clock-ish elapsed time within the current stage, reset
+        // by the begin*() helpers on each stage transition. Accumulated
+        // in sample-rate time inside processSample so the UI playhead
+        // tracks the actual audio playhead within ~1 sample.
+        float  stageElapsedSeconds    { 0.0f };
+        // Cached 1 / sampleRate so processSample doesn't divide per
+        // sample. Recomputed in prepare().
+        float  invSampleRate          { 0.0f };
     };
 }

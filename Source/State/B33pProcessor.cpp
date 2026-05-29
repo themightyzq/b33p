@@ -1221,5 +1221,13 @@ namespace B33p
         // user sees what's shaping CURRENT playback rather than the
         // latent wiring of an idle synth.
         selectedLaneVoiceActive  .store(voices[static_cast<size_t>(sel)].isActive());
+
+        // Amp envelope stage + time-in-stage for the visualizer
+        // playhead (P31). Store as int (the underlying type of Stage
+        // is int by default for enum class).
+        selectedLaneAmpEnvStage     .store(static_cast<int>(
+            voices[static_cast<size_t>(sel)].getAmpEnvelopeStage()));
+        selectedLaneAmpEnvElapsedSec.store(
+            voices[static_cast<size_t>(sel)].getAmpEnvelopeStageElapsedSec());
     }
 }

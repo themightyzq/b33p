@@ -125,6 +125,12 @@ namespace B33p
         float getAmpEnvelopeLevel()  const { return ampEnvelope  .getCurrentLevel(); }
         float getPitchEnvelopeValue() const { return pitchEnvelope.getCurrentValue(); }
 
+        // Snapshots of which amp-env stage is currently running and how
+        // far through it (seconds). Drive the AmpEnvelopeVisualizer's
+        // live playhead (P31).
+        AmpEnvelope::Stage getAmpEnvelopeStage()           const { return ampEnvelope.getStage(); }
+        float              getAmpEnvelopeStageElapsedSec() const { return ampEnvelope.getStageElapsedSeconds(); }
+
     private:
         Oscillator       oscillator;
         AmpEnvelope      ampEnvelope;

@@ -8,7 +8,7 @@ namespace B33p
     AmpEnvSection::AmpEnvSection(B33pProcessor& processorRef)
         : Section("Amp Envelope"),
           processor(processorRef),
-          visualizer(processorRef.getApvts())
+          visualizer(processorRef)
     {
         addAndMakeVisible(visualizer);
         addAndMakeVisible(attackSlider);
