@@ -1,5 +1,7 @@
 #pragma once
 
+#include <juce_audio_basics/juce_audio_basics.h>
+
 #include <array>
 #include <random>
 #include <vector>
@@ -126,5 +128,18 @@ namespace B33p
 
         std::mt19937                          rng;
         std::uniform_real_distribution<float> noiseDist { -1.0f, 1.0f };
+
+        // Per-sample smoothers on every continuous param so fast
+        // automation doesn't zipper the phase increment / modulator
+        // depth / wavetable morph (CLAUDE.md "Parameter smoothing").
+        // Pitch gets the shortest ramp — it's the most audible move;
+        // morph / depth / mix get ~30 ms.
+        juce::SmoothedValue<float> freqSmoother;
+        juce::SmoothedValue<float> morphSmoother;
+        juce::SmoothedValue<float> fmRatioSmoother;
+        juce::SmoothedValue<float> fmDepthSmoother;
+        juce::SmoothedValue<float> ringRatioSmoother;
+        juce::SmoothedValue<float> ringMixSmoother;
+        bool                       firstSetAfterPrepare { true };
     };
 }

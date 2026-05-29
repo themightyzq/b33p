@@ -12,6 +12,11 @@ namespace B33p
         reset();
         recomputeQuantStep();
         recomputePhaseIncrement();
+        bitDepthSmoother.reset(sampleRate, 0.030);     // 30 ms
+        targetHzSmoother.reset(sampleRate, 0.030);
+        bitDepthSmoother.setCurrentAndTargetValue(bitDepth);
+        targetHzSmoother.setCurrentAndTargetValue(targetHz);
+        firstSetAfterPrepare = true;
     }
 
     void Bitcrush::reset()
@@ -22,20 +27,35 @@ namespace B33p
 
     void Bitcrush::setBitDepth(float bits)
     {
-        bitDepth = std::clamp(bits, 1.0f, 16.0f);
-        recomputeQuantStep();
+        const float clamped = std::clamp(bits, 1.0f, 16.0f);
+        if (firstSetAfterPrepare)
+            bitDepthSmoother.setCurrentAndTargetValue(clamped);
+        else
+            bitDepthSmoother.setTargetValue(clamped);
     }
 
     void Bitcrush::setTargetSampleRate(float hz)
     {
-        targetHz = std::max(20.0f, hz);
-        recomputePhaseIncrement();
+        const float clamped = std::max(20.0f, hz);
+        if (firstSetAfterPrepare)
+            targetHzSmoother.setCurrentAndTargetValue(clamped);
+        else
+            targetHzSmoother.setTargetValue(clamped);
     }
 
     float Bitcrush::processSample(float input)
     {
         if (! prepared)
             return 0.0f;
+
+        // Advance the smoothers per sample and recompute the derived
+        // quantization step + phase increment. Both ops are cheap
+        // (pow + divide), so per-sample is fine — no throttle needed.
+        bitDepth = bitDepthSmoother.getNextValue();
+        targetHz = targetHzSmoother.getNextValue();
+        recomputeQuantStep();
+        recomputePhaseIncrement();
+        firstSetAfterPrepare = false;
 
         if (phase >= 1.0)
         {

@@ -73,6 +73,19 @@ namespace B33p
         combMask    = pow2 - 1;
         combWriteIx = 0;
 
+        // Smoother ramps — values per CLAUDE.md "Parameter smoothing".
+        // Cutoff is the most-automated; ~30 ms is the sweet spot between
+        // "no zipper" and "feels responsive." Resonance moves more slowly
+        // in practice; vowel matches cutoff.
+        cutoffSmoother   .reset(sampleRate, 0.030);
+        resonanceSmoother.reset(sampleRate, 0.050);
+        vowelSmoother    .reset(sampleRate, 0.030);
+        cutoffSmoother   .setCurrentAndTargetValue(cutoffHz);
+        resonanceSmoother.setCurrentAndTargetValue(resonanceQ);
+        vowelSmoother    .setCurrentAndTargetValue(vowel01);
+        samplesUntilCoeffUpdate = 0;
+        firstSetAfterPrepare    = true;
+
         updateCoefficients();
     }
 
@@ -95,20 +108,32 @@ namespace B33p
 
     void Filter::setCutoff(float hz)
     {
-        cutoffHz = hz;
-        updateCoefficients();
+        // Target only; the smoother in processSample ramps to it and
+        // updateCoefficients fires every kCoeffUpdateIntervalSamples
+        // off the latest smoothed value. The first setX after prepare
+        // snaps so the initial pushParametersToLane (and tests) get
+        // the requested value immediately.
+        if (firstSetAfterPrepare)
+            cutoffSmoother.setCurrentAndTargetValue(hz);
+        else
+            cutoffSmoother.setTargetValue(hz);
     }
 
     void Filter::setResonance(float q)
     {
-        resonanceQ = q;
-        updateCoefficients();
+        if (firstSetAfterPrepare)
+            resonanceSmoother.setCurrentAndTargetValue(q);
+        else
+            resonanceSmoother.setTargetValue(q);
     }
 
     void Filter::setVowel(float v01)
     {
-        vowel01 = std::clamp(v01, 0.0f, 1.0f);
-        updateCoefficients();
+        const float clamped = std::clamp(v01, 0.0f, 1.0f);
+        if (firstSetAfterPrepare)
+            vowelSmoother.setCurrentAndTargetValue(clamped);
+        else
+            vowelSmoother.setTargetValue(clamped);
     }
 
     float Filter::combFeedbackFromQ() const
@@ -175,6 +200,23 @@ namespace B33p
     {
         if (! prepared)
             return 0.0f;
+
+        // Advance the smoothers every sample so the *next* coefficient
+        // update reads the current ramped value. Updating coefficients
+        // every sample would be CPU-expensive (juce::dsp::IIR's
+        // makeLowPass does 3 trig + several arith ops per call); every
+        // 16 samples is fast enough that the audible response tracks
+        // the ramp (~ 0.33 ms granularity at 48 kHz) and is roughly
+        // 16x cheaper.
+        cutoffHz   = cutoffSmoother   .getNextValue();
+        resonanceQ = resonanceSmoother.getNextValue();
+        vowel01    = vowelSmoother    .getNextValue();
+        if (--samplesUntilCoeffUpdate <= 0)
+        {
+            updateCoefficients();
+            samplesUntilCoeffUpdate = kCoeffUpdateIntervalSamples;
+        }
+        firstSetAfterPrepare = false;
 
         switch (type)
         {

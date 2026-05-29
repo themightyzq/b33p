@@ -14,6 +14,9 @@ namespace B33p
         bitcrush.prepare(sampleRate);
         distortion.prepare(sampleRate);
         modEffect.prepare(sampleRate);
+        gainSmoother.reset(sampleRate, 0.010);    // 10 ms gain ramp
+        gainSmoother.setCurrentAndTargetValue(gain);
+        firstGainSetAfterPrepare = true;
         prepared = true;
     }
 
@@ -100,7 +103,11 @@ namespace B33p
 
     void Voice::setGain(float linearGain)
     {
-        gain = std::clamp(linearGain, 0.0f, 10.0f);
+        const float clamped = std::clamp(linearGain, 0.0f, 10.0f);
+        if (firstGainSetAfterPrepare)
+            gainSmoother.setCurrentAndTargetValue(clamped);
+        else
+            gainSmoother.setTargetValue(clamped);
     }
 
     void Voice::trigger(float durationSeconds, float pitchOffsetSt, float velocity)
@@ -137,6 +144,8 @@ namespace B33p
         sample  = bitcrush.processSample(sample);
         sample  = distortion.processSample(sample);
         sample  = modEffect.processSample(sample);
+        gain    = gainSmoother.getNextValue();
+        firstGainSetAfterPrepare = false;
         sample *= gain * triggerVelocity;
 
         return sample;

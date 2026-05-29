@@ -98,10 +98,19 @@ TEST_CASE("Distortion: drive clamps to [0.1, 100]", "[dsp][distortion]")
     Distortion dist;
     dist.prepare(kSampleRate);
 
-    dist.setDrive(-5.0f);   // below lower clamp -> 0.1
+    // The first setDrive after prepare snaps the smoother to the
+    // clamped target so the very next processSample reflects the
+    // clamped value. Subsequent setDrive calls go through the smoother,
+    // so the test warms up by pumping enough samples for the 20 ms
+    // ramp to converge (kSampleRate * 0.025 = 1200 samples is safe).
+    constexpr int kRampWarmupSamples = 1200;
+
+    dist.setDrive(-5.0f);   // below lower clamp -> 0.1 (snap)
     REQUIRE(dist.processSample(1.0f) == Approx(std::tanh(0.1f)).margin(1e-6f));
 
-    dist.setDrive(1000.0f); // above upper clamp -> 100
+    dist.setDrive(1000.0f); // above upper clamp -> 100 (ramp)
+    for (int i = 0; i < kRampWarmupSamples; ++i)
+        (void) dist.processSample(0.0f);
     REQUIRE(dist.processSample(1.0f) == Approx(1.0f).margin(1e-6f));
 }
 
