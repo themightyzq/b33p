@@ -867,3 +867,120 @@ TEST_CASE("Dirty: writeToFile + markClean produces a clean processor",
 
     tmp.deleteFile();
 }
+
+TEST_CASE("B33pProcessor: A/B slot switch preserves the prior slot's APVTS values",
+          "[state][ab]")
+{
+    // Switching A→B captures the *current* APVTS into A, then loads
+    // whatever was previously in B (or, on the very first switch,
+    // copies A into B). Switching back to A must restore A's values
+    // exactly. The audit flagged A/B state as an untested surface;
+    // this is the smallest reproducer that covers it end-to-end.
+    B33pProcessor processor;
+    auto& apvts = processor.getApvts();
+
+    const auto id = B33p::ParameterIDs::filterCutoffHz(0);
+    auto* param = apvts.getParameter(id);
+    REQUIRE(param != nullptr);
+
+    // Set a known value in A.
+    param->setValueNotifyingHost(0.25f);
+    const float aValue = param->getValue();
+    REQUIRE(processor.getActiveAbSlot() == 'A');
+
+    // Switch to B. First-time switch copies the current state (A's
+    // values) into A's snapshot AND into B's snapshot, then A's
+    // snapshot stays put while B becomes the active slot. So the
+    // APVTS value should be unchanged immediately after the switch.
+    processor.switchAbSlot('B');
+    REQUIRE(processor.getActiveAbSlot() == 'B');
+    REQUIRE(param->getValue() == Approx(aValue).margin(1e-6f));
+
+    // Mutate in B.
+    param->setValueNotifyingHost(0.75f);
+    const float bValue = param->getValue();
+    REQUIRE(bValue != Approx(aValue).margin(0.01f));
+
+    // Switch back to A — A's original value must be restored.
+    processor.switchAbSlot('A');
+    REQUIRE(processor.getActiveAbSlot() == 'A');
+    REQUIRE(param->getValue() == Approx(aValue).margin(1e-6f));
+
+    // Switch back to B — B's mutated value must be restored.
+    processor.switchAbSlot('B');
+    REQUIRE(processor.getActiveAbSlot() == 'B');
+    REQUIRE(param->getValue() == Approx(bValue).margin(1e-6f));
+}
+
+TEST_CASE("B33pProcessor: copyActiveAbSlotToOther mirrors the active side into the other",
+          "[state][ab]")
+{
+    // After dialing in something on A, copyActiveAbSlotToOther
+    // makes B start from that same patch (so the user can then
+    // mutate B as a variation without losing A's reference).
+    B33pProcessor processor;
+    auto& apvts = processor.getApvts();
+    auto* param = apvts.getParameter(B33p::ParameterIDs::filterCutoffHz(0));
+    REQUIRE(param != nullptr);
+
+    param->setValueNotifyingHost(0.42f);
+    const float aValue = param->getValue();
+
+    REQUIRE(processor.getActiveAbSlot() == 'A');
+    processor.copyActiveAbSlotToOther();
+    REQUIRE(processor.getActiveAbSlot() == 'A');   // active slot unchanged
+
+    // Switch to B; it should now reflect A's value.
+    processor.switchAbSlot('B');
+    REQUIRE(param->getValue() == Approx(aValue).margin(1e-6f));
+}
+
+TEST_CASE("B33pProcessor: A/B active slot + both snapshots round-trip through save/load",
+          "[state][ab][project]")
+{
+    // Both the active-slot character AND each slot's XML snapshot are
+    // serialized to the .beep tree (ProjectState.cpp:191,615). A round-
+    // trip must preserve: active slot, A's parameter values when
+    // switched back to A, and B's parameter values when switched to B.
+    B33pProcessor producer;
+    auto& producerApvts = producer.getApvts();
+    auto* param = producerApvts.getParameter(B33p::ParameterIDs::filterCutoffHz(0));
+    REQUIRE(param != nullptr);
+
+    // Configure A with one value.
+    param->setValueNotifyingHost(0.30f);
+    const float aValue = param->getValue();
+
+    // Switch to B (first switch captures the current APVTS as A's
+    // snapshot and copies it into B's snapshot — see switchAbSlot).
+    producer.switchAbSlot('B');
+    REQUIRE(producer.getActiveAbSlot() == 'B');
+
+    // Mutate B.
+    param->setValueNotifyingHost(0.80f);
+    const float bValue = param->getValue();
+    REQUIRE(bValue != Approx(aValue).margin(0.01f));
+
+    // Save while B is active.
+    juce::MemoryBlock data;
+    producer.getStateInformation(data);
+
+    B33pProcessor consumer;
+    consumer.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
+    auto* loadedParam = consumer.getApvts().getParameter(B33p::ParameterIDs::filterCutoffHz(0));
+    REQUIRE(loadedParam != nullptr);
+
+    // Active slot 'B' restored.
+    REQUIRE(consumer.getActiveAbSlot() == 'B');
+    REQUIRE(loadedParam->getValue() == Approx(bValue).margin(1e-6f));
+
+    // Switch the loaded consumer back to A — A's saved snapshot must
+    // restore aValue. (This assertion proves the SNAPSHOTS round-tripped,
+    // not just the active-slot character.)
+    consumer.switchAbSlot('A');
+    REQUIRE(loadedParam->getValue() == Approx(aValue).margin(1e-6f));
+
+    // And back to B — B's saved snapshot must restore bValue.
+    consumer.switchAbSlot('B');
+    REQUIRE(loadedParam->getValue() == Approx(bValue).margin(1e-6f));
+}
