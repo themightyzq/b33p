@@ -29,6 +29,7 @@ add_executable(B33pTests
     Core/CommandLineFilesTests.cpp
     State/AudibilityCheckTests.cpp
     State/AmpEnvSnapshotTests.cpp
+    State/ConcurrencyTests.cpp
     State/ParameterLayoutTests.cpp
     State/ParameterRandomizerTests.cpp
     State/ProjectStateTests.cpp
