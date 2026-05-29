@@ -145,9 +145,13 @@ namespace B33p
         if (! processor.isSelectedLaneVoiceActive())
             return;
 
-        const auto stageInt = processor.getSelectedLaneAmpEnvStageInt();
-        const float elapsed = processor.getSelectedLaneAmpEnvElapsedSec();
-        const auto  stage   = static_cast<AmpEnvelope::Stage>(stageInt);
+        // Read both fields from a single packed-atomic snapshot so a
+        // stage transition mid-read can't pair a NEW stage with the
+        // OLD stage's elapsed (which would compute a wildly wrong
+        // playhead x — the "skips around" bug).
+        const auto envSnapshot = processor.getSelectedLaneAmpEnvSnapshot();
+        const float elapsed    = envSnapshot.elapsedSec;
+        const auto  stage      = static_cast<AmpEnvelope::Stage>(envSnapshot.stageInt);
 
         // The visualizer's x axis: 0=plotArea.getX, then a, then d,
         // then sustainSeconds, then r. Compute the playhead's x by

@@ -11,6 +11,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include <atomic>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -282,11 +283,36 @@ namespace B33p
         // Selected-lane amp envelope stage + elapsed-seconds mirror.
         // Drives the AmpEnvelopeVisualizer's live playhead (P31).
         // Stage is encoded as the AmpEnvelope::Stage enum's underlying
-        // int (Idle=0..Release=4) so it's representable as an atomic.
-        // Elapsed is the time since the current stage started, in
-        // seconds.
-        int    getSelectedLaneAmpEnvStageInt()   const { return selectedLaneAmpEnvStage.load(); }
-        float  getSelectedLaneAmpEnvElapsedSec() const { return selectedLaneAmpEnvElapsedSec.load(); }
+        // int (Idle=0..Release=4); elapsed is the time since the
+        // current stage started, in seconds.
+        //
+        // Published as a single packed uint64 (stage in high 32 bits,
+        // elapsed-in-microseconds in low 32 bits) so one atomic load
+        // returns a consistent (stage, elapsed) pair. The earlier
+        // two-separate-atomics design tore on the boundary: the audio
+        // thread updated stage and then elapsed, and a UI read landing
+        // in between saw the NEW stage with the OLD stage's elapsed,
+        // producing a wildly wrong playhead x and the "skips around"
+        // visual the user reported.
+        struct AmpEnvSnapshot
+        {
+            int   stageInt;
+            float elapsedSec;
+        };
+        AmpEnvSnapshot getSelectedLaneAmpEnvSnapshot() const
+        {
+            const std::uint64_t packed = selectedLaneAmpEnvPacked.load();
+            const auto stageInt = static_cast<int>(
+                static_cast<std::int32_t>(packed >> 32));
+            const auto micros   = static_cast<std::uint32_t>(packed & 0xFFFFFFFFu);
+            return { stageInt, static_cast<float>(micros) * 1.0e-6f };
+        }
+        // Legacy single-field accessors — each loads the packed value
+        // and decodes it. Tearing is impossible *within* a single call,
+        // but two consecutive calls can still see different snapshots.
+        // Prefer `getSelectedLaneAmpEnvSnapshot()` from new code.
+        int   getSelectedLaneAmpEnvStageInt()   const { return getSelectedLaneAmpEnvSnapshot().stageInt;   }
+        float getSelectedLaneAmpEnvElapsedSec() const { return getSelectedLaneAmpEnvSnapshot().elapsedSec; }
 
         // Lets the UI park the playhead at a specific time (e.g. by
         // clicking on the pattern grid ruler). Clamped to
@@ -483,12 +509,15 @@ namespace B33p
         // what's currently shaping playback, not the latent wiring.
         std::atomic<bool>  selectedLaneVoiceActive   { false };
 
-        // Selected-lane amp envelope stage + time-in-stage mirror —
-        // the AmpEnvelopeVisualizer's playhead reads these (P31). Stage
-        // is encoded as the underlying int of AmpEnvelope::Stage so it
-        // round-trips through atomic<int>.
-        std::atomic<int>   selectedLaneAmpEnvStage       { 0 };
-        std::atomic<float> selectedLaneAmpEnvElapsedSec  { 0.0f };
+        // Selected-lane amp envelope stage + time-in-stage mirror — the
+        // AmpEnvelopeVisualizer's playhead reads these (P31). Packed
+        // into a single uint64 (stage in high 32 bits, elapsed-as-
+        // microseconds in low 32 bits) so one atomic load returns a
+        // consistent (stage, elapsed) pair. Microsecond resolution
+        // covers any reasonable amp-env stage duration (max ~5 s per
+        // the slider cap; uint32 micros tops out at ~4294 s). See
+        // `AmpEnvSnapshot` + `getSelectedLaneAmpEnvSnapshot()` above.
+        std::atomic<std::uint64_t> selectedLaneAmpEnvPacked { 0 };
 
         // Pattern snapshot hand-off message → audio thread. Guarded by
         // snapshotLock: writers (message thread) take
