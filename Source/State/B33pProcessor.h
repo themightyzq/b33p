@@ -301,6 +301,15 @@ namespace B33p
         void  processBlock(juce::AudioBuffer<float>& buffer,
                            juce::MidiBuffer& midi) override;
 
+        // Both mono and stereo output buses are accepted. The voices
+        // are mono today (REVIEW-AUDIO #4); a stereo host gets the
+        // mono signal written to both channels (bit-identical L = R),
+        // a mono host gets a single honest channel. A genuinely
+        // stereo per-voice signal path (per-lane pan + stereo Mod FX)
+        // is a separate follow-up and would not change this method's
+        // contract.
+        bool  isBusesLayoutSupported(const BusesLayout& layouts) const override;
+
         // hasEditor / createEditor are gated on the B33P_HAS_EDITOR
         // compile flag set by the plugin / standalone target. The
         // tests target builds the same B33pProcessor.cpp without
@@ -312,14 +321,17 @@ namespace B33p
 
         bool  acceptsMidi() const override                                       { return true;  }
         bool  producesMidi() const override                                      { return false; }
-        // Covers worst-case audible tail across the per-voice signal
-        // path: amp-envelope release (~1 s max), reverb decay (~3 s
-        // at large-room settings), and delay feedback echoes (~2-3 s
-        // at moderate feedback). Conservative single value rather
-        // than per-lane dynamic computation — the host uses this to
-        // decide how many extra samples to record after transport
-        // stop so a reverb / delay tail isn't cut off mid-decay.
-        double getTailLengthSeconds() const override                             { return 4.0; }
+        // Covers a comfortable worst-case audible tail across the
+        // per-voice signal path: amp-envelope release (~5 s slider
+        // max), reverb at large-room + low damping (~6-8 s), and
+        // delay at long time + moderate feedback (~3-5 s for typical
+        // settings; pathological feedback ≈ 0.95 with time = 2 s
+        // tails for 30+ s and the user is on their own there).
+        // 10 s catches most realistic tails without forcing the
+        // host to render unbounded extra samples after transport
+        // stop. (REVIEW-AUDIO #8; a per-parameter dynamic
+        // computation is a follow-up.)
+        double getTailLengthSeconds() const override                             { return 10.0; }
 
         // Host bypass — DAWs use this to route their bypass automation
         // to a parameter we own. processBlock checks bypassParam and
@@ -417,6 +429,12 @@ namespace B33p
         // Soft-clip safety on the summed output (voices sum with no
         // headroom, so a dense / randomized pattern could hard-clip).
         OutputLimiter outputLimiter;
+
+        // Bypass-exit fade-in (REVIEW-AUDIO #6). On bypass entry the
+        // smoother snaps to 0 (buffer is cleared anyway), on bypass
+        // exit it ramps to 1 over 10 ms so a long-tail reverb / delay
+        // that was sounding at engage doesn't resume with a click.
+        juce::SmoothedValue<float> bypassFadeGain;
 
         // Per-lane "currently active per-event overrides" mirror.
         // Loaded from Event::overrides in triggerVoiceFromEvent and
