@@ -1,6 +1,8 @@
 #include "AmpEnvelopeVisualizer.h"
 
 #include "Core/ParameterIDs.h"
+#include "DSP/AmpEnvelope.h"
+#include "State/B33pProcessor.h"
 
 namespace B33p
 {
@@ -10,6 +12,7 @@ namespace B33p
         constexpr float kCornerRadius   = 3.0f;
         constexpr float kInnerInset     = 6.0f;
         constexpr float kStrokeWidth    = 2.0f;
+        constexpr float kPlayheadWidth  = 1.5f;
 
         // Synthetic sustain display length: a small baseline plus a
         // fraction of the other stages' total length. Ensures the
@@ -21,10 +24,15 @@ namespace B33p
         }
     }
 
-    AmpEnvelopeVisualizer::AmpEnvelopeVisualizer(juce::AudioProcessorValueTreeState& apvtsRef)
-        : apvts(apvtsRef)
+    AmpEnvelopeVisualizer::AmpEnvelopeVisualizer(B33pProcessor& processorRef)
+        : processor(processorRef),
+          apvts(processorRef.getApvts())
     {
         attachListeners(currentLane);
+        // 30 Hz playhead repaint while audio is playing. The gate inside
+        // timerCallback ensures the timer self-elides repaints when the
+        // selected lane is idle (accessibility: no motion when silent).
+        startTimerHz(30);
     }
 
     AmpEnvelopeVisualizer::~AmpEnvelopeVisualizer()
@@ -62,6 +70,18 @@ namespace B33p
         // juce::Component::repaint is thread-safe; no need to hop to
         // the message thread manually.
         repaint();
+    }
+
+    void AmpEnvelopeVisualizer::timerCallback()
+    {
+        // Accessibility: only repaint while audio is playing (so the
+        // playhead actually moves) plus one final tick on the
+        // playing→idle edge so the playhead clears instead of freezing
+        // at its last position.
+        const bool playing = processor.isSelectedLaneVoiceActive();
+        if (playing || wasPlayingLastTick)
+            repaint();
+        wasPlayingLastTick = playing;
     }
 
     void AmpEnvelopeVisualizer::paint(juce::Graphics& g)
@@ -116,5 +136,56 @@ namespace B33p
 
         g.setColour(juce::Colour::fromRGB(120, 200, 255));
         g.strokePath(envelope, juce::PathStrokeType(kStrokeWidth));
+
+        // Live playhead (P31). Only painted while the selected lane's
+        // voice is producing audio. Stage + elapsed-in-stage come from
+        // the processor's per-block mirror; we map them onto the same
+        // x axis the envelope curve uses so the playhead reads cleanly
+        // as "where we are on this curve."
+        if (! processor.isSelectedLaneVoiceActive())
+            return;
+
+        const auto stageInt = processor.getSelectedLaneAmpEnvStageInt();
+        const float elapsed = processor.getSelectedLaneAmpEnvElapsedSec();
+        const auto  stage   = static_cast<AmpEnvelope::Stage>(stageInt);
+
+        // The visualizer's x axis: 0=plotArea.getX, then a, then d,
+        // then sustainSeconds, then r. Compute the playhead's x by
+        // accumulating offsets per the active stage.
+        const float xAttackEnd  = plotArea.getX() + a * pxPerSec;
+        const float xDecayEnd   = xAttackEnd + d * pxPerSec;
+        const float xSustainEnd = xDecayEnd  + sustainSeconds * pxPerSec;
+        const float xReleaseEnd = xSustainEnd + r * pxPerSec;
+
+        float playheadX = plotArea.getX();
+        switch (stage)
+        {
+            case AmpEnvelope::Stage::Idle:
+                return;   // guarded above, but defensive
+            case AmpEnvelope::Stage::Attack:
+                playheadX = plotArea.getX() + std::min(elapsed, a) * pxPerSec;
+                break;
+            case AmpEnvelope::Stage::Decay:
+                playheadX = xAttackEnd + std::min(elapsed, d) * pxPerSec;
+                break;
+            case AmpEnvelope::Stage::Sustain:
+                // Park at the start of the sustain region — sustain holds
+                // a constant level by definition, so showing the playhead
+                // walking across it would just be motion for its own
+                // sake. The "we're holding here" state reads as a
+                // stationary playhead, which matches the mental model.
+                playheadX = xDecayEnd;
+                break;
+            case AmpEnvelope::Stage::Release:
+                playheadX = xSustainEnd + std::min(elapsed, r) * pxPerSec;
+                break;
+        }
+        playheadX = juce::jlimit(plotArea.getX(), xReleaseEnd, playheadX);
+
+        g.setColour(juce::Colour::fromRGB(220, 235, 255).withAlpha(0.85f));
+        g.fillRect(juce::Rectangle<float>(playheadX - kPlayheadWidth * 0.5f,
+                                          plotArea.getY(),
+                                          kPlayheadWidth,
+                                          plotArea.getHeight()));
     }
 }

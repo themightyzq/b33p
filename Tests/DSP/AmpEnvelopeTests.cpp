@@ -307,3 +307,46 @@ TEST_CASE("AmpEnvelope: isActive reflects stage transitions", "[dsp][ampenv]")
         (void) env.processSample();
     REQUIRE_FALSE(env.isActive());    // back to idle
 }
+
+TEST_CASE("AmpEnvelope: stage + elapsed reflect the active stage", "[dsp][amp-env][p31]")
+{
+    B33p::AmpEnvelope env;
+    env.prepare(48000.0);
+    env.setAttack(0.010f);    // 10 ms
+    env.setDecay(0.010f);     // 10 ms
+    env.setSustain(0.5f);
+    env.setRelease(0.010f);   // 10 ms
+
+    REQUIRE(env.getStage() == B33p::AmpEnvelope::Stage::Idle);
+    REQUIRE(env.getStageElapsedSeconds() == Approx(0.0f).margin(1e-6f));
+
+    env.noteOn();
+    // First sample of attack — elapsed should be ~one sample = 1/48000.
+    (void) env.processSample();
+    REQUIRE(env.getStage() == B33p::AmpEnvelope::Stage::Attack);
+    REQUIRE(env.getStageElapsedSeconds() == Approx(1.0f / 48000.0f).margin(1e-6f));
+
+    // Run another ~5 ms; should still be in Attack with elapsed advanced.
+    for (int i = 0; i < 240; ++i)   // 240 / 48000 = 5 ms
+        (void) env.processSample();
+    REQUIRE(env.getStage() == B33p::AmpEnvelope::Stage::Attack);
+    REQUIRE(env.getStageElapsedSeconds() == Approx(0.005f + 1.0f / 48000.0f).margin(2e-4f));
+
+    // Push through Attack (480 samples) + Decay (480 samples) = 960
+    // samples from noteOn to reach Sustain. We've done 241 so far,
+    // so 800 more samples gets us comfortably past.
+    for (int i = 0; i < 800; ++i)
+        (void) env.processSample();
+    REQUIRE(env.getStage() == B33p::AmpEnvelope::Stage::Sustain);
+
+    env.noteOff();
+    (void) env.processSample();
+    REQUIRE(env.getStage() == B33p::AmpEnvelope::Stage::Release);
+    REQUIRE(env.getStageElapsedSeconds() == Approx(1.0f / 48000.0f).margin(1e-6f));
+
+    // Run past the release.
+    for (int i = 0; i < 600; ++i)
+        (void) env.processSample();
+    REQUIRE(env.getStage() == B33p::AmpEnvelope::Stage::Idle);
+    REQUIRE(env.getStageElapsedSeconds() == Approx(0.0f).margin(1e-6f));
+}

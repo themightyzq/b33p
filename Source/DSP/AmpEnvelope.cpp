@@ -6,15 +6,19 @@ namespace B33p
 {
     void AmpEnvelope::prepare(double newSampleRate)
     {
-        sampleRate = newSampleRate;
+        sampleRate    = newSampleRate;
+        invSampleRate = newSampleRate > 0.0
+            ? static_cast<float>(1.0 / newSampleRate)
+            : 0.0f;
         reset();
     }
 
     void AmpEnvelope::reset()
     {
-        stage          = Stage::Idle;
-        currentLevel   = 0.0f;
-        stageIncrement = 0.0f;
+        stage               = Stage::Idle;
+        currentLevel        = 0.0f;
+        stageIncrement      = 0.0f;
+        stageElapsedSeconds = 0.0f;
     }
 
     void AmpEnvelope::setAttack(float seconds)
@@ -60,7 +64,8 @@ namespace B33p
 
     void AmpEnvelope::beginAttack()
     {
-        stage = Stage::Attack;
+        stage               = Stage::Attack;
+        stageElapsedSeconds = 0.0f;
 
         const double samples = static_cast<double>(attackSeconds) * sampleRate;
 
@@ -79,13 +84,15 @@ namespace B33p
         // the envelope doesn't spend a sample in a stage with zero slope.
         if (currentLevel <= sustainLevel)
         {
-            currentLevel   = sustainLevel;
-            stage          = Stage::Sustain;
-            stageIncrement = 0.0f;
+            currentLevel        = sustainLevel;
+            stage               = Stage::Sustain;
+            stageIncrement      = 0.0f;
+            stageElapsedSeconds = 0.0f;
             return;
         }
 
-        stage = Stage::Decay;
+        stage               = Stage::Decay;
+        stageElapsedSeconds = 0.0f;
 
         const double samples = static_cast<double>(decaySeconds) * sampleRate;
 
@@ -96,7 +103,8 @@ namespace B33p
 
     void AmpEnvelope::beginRelease()
     {
-        stage = Stage::Release;
+        stage               = Stage::Release;
+        stageElapsedSeconds = 0.0f;
 
         const double samples = static_cast<double>(releaseSeconds) * sampleRate;
 
@@ -107,6 +115,17 @@ namespace B33p
 
     float AmpEnvelope::processSample()
     {
+        // Idle returns silence early — no accumulator advance, so the
+        // visualizer playhead's "elapsed" doesn't drift while the
+        // envelope is parked.
+        if (stage == Stage::Idle)
+            return 0.0f;
+
+        // Sample-rate elapsed accumulator drives the visualizer's
+        // playhead. Reset on every begin*() at stage transitions so
+        // the value is "time since the current stage started."
+        stageElapsedSeconds += invSampleRate;
+
         switch (stage)
         {
             case Stage::Idle:
@@ -125,9 +144,10 @@ namespace B33p
                 currentLevel += stageIncrement;
                 if (currentLevel <= sustainLevel)
                 {
-                    currentLevel   = sustainLevel;
-                    stage          = Stage::Sustain;
-                    stageIncrement = 0.0f;
+                    currentLevel        = sustainLevel;
+                    stage               = Stage::Sustain;
+                    stageIncrement      = 0.0f;
+                    stageElapsedSeconds = 0.0f;
                 }
                 return currentLevel;
 
@@ -138,9 +158,10 @@ namespace B33p
                 currentLevel += stageIncrement;
                 if (currentLevel <= 0.0f)
                 {
-                    currentLevel   = 0.0f;
-                    stage          = Stage::Idle;
-                    stageIncrement = 0.0f;
+                    currentLevel        = 0.0f;
+                    stage               = Stage::Idle;
+                    stageIncrement      = 0.0f;
+                    stageElapsedSeconds = 0.0f;
                 }
                 return currentLevel;
         }

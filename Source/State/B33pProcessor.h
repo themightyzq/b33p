@@ -279,6 +279,15 @@ namespace B33p
         // troubleshooting mental model.
         bool   isSelectedLaneVoiceActive() const { return selectedLaneVoiceActive.load(); }
 
+        // Selected-lane amp envelope stage + elapsed-seconds mirror.
+        // Drives the AmpEnvelopeVisualizer's live playhead (P31).
+        // Stage is encoded as the AmpEnvelope::Stage enum's underlying
+        // int (Idle=0..Release=4) so it's representable as an atomic.
+        // Elapsed is the time since the current stage started, in
+        // seconds.
+        int    getSelectedLaneAmpEnvStageInt()   const { return selectedLaneAmpEnvStage.load(); }
+        float  getSelectedLaneAmpEnvElapsedSec() const { return selectedLaneAmpEnvElapsedSec.load(); }
+
         // Lets the UI park the playhead at a specific time (e.g. by
         // clicking on the pattern grid ruler). Clamped to
         // [0, pattern length). Used as the paste-target time for
@@ -455,6 +464,13 @@ namespace B33p
         // The glow disappears when the gate falls so the user only sees
         // what's currently shaping playback, not the latent wiring.
         std::atomic<bool>  selectedLaneVoiceActive   { false };
+
+        // Selected-lane amp envelope stage + time-in-stage mirror —
+        // the AmpEnvelopeVisualizer's playhead reads these (P31). Stage
+        // is encoded as the underlying int of AmpEnvelope::Stage so it
+        // round-trips through atomic<int>.
+        std::atomic<int>   selectedLaneAmpEnvStage       { 0 };
+        std::atomic<float> selectedLaneAmpEnvElapsedSec  { 0.0f };
 
         // Pattern snapshot lives behind atomic_load/store — see
         // class-level comment for the threading model.
