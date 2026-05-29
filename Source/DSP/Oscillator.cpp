@@ -1,5 +1,7 @@
 #include "Oscillator.h"
 
+#include "SmoothingHelpers.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -104,6 +106,9 @@ namespace B33p
         phase              = 0.0;
         modulatorPhase     = 0.0;
         ringModulatorPhase = 0.0;
+        // Re-arm the snap-on-first-set flag — matches prepare()'s
+        // post-condition that the next setX snaps.
+        firstSetAfterPrepare = true;
     }
 
     void Oscillator::setWaveform(Waveform newWaveform)
@@ -113,10 +118,7 @@ namespace B33p
 
     void Oscillator::setFrequency(float hz)
     {
-        if (firstSetAfterPrepare)
-            freqSmoother.setCurrentAndTargetValue(hz);
-        else
-            freqSmoother.setTargetValue(hz);
+        setSmoothedTarget(freqSmoother, hz, firstSetAfterPrepare);
     }
 
     void Oscillator::setCustomTable(const std::vector<float>& samples)
@@ -133,20 +135,19 @@ namespace B33p
 
     void Oscillator::setWavetableMorph(float morph01)
     {
-        const float clamped = std::clamp(morph01, 0.0f, 1.0f);
-        if (firstSetAfterPrepare)
-            morphSmoother.setCurrentAndTargetValue(clamped);
-        else
-            morphSmoother.setTargetValue(clamped);
+        setSmoothedTarget(morphSmoother,
+                          std::clamp(morph01, 0.0f, 1.0f),
+                          firstSetAfterPrepare);
     }
 
     void Oscillator::setFmRatio(float ratio)
     {
-        const float clamped = std::clamp(ratio, 0.1f, 16.0f);
-        if (firstSetAfterPrepare)
-            fmRatioSmoother.setCurrentAndTargetValue(clamped);
-        else
-            fmRatioSmoother.setTargetValue(clamped);
+        // 0.1 .. 16: covers sub-octave (0.5), unison (1.0), and the
+        // common harmonic ratios (2..16) without letting a runaway
+        // value alias hard.
+        setSmoothedTarget(fmRatioSmoother,
+                          std::clamp(ratio, 0.1f, 16.0f),
+                          firstSetAfterPrepare);
     }
 
     void Oscillator::setFmDepth(float depth)
@@ -154,29 +155,24 @@ namespace B33p
         // 0..10: 0 = pure carrier, ~1 = mild "vocal" sidebands,
         // 5+ starts pushing into bell / DX-style territory. Above
         // 10 the spectrum quickly devolves into noise; cap there.
-        const float clamped = std::clamp(depth, 0.0f, 10.0f);
-        if (firstSetAfterPrepare)
-            fmDepthSmoother.setCurrentAndTargetValue(clamped);
-        else
-            fmDepthSmoother.setTargetValue(clamped);
+        setSmoothedTarget(fmDepthSmoother,
+                          std::clamp(depth, 0.0f, 10.0f),
+                          firstSetAfterPrepare);
     }
 
     void Oscillator::setRingRatio(float ratio)
     {
-        const float clamped = std::clamp(ratio, 0.1f, 16.0f);
-        if (firstSetAfterPrepare)
-            ringRatioSmoother.setCurrentAndTargetValue(clamped);
-        else
-            ringRatioSmoother.setTargetValue(clamped);
+        // Same range as fmRatio — sub-octave to four-octaves-up.
+        setSmoothedTarget(ringRatioSmoother,
+                          std::clamp(ratio, 0.1f, 16.0f),
+                          firstSetAfterPrepare);
     }
 
     void Oscillator::setRingMix(float mix01)
     {
-        const float clamped = std::clamp(mix01, 0.0f, 1.0f);
-        if (firstSetAfterPrepare)
-            ringMixSmoother.setCurrentAndTargetValue(clamped);
-        else
-            ringMixSmoother.setTargetValue(clamped);
+        setSmoothedTarget(ringMixSmoother,
+                          std::clamp(mix01, 0.0f, 1.0f),
+                          firstSetAfterPrepare);
     }
 
     void Oscillator::updatePhaseIncrement()

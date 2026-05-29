@@ -307,6 +307,8 @@ Inside a host, b33p is a synth instrument:
 
 **DAW transport sync** is opt-in via the **Follow** toggle next to Play / Loop in the pattern controls. When on (and a host playhead is available), b33p's pattern playback mirrors host transport: host play / stop drives `playing`, and the playhead snaps to `host_time mod pattern_length` at the top of every block. Pattern BPM stays independent of host BPM — sound-design users routinely want a beep pattern at a different tempo than the host session. The toggle is inert in standalone mode (no host = no playhead) but its state is preserved in the `.beep` so a project saved standalone keeps its choice when reopened in a DAW.
 
+**Host bypass freezes pattern playback.** Engaging the host's plugin-bypass on b33p stops audio generation entirely — the buffer is cleared and the pattern playhead is paused for as long as bypass is on. Any pattern events that would have fired during the bypass window are skipped (they don't queue up to fire on un-bypass). On un-bypass the output fades back in over ~10 ms so a long reverb or delay tail that was sounding at engage doesn't resume with a click. This is the standard instrument-plugin semantic; if you want the pattern to keep advancing while b33p is silent, mute the plugin's output bus in your host instead of using plugin-bypass.
+
 ## Things that are intentionally not here (yet)
 
 See the post-MVP roadmap in [TODO.md](../TODO.md) for the canonical list. Briefly:

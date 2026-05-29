@@ -1,5 +1,7 @@
 #include "Voice.h"
 
+#include "SmoothingHelpers.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -29,6 +31,8 @@ namespace B33p
         bitcrush.reset();
         distortion.reset();
         modEffect.reset();
+        // Re-arm the snap-on-first-set flag for the gain smoother too.
+        firstGainSetAfterPrepare = true;
     }
 
     void Voice::setWaveform(Oscillator::Waveform waveform)
@@ -103,11 +107,9 @@ namespace B33p
 
     void Voice::setGain(float linearGain)
     {
-        const float clamped = std::clamp(linearGain, 0.0f, 10.0f);
-        if (firstGainSetAfterPrepare)
-            gainSmoother.setCurrentAndTargetValue(clamped);
-        else
-            gainSmoother.setTargetValue(clamped);
+        setSmoothedTarget(gainSmoother,
+                          std::clamp(linearGain, 0.0f, 10.0f),
+                          firstGainSetAfterPrepare);
     }
 
     void Voice::trigger(float durationSeconds, float pitchOffsetSt, float velocity)

@@ -28,6 +28,7 @@ add_executable(B33pTests
     DSP/VoiceTests.cpp
     Core/CommandLineFilesTests.cpp
     State/AudibilityCheckTests.cpp
+    State/AmpEnvSnapshotTests.cpp
     State/ParameterLayoutTests.cpp
     State/ParameterRandomizerTests.cpp
     State/ProjectStateTests.cpp
