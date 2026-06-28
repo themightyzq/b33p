@@ -90,11 +90,13 @@ $RECYCLE.BIN/
 CLAUDE.md
 repo-hygiene.md
 # AI-generated review docs — session artifacts the author keeps locally for
-# reference, not shipped. The docs/REVIEW.md design pass from 2026-05-25
-# was committed deliberately at the time and pre-dates this rule.
+# reference (tracked in Diversion), not shipped via git. docs/REVIEW.md was
+# committed deliberately in 2026-05 before this policy; untracked 2026-06-28
+# (git rm --cached) to bring it in line — it stays on disk + in Diversion.
 REVIEW-USER.md
 REVIEW-DESIGN.md
 REVIEW-AUDIO.md
+docs/REVIEW.md
 .claude/
 .anthropic/
 .cursor/
