@@ -12,7 +12,7 @@ if(APPLE)
     enable_language(OBJCXX)
 endif()
 
-set(B33P_BUNDLE_ID "com.themightyzq.b33p" CACHE STRING "Application bundle identifier")
+set(B33P_BUNDLE_ID "com.zqsfx.b33p" CACHE STRING "Application bundle identifier")
 set(B33P_COMPANY_NAME "ZQ SFX"              CACHE STRING "Company / author name")
 set(B33P_JUCE_VERSION "8.0.12"              CACHE STRING "JUCE release tag to fetch")
 set(B33P_CATCH2_VERSION "v3.14.0"           CACHE STRING "Catch2 release tag to fetch")
@@ -107,9 +107,12 @@ CPMAddPackage(
 juce_add_plugin(B33p
     PRODUCT_NAME            "b33p"
     COMPANY_NAME            "${B33P_COMPANY_NAME}"
+    COMPANY_WEBSITE         "https://www.zq-sfx.com"
+    COMPANY_EMAIL           "connect@zq-sfx.com"
+    COMPANY_COPYRIGHT       "Copyright (c) 2026 ZQ SFX"
     BUNDLE_ID               "${B33P_BUNDLE_ID}"
     VERSION                 "${PROJECT_VERSION}"
-    PLUGIN_MANUFACTURER_CODE Zqsf
+    PLUGIN_MANUFACTURER_CODE ZQSF
     PLUGIN_CODE              B33p
     FORMATS                 Standalone VST3 AU
     IS_SYNTH                TRUE

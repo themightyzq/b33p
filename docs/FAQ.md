@@ -100,7 +100,7 @@ Yes. **File ▸ Restore Factory Presets...** rewrites the four shipped presets (
    - **macOS**: `~/Library/Application Support/b33p/` (presets + preferences)
    - **Windows**: `%APPDATA%\b33p\`
    - **Linux**: `~/.config/b33p/` (or `$XDG_CONFIG_HOME/b33p/`)
-4. Delete `~/Library/Preferences/com.themightyzq.b33p.plist` on macOS (window geometry + recent-files list).
+4. Delete `~/Library/Preferences/com.zqsfx.b33p.plist` on macOS (window geometry + recent-files list).
 
 Nothing else is written outside your home directory.
 

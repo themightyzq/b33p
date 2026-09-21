@@ -837,7 +837,7 @@ namespace B33p
         // String literals so any of version, author, or license can
         // be tweaked here without recompiling more than this file.
         const juce::String version  { B33P_VERSION_STRING };
-        const juce::String author   { "ZQ SFX (themightyzq)" };
+        const juce::String author   { "ZQ SFX" };
         const juce::String license  { "GPL-3.0-or-later" };
         const juce::String juceVer  { juce::SystemStats::getJUCEVersion() };
 

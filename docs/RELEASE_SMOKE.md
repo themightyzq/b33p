@@ -59,8 +59,8 @@ cp -R ./VST3/b33p.vst3       ~/Library/Audio/Plug-Ins/VST3/
 cp -R ./AU/b33p.component    ~/Library/Audio/Plug-Ins/Components/
 
 # 4. Validate the AU. A passing `auval -v` is the load-bearing check
-#    for AU hosts (Logic, GarageBand). Plugin code "B33p", manufacturer "Zqsf".
-auval -v aumu B33p Zqsf
+#    for AU hosts (Logic, GarageBand). Plugin code "B33p", manufacturer "ZQSF".
+auval -v aumu B33p ZQSF
 ```
 
 `auval` should print `AU VALIDATION SUCCEEDED` near the end. Anything else is a fail.
