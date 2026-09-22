@@ -4,57 +4,27 @@
 
 namespace B33p
 {
-    namespace
-    {
-        const juce::Colour kWindow   = juce::Colour::fromRGB(22, 22, 22);
-        const juce::Colour kPanel    = juce::Colour::fromRGB(34, 34, 38);
-        const juce::Colour kWidget   = juce::Colour::fromRGB(46, 46, 51);
-        const juce::Colour kKnobBody = juce::Colour::fromRGB(28, 28, 31);
-        const juce::Colour kTrack    = juce::Colour::fromRGB(64, 64, 70);
-        const juce::Colour kOutline  = juce::Colour::fromRGB(72, 72, 80);
-        // Default accent — the per-lane tint overrides this on most knobs.
-        const juce::Colour kAccent   = juce::Colour::fromRGB(120, 200, 255);
-    }
-
     B33pLookAndFeel::B33pLookAndFeel()
     {
-        using LF = juce::LookAndFeel_V4;
+        namespace colour = zqsfx::ui::colour;
 
-        setColour(juce::ResizableWindow::backgroundColourId, kWindow);
-
-        setColour(juce::PopupMenu::backgroundColourId,            kPanel);
-        setColour(juce::PopupMenu::textColourId,                  juce::Colours::white);
-        setColour(juce::PopupMenu::highlightedBackgroundColourId, kAccent.withAlpha(0.22f));
-        setColour(juce::PopupMenu::highlightedTextColourId,       juce::Colours::white);
-
-        setColour(juce::ComboBox::backgroundColourId, kWidget);
-        setColour(juce::ComboBox::textColourId,       juce::Colours::white);
-        setColour(juce::ComboBox::outlineColourId,    kOutline);
-        setColour(juce::ComboBox::arrowColourId,      kAccent);
-        setColour(juce::ComboBox::buttonColourId,     kWidget);
-
-        setColour(juce::TextButton::buttonColourId,   kWidget);
-        setColour(juce::TextButton::buttonOnColourId, kAccent);
-        setColour(juce::TextButton::textColourOnId,   juce::Colours::black);
-        setColour(juce::TextButton::textColourOffId,  juce::Colours::white);
-
-        setColour(juce::Slider::rotarySliderFillColourId,    kAccent);
-        setColour(juce::Slider::rotarySliderOutlineColourId, kTrack);
-        setColour(juce::Slider::trackColourId,               kAccent);
-        setColour(juce::Slider::backgroundColourId,          kTrack);
-        setColour(juce::Slider::thumbColourId,               kAccent);
-        setColour(juce::Slider::textBoxTextColourId,         juce::Colours::white);
-        setColour(juce::Slider::textBoxOutlineColourId,      juce::Colours::transparentBlack);
-
-        setColour(juce::Label::textColourId, juce::Colours::white);
-
-        setColour(juce::AlertWindow::backgroundColourId, kPanel);
-        setColour(juce::AlertWindow::textColourId,       juce::Colours::white);
-        setColour(juce::AlertWindow::outlineColourId,    kOutline);
-
-        // Keep the V4 colour scheme broadly consistent for any widgets we
-        // don't draw by hand (text editors, scrollbars, list boxes).
-        setColourScheme(LF::getDarkColourScheme());
+        // The base zqsfx::ui::LookAndFeel constructor already sets the house colours
+        // this class used to set itself: ComboBox/PopupMenu -> LCD glass, Slider
+        // textbox -> LCD glass + glow, TextButton -> btn gradient / accent-on,
+        // TooltipWindow/AlertWindow/TextEditor -> house tokens.
+        //
+        // Default (non-lane) slider colour: most sliders in this product get their
+        // rotarySliderFillColourId/trackColourId set per-lane by Section::tintSliders
+        // whenever a Section's accent changes. A few controls live outside any
+        // per-lane Section (the modulation-matrix amount sliders' bipolar fill still
+        // routes through this default when a slot is unrouted at construction, the
+        // pattern section's randomize-scope slider, the event-overrides dialog's
+        // sliders) — for those, default to the house LCD green rather than JUCE's
+        // stock blue, so an un-tinted control still reads as "this product's screen
+        // content" instead of a leftover default theme colour.
+        setColour(juce::Slider::rotarySliderFillColourId, colour::lcdText);
+        setColour(juce::Slider::trackColourId,             colour::lcdText);
+        setColour(juce::Slider::thumbColourId,             colour::lcdText);
     }
 
     bool B33pLookAndFeel::isBipolar(const juce::Slider& s)
@@ -63,226 +33,73 @@ namespace B33p
             && juce::approximatelyEqual(s.getMinimum(), -s.getMaximum());
     }
 
-    void B33pLookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
-                                           float sliderPos, float startAngle, float endAngle,
-                                           juce::Slider& slider)
+    juce::Font B33pLookAndFeel::getSliderPopupFont(juce::Slider&)
     {
-        const auto area   = juce::Rectangle<int>(x, y, width, height).toFloat().reduced(3.0f);
-        const auto centre = area.getCentre();
-        // Cap the diameter so a knob reads as one consistent control across
-        // sections — without it, a section with a single knob (e.g. Oscillator
-        // Pitch) stretches it ~2.5x the size of a packed section's knobs.
-        constexpr float kMaxKnobRadius = 34.0f;   // ~68 px knob
-        const float radius   = juce::jmin(juce::jmin(area.getWidth(), area.getHeight()) * 0.5f,
-                                          kMaxKnobRadius);
-        const float lineW    = juce::jmax(2.0f, radius * 0.12f);
-        const float arcR     = radius - lineW * 0.5f;
-        const bool  enabled  = slider.isEnabled();
-
-        auto accent = slider.findColour(juce::Slider::rotarySliderFillColourId);
-        if (! enabled) accent = accent.withAlpha(0.30f);
-
-        // Flat knob body — a subtle disc darker than the panel, no bevel.
-        g.setColour(kKnobBody.withAlpha(enabled ? 1.0f : 0.6f));
-        g.fillEllipse(juce::Rectangle<float>(arcR * 1.55f, arcR * 1.55f).withCentre(centre));
-
-        // Background track ring (full sweep).
-        juce::Path track;
-        track.addCentredArc(centre.x, centre.y, arcR, arcR, 0.0f, startAngle, endAngle, true);
-        g.setColour(kTrack.withAlpha(enabled ? 1.0f : 0.5f));
-        g.strokePath(track, juce::PathStrokeType(lineW, juce::PathStrokeType::curved,
-                                                 juce::PathStrokeType::rounded));
-
-        // Value arc — from the start (or the centre, if bipolar) to the value.
-        const float toAngle   = startAngle + sliderPos * (endAngle - startAngle);
-        const float fromAngle = isBipolar(slider) ? (startAngle + endAngle) * 0.5f : startAngle;
-        const float a0 = juce::jmin(fromAngle, toAngle);
-        const float a1 = juce::jmax(fromAngle, toAngle);
-
-        if (a1 - a0 > 0.001f)
-        {
-            juce::Path value;
-            value.addCentredArc(centre.x, centre.y, arcR, arcR, 0.0f, a0, a1, true);
-            g.setColour(accent);
-            g.strokePath(value, juce::PathStrokeType(lineW, juce::PathStrokeType::curved,
-                                                     juce::PathStrokeType::rounded));
-        }
-
-        // Indicator dot riding the arc at the current value (clockwise from top).
-        const juce::Point<float> dot(centre.x + arcR * std::sin(toAngle),
-                                     centre.y - arcR * std::cos(toAngle));
-        g.setColour(accent.brighter(0.35f));
-        g.fillEllipse(juce::Rectangle<float>(lineW * 1.5f, lineW * 1.5f).withCentre(dot));
-
-        // Modulation glow — outer halo whose intensity tracks how hard the
-        // knob's parameter is currently being modulated (matrix LFO and,
-        // later, envelopes / Mod FX activity). Painted on top so it reads
-        // clearly without obscuring the value arc, at a larger radius so
-        // the dynamic ring sits outside the static control. The owning
-        // section's timer writes "modulationIntensity" (0..1) to the
-        // slider's Component properties each tick; zero or unset = no
-        // glow, no cost.
-        const float modIntensity = juce::jlimit(0.0f, 1.0f,
-            static_cast<float>(slider.getProperties()
-                                      .getWithDefault("modulationIntensity", 0.0f)));
-        if (enabled && modIntensity > 0.01f)
-        {
-            // Two concentric rings for a soft falloff: a brighter inner
-            // ring tight against the value arc + a fainter, wider outer
-            // ring giving a glow tail. Both fade with intensity.
-            const float innerR  = arcR + lineW * 1.0f;
-            const float outerR  = arcR + lineW * 1.9f;
-            const float innerW  = lineW * 1.1f;
-            const float outerW  = lineW * 1.6f;
-
-            juce::Path inner;
-            inner.addCentredArc(centre.x, centre.y, innerR, innerR, 0.0f,
-                                startAngle, endAngle, true);
-            g.setColour(accent.withAlpha(0.55f * modIntensity));
-            g.strokePath(inner, juce::PathStrokeType(innerW,
-                                                      juce::PathStrokeType::curved,
-                                                      juce::PathStrokeType::rounded));
-
-            juce::Path outer;
-            outer.addCentredArc(centre.x, centre.y, outerR, outerR, 0.0f,
-                                startAngle, endAngle, true);
-            g.setColour(accent.withAlpha(0.22f * modIntensity));
-            g.strokePath(outer, juce::PathStrokeType(outerW,
-                                                      juce::PathStrokeType::curved,
-                                                      juce::PathStrokeType::rounded));
-        }
-
-        // Change-flash halo (P35) — brief bright pulse painted when the
-        // parameter just got randomized, so the user sees which knobs
-        // moved. Distinct from the modulation glow: brighter colour
-        // (accent.brighter), full-sweep ring at the value-arc radius,
-        // alpha is a one-shot decay driven by LabeledSlider's timer
-        // (so it fades to zero and stops — no idle motion).
-        const float flashAlpha = juce::jlimit(0.0f, 1.0f,
-            static_cast<float>(slider.getProperties()
-                                      .getWithDefault("changeFlashAlpha", 0.0f)));
-        if (enabled && flashAlpha > 0.01f)
-        {
-            juce::Path flash;
-            flash.addCentredArc(centre.x, centre.y, arcR, arcR, 0.0f,
-                                startAngle, endAngle, true);
-            g.setColour(accent.brighter(0.6f).withAlpha(0.85f * flashAlpha));
-            g.strokePath(flash, juce::PathStrokeType(lineW * 1.7f,
-                                                     juce::PathStrokeType::curved,
-                                                     juce::PathStrokeType::rounded));
-        }
+        return lcdFont(15.0f);
     }
 
     void B33pLookAndFeel::drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
-                                           float sliderPos, float /*minSliderPos*/, float /*maxSliderPos*/,
+                                           float sliderPos, float minSliderPos, float maxSliderPos,
                                            juce::Slider::SliderStyle style, juce::Slider& slider)
     {
         if (style != juce::Slider::LinearHorizontal)
         {
             juce::LookAndFeel_V4::drawLinearSlider(g, x, y, width, height, sliderPos,
-                                                   0.0f, 0.0f, style, slider);
+                                                   minSliderPos, maxSliderPos, style, slider);
             return;
         }
 
-        const bool enabled = slider.isEnabled();
-        auto accent = slider.findColour(juce::Slider::trackColourId);
-        if (! enabled) accent = accent.withAlpha(0.30f);
+        namespace colour = zqsfx::ui::colour;
 
-        const float cy   = (float) y + (float) height * 0.5f;
-        const auto  track = juce::Rectangle<float>((float) x, cy - 2.0f, (float) width, 4.0f);
+        const bool  enabled  = slider.isEnabled();
+        const float alphaMul = enabled ? 1.0f : zqsfx::ui::geom::dimAlpha;
+        const auto  bounds   = juce::Rectangle<int>(x, y, width, height).toFloat();
 
-        g.setColour(kTrack.withAlpha(enabled ? 1.0f : 0.5f));
-        g.fillRoundedRectangle(track, 2.0f);
+        // Screen-glass track, ruleTitle border — hard rectangle, no rounded caps
+        // (style guide section 6: replace rounded corners with hard edges).
+        constexpr float trackH = 4.0f;
+        const float trackY = bounds.getCentreY() - trackH * 0.5f;
+        const juce::Rectangle<float> track(bounds.getX(), trackY, bounds.getWidth(), trackH);
+        g.setColour(colour::lcdScreenDark.withAlpha(alphaMul));
+        g.fillRect(track);
+        g.setColour(colour::ruleTitle.withAlpha(alphaMul));
+        g.drawRect(track, 1.0f);
+
+        // Filled portion, in the control's own colour (rotarySliderFillColourId /
+        // trackColourId — set per-lane by Section::tintSliders, or this class's own
+        // lcdText default otherwise).
+        const auto fillColour = slider.findColour(juce::Slider::trackColourId);
 
         if (isBipolar(slider))
         {
-            const float centreX = (float) x + (float) width * 0.5f;
-            const auto fill = juce::Rectangle<float>::leftTopRightBottom(
+            const float centreX = bounds.getX() + bounds.getWidth() * 0.5f;
+            const auto  fill    = juce::Rectangle<float>::leftTopRightBottom(
                 juce::jmin(centreX, sliderPos), track.getY(),
                 juce::jmax(centreX, sliderPos), track.getBottom());
-            g.setColour(accent);
-            g.fillRoundedRectangle(fill, 2.0f);
+            g.setColour(fillColour.withAlpha(alphaMul));
+            g.fillRect(fill);
 
-            // Centre detent tick.
-            g.setColour(juce::Colour::fromRGB(96, 96, 104));
-            g.fillRect(juce::Rectangle<float>(centreX - 0.5f, track.getY() - 2.0f, 1.0f,
-                                              track.getHeight() + 4.0f));
+            g.setColour(colour::ruleInner.withAlpha(alphaMul));
+            g.fillRect(juce::Rectangle<float>(centreX - 0.5f, track.getY() - 2.0f,
+                                              1.0f, track.getHeight() + 4.0f));
         }
         else
         {
-            const auto fill = juce::Rectangle<float>::leftTopRightBottom(
-                (float) x, track.getY(), sliderPos, track.getBottom());
-            g.setColour(accent);
-            g.fillRoundedRectangle(fill, 2.0f);
+            const float fillW = juce::jlimit(0.0f, bounds.getWidth(), sliderPos - bounds.getX());
+            if (fillW > 0.0f)
+            {
+                const juce::Rectangle<float> fill(bounds.getX(), trackY, fillW, trackH);
+                g.setColour(fillColour.withAlpha(alphaMul));
+                g.fillRect(fill);
+            }
         }
 
-        g.setColour(accent.brighter(0.35f));
-        g.fillEllipse(juce::Rectangle<float>(11.0f, 11.0f).withCentre({ sliderPos, cy }));
-    }
-
-    void B33pLookAndFeel::drawComboBox(juce::Graphics& g, int width, int height, bool /*isButtonDown*/,
-                                       int /*buttonX*/, int /*buttonY*/, int /*buttonW*/, int /*buttonH*/,
-                                       juce::ComboBox& box)
-    {
-        const auto bounds  = juce::Rectangle<float>(0.0f, 0.0f, (float) width, (float) height).reduced(1.0f);
-        const bool enabled = box.isEnabled();
-
-        g.setColour(box.findColour(juce::ComboBox::backgroundColourId)
-                        .withAlpha(enabled ? 1.0f : 0.5f));
-        g.fillRoundedRectangle(bounds, 4.0f);
-
-        g.setColour(box.findColour(juce::ComboBox::outlineColourId).withAlpha(enabled ? 1.0f : 0.4f));
-        g.drawRoundedRectangle(bounds, 4.0f, 1.0f);
-
-        // Accent chevron caret.
-        const auto zone = juce::Rectangle<float>((float) width - 18.0f, 0.0f, 14.0f, (float) height);
-        const float cx = zone.getCentreX();
-        const float cy = zone.getCentreY();
-        juce::Path caret;
-        caret.startNewSubPath(cx - 4.0f, cy - 2.0f);
-        caret.lineTo(cx, cy + 3.0f);
-        caret.lineTo(cx + 4.0f, cy - 2.0f);
-        g.setColour(box.findColour(juce::ComboBox::arrowColourId).withAlpha(enabled ? 1.0f : 0.3f));
-        g.strokePath(caret, juce::PathStrokeType(1.6f, juce::PathStrokeType::curved,
-                                                 juce::PathStrokeType::rounded));
-    }
-
-    void B33pLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button,
-                                               const juce::Colour& backgroundColour,
-                                               bool shouldDrawButtonAsHighlighted,
-                                               bool shouldDrawButtonAsDown)
-    {
-        const auto bounds = button.getLocalBounds().toFloat().reduced(0.5f);
-
-        auto fill = backgroundColour;
-        if (shouldDrawButtonAsDown)            fill = fill.darker(0.25f);
-        else if (shouldDrawButtonAsHighlighted) fill = fill.brighter(0.18f);
-
-        g.setColour(fill);
-        g.fillRoundedRectangle(bounds, 4.0f);
-
-        g.setColour(kOutline.withAlpha(0.6f));
-        g.drawRoundedRectangle(bounds, 4.0f, 1.0f);
-    }
-
-    void B33pLookAndFeel::drawPopupMenuBackground(juce::Graphics& g, int width, int height)
-    {
-        g.fillAll(findColour(juce::PopupMenu::backgroundColourId));
-        g.setColour(kOutline);
-        g.drawRect(0, 0, width, height, 1);
-    }
-
-    juce::Font B33pLookAndFeel::getSliderPopupFont(juce::Slider&)
-    {
-        return juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
-                                            13.0f, juce::Font::plain));
-    }
-
-    juce::Label* B33pLookAndFeel::createSliderTextBox(juce::Slider& slider)
-    {
-        auto* label = juce::LookAndFeel_V4::createSliderTextBox(slider);
-        label->setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
-                                                    11.0f, juce::Font::plain)));
-        return label;
+        // Slim rectangular thumb — no stock ball, no rounded capsule.
+        constexpr float thumbW = 5.0f;
+        constexpr float thumbH = 14.0f;
+        const juce::Rectangle<float> thumb(sliderPos - thumbW * 0.5f, bounds.getCentreY() - thumbH * 0.5f,
+                                           thumbW, thumbH);
+        g.setColour(colour::pointer.withAlpha(alphaMul));
+        g.fillRect(thumb);
     }
 }

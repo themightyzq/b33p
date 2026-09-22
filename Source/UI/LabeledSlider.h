@@ -83,6 +83,7 @@ namespace B33p
         void setModulationIntensity(float intensity01);
 
         void resized() override;
+        void paint(juce::Graphics& g) override;
 
     private:
         // ParameterRandomizer::RollListener — matches `parameterID`

@@ -3,6 +3,8 @@
 #include "Core/ParameterIDs.h"
 #include "SliderFormatting.h"
 
+#include <zqsfx_ui/zqsfx_ui.h>
+
 namespace B33p
 {
     namespace
@@ -37,6 +39,7 @@ namespace B33p
             addAndMakeVisible(lfo.rate);
             lfo.shape.setTooltip("LFO " + juce::String(i + 1) + " waveform shape");
             lfo.rate .setTooltip("LFO " + juce::String(i + 1) + " rate (0..30 Hz)");
+            lfo.shape.setTitle("LFO " + juce::String(i + 1) + " shape");
         }
 
         for (int i = 0; i < kNumModSlots; ++i)
@@ -63,15 +66,17 @@ namespace B33p
             slot.source.setTooltip("Modulation source for slot " + juce::String(i + 1));
             slot.dest  .setTooltip("Modulation destination for slot " + juce::String(i + 1));
             slot.amount.setTooltip("Modulation amount: -1 = full inverse, 0 = off, +1 = full positive");
+            slot.source.setTitle("Modulation slot " + juce::String(i + 1) + " source");
+            slot.dest  .setTitle("Modulation slot " + juce::String(i + 1) + " destination");
+            slot.amount.setTitle("Modulation slot " + juce::String(i + 1) + " amount");
         }
 
         hintLabel.setText(
             "Route a Source (LFO 1 or LFO 2) to a Destination, then dial the Amount to start modulating.",
             juce::dontSendNotification);
         hintLabel.setJustificationType(juce::Justification::centred);
-        hintLabel.setFont(juce::FontOptions(10.5f).withStyle("Italic"));
-        hintLabel.setColour(juce::Label::textColourId,
-                             juce::Colour::fromRGB(120, 120, 120));
+        hintLabel.setFont(juce::FontOptions(10.5f, juce::Font::italic));
+        hintLabel.setColour(juce::Label::textColourId, zqsfx::ui::colour::silkCaption);
         hintLabel.setInterceptsMouseClicks(false, false);
         addAndMakeVisible(hintLabel);
 
@@ -132,7 +137,7 @@ namespace B33p
         }
 
         setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6
-        setAccentColour(processor.laneAccentColour(lane));
+        setAccentColour(Section::houseLaneAccent(lane));
     }
 
     void ModulationSection::resized()
@@ -255,7 +260,11 @@ namespace B33p
     {
         Section::paint(g);
 
-        const auto accent = processor.laneAccentColour(currentLane);
+        // This indicator lives inside a per-lane Section, so it takes the
+        // SAME lane channel colour as the section's own title strip — not
+        // the house accent, which is reserved for "active/lit" states, not
+        // lane identity.
+        const auto laneColour = Section::houseLaneAccent(currentLane);
 
         for (int i = 0; i < kNumModSlots; ++i)
         {
@@ -266,20 +275,22 @@ namespace B33p
             const float activity = slotActivity(i);
             if (activity < 0.0f)
             {
-                // Not routed — faint hollow tick so the column reads "idle here".
-                g.setColour(juce::Colour::fromRGB(60, 60, 64));
-                g.drawRoundedRectangle(r.reduced(1.0f), 1.5f, 1.0f);
+                // Not routed — faint hollow tick so the column reads "idle here"
+                // (unlit-LED semantics). Hard-edged (style guide section 6).
+                g.setColour(zqsfx::ui::colour::ledOffRim);
+                g.drawRect(r.reduced(1.0f), 1.0f);
                 continue;
             }
 
-            // Routed — a steady accent frame plus a fill whose brightness
-            // tracks the live |LFO × amount|, so the slot visibly pulses
-            // while it modulates (and sits faint when amount/LFO are at 0).
-            g.setColour(accent.withAlpha(0.30f));
-            g.drawRoundedRectangle(r.reduced(0.5f), 1.5f, 1.0f);
+            // Routed — a steady lane-coloured frame plus a fill whose
+            // brightness tracks the live |LFO × amount|, so the slot visibly
+            // pulses while it modulates (and sits faint when amount/LFO are
+            // at 0).
+            g.setColour(laneColour.withAlpha(0.30f));
+            g.drawRect(r.reduced(0.5f), 1.0f);
 
-            g.setColour(accent.withAlpha(juce::jlimit(0.15f, 1.0f, activity)));
-            g.fillRoundedRectangle(r.reduced(1.5f), 1.0f);
+            g.setColour(laneColour.withAlpha(juce::jlimit(0.15f, 1.0f, activity)));
+            g.fillRect(r.reduced(1.5f));
         }
     }
 }

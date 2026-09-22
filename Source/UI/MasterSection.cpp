@@ -1,8 +1,11 @@
 #include "MasterSection.h"
 
 #include "Core/ParameterIDs.h"
+#include "HouseScreenText.h"
 #include "ModulationGlow.h"
 #include "SliderFormatting.h"
+
+#include <zqsfx_ui/zqsfx_ui.h>
 
 namespace B33p
 {
@@ -41,25 +44,25 @@ namespace B33p
         gainSlider    .setTooltip("Master output level");
         auditionButton.setTooltip("Play a single beep with the current settings (Shift+Space)");
         diceAllButton .setTooltip("Randomize every unlocked parameter on the currently-selected lane's voice");
+        auditionButton.setTitle("Audition");
+        diceAllButton .setTitle("Randomize voice");
 
         // ---- A/B compare buttons ----------------------------------
+        // clickingTogglesState stays false (refreshAbButtonStates drives the
+        // toggle state explicitly from the processor's active slot) but the
+        // house button treatment still applies: un-overridden
+        // drawButtonBackground/drawButtonText paint the active slot as an
+        // accent fill + accentInk text and the inactive one as the btn
+        // gradient — exactly "active toggle" per the style guide, so the
+        // old per-instance blue/grey colour overrides are gone.
         abButtonA.setClickingTogglesState(false);
         abButtonB.setClickingTogglesState(false);
         abButtonA.setTooltip("A/B compare — switch to slot A. First switch to B copies A into B so you can tweak it independently.");
         abButtonB.setTooltip("A/B compare — switch to slot B. Tweak independently of A; click A again to compare.");
         abCopyButton.setTooltip("Copy the active A/B slot's settings into the other slot.");
-
-        const auto kActiveBg   = juce::Colour::fromRGB(80, 130, 200);
-        const auto kInactiveBg = juce::Colour::fromRGB(48, 48, 48);
-        const auto kActiveText = juce::Colour::fromRGB(255, 255, 255);
-        const auto kInactiveText = juce::Colour::fromRGB(160, 160, 160);
-        for (auto* b : { &abButtonA, &abButtonB })
-        {
-            b->setColour(juce::TextButton::buttonColourId,    kInactiveBg);
-            b->setColour(juce::TextButton::buttonOnColourId,  kActiveBg);
-            b->setColour(juce::TextButton::textColourOffId,   kInactiveText);
-            b->setColour(juce::TextButton::textColourOnId,    kActiveText);
-        }
+        abButtonA.setTitle("A/B compare slot A");
+        abButtonB.setTitle("A/B compare slot B");
+        abCopyButton.setTitle("Copy active A/B slot to the other");
 
         abButtonA.onClick = [this]
         {
@@ -86,6 +89,8 @@ namespace B33p
         redoButton.onClick = [this] { processor.getUndoManager().redo(); };
         undoButton.setTooltip("Undo (Cmd+Z) — the plugin's own undo, in case the host captures the keyboard shortcut.");
         redoButton.setTooltip("Redo (Cmd+Shift+Z)");
+        undoButton.setTitle("Undo");
+        redoButton.setTitle("Redo");
         addAndMakeVisible(undoButton);
         addAndMakeVisible(redoButton);
         refreshUndoButtonStates();
@@ -100,9 +105,9 @@ namespace B33p
 
         presetNameLabel.setJustificationType(juce::Justification::centred);
         presetNameLabel.setFont(juce::FontOptions(11.0f));
-        presetNameLabel.setColour(juce::Label::textColourId,
-                                  juce::Colour::fromRGB(170, 170, 175));
+        presetNameLabel.setColour(juce::Label::textColourId, zqsfx::ui::colour::silkLabel);
         presetNameLabel.setTooltip("Current preset — use < and > to step through your presets");
+        presetNameLabel.setTitle("Current preset name");
         presetNameLabel.setInterceptsMouseClicks(false, false);
         setPresetName({});   // starts as the em-dash placeholder
         addAndMakeVisible(presetNameLabel);
@@ -133,28 +138,32 @@ namespace B33p
                                                 processor.getApvts(),
                                                 ParameterIDs::voiceGain(lane));
 
-        setAccentColour(processor.laneAccentColour(lane));
+        setAccentColour(Section::houseLaneAccent(lane));
     }
 
     void MasterSection::flashAuditionButton()
     {
-        // Brief amber tint so the user gets a visual confirmation
-        // that the click registered — the audition is a fire-and-
-        // forget half-second beep with no other on-screen feedback.
-        auditionButton.setColour(juce::TextButton::buttonColourId,
-                                  juce::Colour::fromRGB(220, 140, 60));
+        // Brief visual confirmation that the click registered — the audition
+        // is a fire-and-forget half-second beep with no other on-screen
+        // feedback. The house LookAndFeel's drawButtonBackground ignores
+        // per-instance colour overrides entirely (it always paints an "on"
+        // TextButton as the accent fill), so the flash now toggles the
+        // button's own toggle state instead of setting a colour directly —
+        // same accent-fill visual, and "audition just fired" is exactly the
+        // accent's "active" meaning.
+        auditionButton.setToggleState(true, juce::dontSendNotification);
         auditionFlashUntilMs = juce::Time::currentTimeMillis() + 180;
         auditionFlashActive  = true;
     }
 
     void MasterSection::timerCallback()
     {
-        // Audition flash deadline — restore the button colour once
-        // the flash window has elapsed.
+        // Audition flash deadline — clear the toggle state once the flash
+        // window has elapsed.
         if (auditionFlashActive
             && juce::Time::currentTimeMillis() >= auditionFlashUntilMs)
         {
-            auditionButton.removeColour(juce::TextButton::buttonColourId);
+            auditionButton.setToggleState(false, juce::dontSendNotification);
             auditionFlashActive = false;
         }
 
@@ -233,30 +242,34 @@ namespace B33p
 
     void MasterSection::paint(juce::Graphics& g)
     {
+        namespace houseColour = zqsfx::ui::colour;
         Section::paint(g);
 
         // Group outline around the A | B | Copy cluster — the three
         // buttons share an A/B-compare purpose and shouldn't read as
         // peers of Undo / Redo / preset arrows on the same row.
-        // (REVIEW-USER L-CONFUSING-7.)
+        // (REVIEW-USER L-CONFUSING-7.) Hard-edged (style guide section 6).
         if (! abClusterBounds.isEmpty())
         {
             auto frame = abClusterBounds.toFloat().expanded(3.0f);
-            g.setColour(juce::Colour::fromRGB(60, 60, 64));
-            g.drawRoundedRectangle(frame, 4.0f, 1.0f);
+            g.setColour(houseColour::ruleInner);
+            g.drawRect(frame, 1.0f);
         }
 
         if (meterBounds.isEmpty())
             return;
 
+        // Meter well in lcdScreenDark per the style guide's Meters spec.
         const auto bounds = meterBounds.toFloat();
-        g.setColour(juce::Colour::fromRGB(20, 20, 20));
-        g.fillRoundedRectangle(bounds, 2.0f);
-        g.setColour(juce::Colour::fromRGB(60, 60, 60));
-        g.drawRoundedRectangle(bounds, 2.0f, 1.0f);
+        g.setColour(houseColour::lcdScreenDark);
+        g.fillRect(bounds);
+        g.setColour(houseColour::lcdBorder);
+        g.drawRect(bounds, 1.0f);
 
-        // Filled width = meterLevel (0..1). Green up to 0.7, amber 0.7..0.9,
-        // red above.
+        // Filled width = meterLevel (0..1). meterMid up to 0.7, meterHot
+        // (amber) 0.7..0.9, meterClip (red) above — matches the house
+        // token names and the style guide's own "amber above -6 dB, red at
+        // clip" rule almost exactly.
         const float clamped = juce::jlimit(0.0f, 1.0f, meterLevel);
         const auto  track   = bounds.reduced(1.5f);
 
@@ -265,31 +278,31 @@ namespace B33p
             auto fill = track;
             fill.setWidth(fill.getWidth() * clamped);
 
-            auto barColour = juce::Colour::fromRGB(60, 180, 80);
-            if (clamped > 0.9f)      barColour = juce::Colour::fromRGB(220,  60,  60);
-            else if (clamped > 0.7f) barColour = juce::Colour::fromRGB(220, 180,  60);
+            auto barColour = houseColour::meterMid;
+            if (clamped > 0.9f)      barColour = houseColour::meterClip;
+            else if (clamped > 0.7f) barColour = houseColour::meterHot;
 
             g.setColour(barColour);
-            g.fillRoundedRectangle(fill, 1.5f);
+            g.fillRect(fill);
         }
 
-        // Peak-hold tick (P18) — bright vertical marker at the recent max.
+        // Peak-hold tick (P18) — bright neutral vertical marker at the recent
+        // max (not a meter-fill colour, not the accent — a chrome marker).
         const float ph = juce::jlimit(0.0f, 1.0f, peakHoldLevel);
         if (ph > 0.0f)
         {
             const float x = track.getX() + track.getWidth() * ph;
-            g.setColour(juce::Colour::fromRGB(235, 235, 245));
+            g.setColour(houseColour::logoBright);
             g.fillRect(juce::Rectangle<float>(x - 0.75f, track.getY(), 1.5f, track.getHeight()));
         }
 
         // Clip cap (P18) — latched red block at the right end after 0 dBFS.
         if (clipLatched)
         {
-            g.setColour(juce::Colour::fromRGB(255, 70, 70));
-            g.fillRoundedRectangle(
+            g.setColour(houseColour::meterClip);
+            g.fillRect(
                 juce::Rectangle<float>(bounds.getRight() - 4.5f, bounds.getY(),
-                                       4.5f, bounds.getHeight()).reduced(0.5f),
-                1.0f);
+                                       4.5f, bounds.getHeight()).reduced(0.5f));
         }
 
         // dBFS scale ruler (P18) — ticks + labels at -12 / -6 / -3 / 0 dBFS,
@@ -298,7 +311,6 @@ namespace B33p
         if (! meterScaleBounds.isEmpty())
         {
             const auto scale = meterScaleBounds.toFloat();
-            g.setFont(juce::FontOptions(8.5f));
 
             struct DbMark { int db; const char* label; };
             for (const auto& mark : { DbMark { -12, "-12" }, DbMark { -6, "-6" },
@@ -307,7 +319,7 @@ namespace B33p
                 const float level = juce::Decibels::decibelsToGain((float) mark.db);
                 const float x     = track.getX() + track.getWidth() * level;
 
-                g.setColour(juce::Colour::fromRGB(110, 110, 120));
+                g.setColour(houseColour::lcdFaint2);
                 g.fillRect(juce::Rectangle<float>(x - 0.5f, scale.getY(), 1.0f, 3.0f));
 
                 // Centre the label under its tick, clamped so the right-most
@@ -316,11 +328,10 @@ namespace B33p
                 const float textX = juce::jlimit(scale.getX(),
                                                  scale.getRight() - textW,
                                                  x - textW * 0.5f);
-                g.setColour(juce::Colour::fromRGB(150, 150, 160));
-                g.drawText(mark.label,
-                           juce::Rectangle<float>(textX, scale.getY() + 2.0f,
-                                                  textW, scale.getHeight() - 2.0f),
-                           juce::Justification::centred, false);
+                drawHouseScreenText(*this, g, mark.label,
+                           juce::Rectangle<int>(static_cast<int>(textX), static_cast<int>(scale.getY()) + 2,
+                                                  static_cast<int>(textW), static_cast<int>(scale.getHeight()) - 2),
+                           9.0f, juce::Justification::centred, houseColour::lcdFaint);
             }
         }
     }

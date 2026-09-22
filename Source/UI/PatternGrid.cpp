@@ -1,7 +1,11 @@
 #include "PatternGrid.h"
 
+#include "HouseScreenText.h"
 #include "Pattern/SnapMath.h"
+#include "Section.h"
 #include "State/UndoableActions.h"
+
+#include <zqsfx_ui/zqsfx_ui.h>
 
 #include <algorithm>
 #include <cmath>
@@ -17,7 +21,6 @@ namespace B33p
         constexpr float  kRulerHeight        = 20.0f;
         constexpr float  kOuterInset         = 1.0f;
         constexpr float  kLaneInset          = 3.0f;   // vertical padding inside each lane
-        constexpr float  kEventCorner        = 2.0f;
         constexpr float  kResizeEdgeWidth    = 6.0f;
         constexpr double kMinDurationSec     = 0.02;   // 20 ms — tighter than the smallest grid by design
         constexpr double kDefaultDurationSec = 0.1;    // matches the default 100 ms grid
@@ -27,6 +30,13 @@ namespace B33p
         : processor(processorRef)
     {
         setWantsKeyboardFocus(true);
+        // Accessibility floor: this is a custom component showing data (the whole
+        // step sequencer), so it needs its own accessible identity on top of its
+        // labelled/buttoned children.
+        setAccessible(true);
+        setTitle("Pattern grid");
+        setDescription("Step sequencer: four pattern lanes. Drag in a lane to draw "
+                       "a beep; drag an existing beep to move or resize it.");
 
         for (int i = 0; i < Pattern::kNumLanes; ++i)
         {
@@ -36,11 +46,12 @@ namespace B33p
             nameLabel.setEditable(false, true, false);   // double-click to edit
             nameLabel.setJustificationType(juce::Justification::centredLeft);
             nameLabel.setFont(juce::FontOptions(11.0f));
-            nameLabel.setColour(juce::Label::textColourId,
-                                  juce::Colour::fromRGB(190, 190, 190));
+            nameLabel.setColour(juce::Label::textColourId, zqsfx::ui::colour::silkLabel);
             nameLabel.setColour(juce::Label::backgroundWhenEditingColourId,
-                                  juce::Colour::fromRGB(28, 28, 28));
+                                  zqsfx::ui::colour::lcdBg);
             nameLabel.setTooltip("Double-click to rename");
+            nameLabel.setTitle("Lane " + juce::String(i + 1) + " name");
+            nameLabel.setDescription("Lane " + juce::String(i + 1) + " name — double-click to rename");
             // I-beam cursor on hover signals "this is editable text",
             // turning the previously-buried double-click rename into a
             // discoverable affordance without changing the label's
@@ -73,18 +84,14 @@ namespace B33p
             muteBtn.setButtonText("M");
             muteBtn.setClickingTogglesState(true);
             muteBtn.setTooltip("Mute lane");
-            // Off vs on differentiates by *luminance* (dark→bright) and
-            // *text contrast* (dim grey→white), not just by hue. Color-
-            // blind users see the state change via the brightness shift,
-            // not the red/yellow distinction.
-            muteBtn.setColour(juce::TextButton::buttonColourId,
-                                juce::Colour::fromRGB(30, 30, 30));
-            muteBtn.setColour(juce::TextButton::buttonOnColourId,
-                                juce::Colour::fromRGB(190, 60, 60));
-            muteBtn.setColour(juce::TextButton::textColourOffId,
-                                juce::Colour::fromRGB(110, 110, 110));
-            muteBtn.setColour(juce::TextButton::textColourOnId,
-                                juce::Colour::fromRGB(255, 255, 255));
+            muteBtn.setTitle("Mute lane " + juce::String(i + 1));
+            muteBtn.setDescription("Mute lane " + juce::String(i + 1));
+            // House button treatment (un-overridden zqsfx::ui::LookAndFeel::
+            // drawButtonBackground/drawButtonText) paints on-state as an accent
+            // fill + accentInk text and off-state as the btn gradient — the "M"
+            // glyph itself, not colour, is what tells mute apart from solo, so no
+            // per-instance colour override is needed (and the house rule reserves
+            // red for clip/error, not "muted").
             muteBtn.onClick = [this, i]
             {
                 processor.setSelectedLane(i);
@@ -108,16 +115,9 @@ namespace B33p
             soloBtn.setButtonText("S");
             soloBtn.setClickingTogglesState(true);
             soloBtn.setTooltip("Solo lane (only soloed lanes play)");
-            // Same off/on contrast logic as mute — see the comment
-            // above the muteBtn setColour block.
-            soloBtn.setColour(juce::TextButton::buttonColourId,
-                                juce::Colour::fromRGB(30, 30, 30));
-            soloBtn.setColour(juce::TextButton::buttonOnColourId,
-                                juce::Colour::fromRGB(220, 200, 60));
-            soloBtn.setColour(juce::TextButton::textColourOffId,
-                                juce::Colour::fromRGB(110, 110, 110));
-            soloBtn.setColour(juce::TextButton::textColourOnId,
-                                juce::Colour::fromRGB(40, 40, 40));   // dark on yellow for contrast
+            soloBtn.setTitle("Solo lane " + juce::String(i + 1));
+            soloBtn.setDescription("Solo lane " + juce::String(i + 1) + " — only soloed lanes play");
+            // Same house on/off button treatment as Mute — see the comment there.
             soloBtn.onClick = [this, i]
             {
                 processor.setSelectedLane(i);
@@ -596,12 +596,12 @@ namespace B33p
 
     void PatternGrid::paint(juce::Graphics& g)
     {
+        namespace houseColour = zqsfx::ui::colour;
         auto frame = plotArea();
 
-        g.setColour(juce::Colour::fromRGB(20, 20, 20));
-        g.fillRoundedRectangle(frame, 3.0f);
-        g.setColour(juce::Colour::fromRGB(60, 60, 60));
-        g.drawRoundedRectangle(frame, 3.0f, 1.0f);
+        // Phosphor screen treatment (style guide section 6: custom data displays
+        // get the house screen background; hard edges, no rounded corners).
+        zqsfx::ui::LookAndFeel::drawScreen(g, frame, false);
 
         const auto& pattern = processor.getPattern();
         const double length = pattern.getLengthSeconds();
@@ -613,7 +613,7 @@ namespace B33p
         // than competing with it.
         if (gridSeconds > 0.0)
         {
-            g.setColour(juce::Colour::fromRGB(32, 32, 32));
+            g.setColour(houseColour::lcdFaint2);
             for (double t = 0.0; t <= length + 1e-6; t += gridSeconds)
             {
                 const float x = secondsToX(t);
@@ -638,13 +638,13 @@ namespace B33p
                 const float alpha = (lane == sel)          ? 0.10f
                                   : (lane == hoveredLane)  ? 0.07f
                                                             : 0.04f;
-                g.setColour(processor.laneAccentColour(lane).withAlpha(alpha));
+                g.setColour(Section::houseLaneAccent(lane).withAlpha(alpha));
                 g.fillRect(sl);
             }
         }
 
         // Lane separators
-        g.setColour(juce::Colour::fromRGB(55, 55, 55));
+        g.setColour(houseColour::ruleInner);
         for (int lane = 1; lane < Pattern::kNumLanes; ++lane)
         {
             auto r = laneArea(lane);
@@ -665,14 +665,14 @@ namespace B33p
                 frame.getY(),
                 frame.getWidth() - kLaneLabelWidth,
                 kRulerHeight);
-            g.setColour(juce::Colour::fromRGB(40, 40, 40));
+            g.setColour(houseColour::ruleTitle);
             g.fillRect(rulerRow);
 
             // Second labels along the top half of the ruler — keeps
             // the seconds reference visible for users who think in
             // raw time.
             const int lastSec = static_cast<int>(std::floor(length));
-            g.setColour(juce::Colour::fromRGB(100, 100, 100));
+            g.setColour(houseColour::lcdFaint2);
             for (int s = 0; s <= lastSec; ++s)
             {
                 const float x = secondsToX(static_cast<double>(s));
@@ -680,17 +680,15 @@ namespace B33p
                                     rulerRow.getY() + 1.0f,
                                     rulerRow.getY() + 5.0f);
             }
-            g.setColour(juce::Colour::fromRGB(160, 160, 160));
-            g.setFont(juce::FontOptions(9.0f));
             for (int s = 0; s <= lastSec; ++s)
             {
                 const float x = secondsToX(static_cast<double>(s));
-                g.drawText(juce::String(s) + "s",
-                           juce::Rectangle<float>(x + 2.0f,
-                                                  rulerRow.getY() + 1.0f,
-                                                  30.0f,
-                                                  kRulerHeight * 0.5f),
-                           juce::Justification::centredLeft);
+                drawHouseScreenText(*this, g, juce::String(s) + "s",
+                           juce::Rectangle<int>(static_cast<int>(x) + 2,
+                                                  static_cast<int>(rulerRow.getY()) + 1,
+                                                  30,
+                                                  static_cast<int>(kRulerHeight * 0.5f)),
+                           11.0f, juce::Justification::centredLeft, houseColour::lcdFaint);
             }
 
             // Bar / beat labels along the bottom half. Bars get a
@@ -717,9 +715,7 @@ namespace B33p
                 // stay at (80) — clearly subordinate, still legible.
                 // Combined with the dimmer grid lines above, the eye
                 // can now pre-attentively separate grid → beat → bar.
-                g.setColour(isBarStart
-                                ? juce::Colour::fromRGB(200, 200, 200)
-                                : juce::Colour::fromRGB( 80,  80,  80));
+                g.setColour(isBarStart ? houseColour::lcdText : houseColour::lcdFaint2);
                 g.drawVerticalLine(static_cast<int>(std::round(x)),
                                     rulerRow.getBottom() - (isBarStart ? 6.0f : 3.0f),
                                     rulerRow.getBottom());
@@ -739,8 +735,6 @@ namespace B33p
             while (labelSkip * barSpacingPx < kLabelWidth + kLabelPadding)
                 labelSkip *= 2;
 
-            g.setColour(juce::Colour::fromRGB(190, 190, 190));
-            g.setFont(juce::FontOptions(9.0f));
             int barNum = 1;
             int barCount = 0;
             for (double t = 0.0; t <= length + 1e-9; t += secPerBar, ++barNum, ++barCount)
@@ -749,12 +743,12 @@ namespace B33p
                     continue;
 
                 const float x = secondsToX(t);
-                g.drawText("Bar " + juce::String(barNum),
-                           juce::Rectangle<float>(x + 2.0f,
-                                                  rulerRow.getCentreY(),
-                                                  kLabelWidth,
-                                                  kRulerHeight * 0.5f),
-                           juce::Justification::centredLeft);
+                drawHouseScreenText(*this, g, "Bar " + juce::String(barNum),
+                           juce::Rectangle<int>(static_cast<int>(x) + 2,
+                                                  static_cast<int>(rulerRow.getCentreY()),
+                                                  static_cast<int>(kLabelWidth),
+                                                  static_cast<int>(kRulerHeight * 0.5f)),
+                           11.0f, juce::Justification::centredLeft, houseColour::lcdDim);
             }
         }
 
@@ -775,9 +769,6 @@ namespace B33p
                 frame.getWidth() - kLaneLabelWidth,
                 frame.getBottom() - (frame.getY() + kRulerHeight));
 
-            g.setColour(juce::Colour::fromRGB(110, 110, 110));
-            g.setFont(juce::FontOptions(12.0f));
-
             // Two stacked lines instead of one 137-character run-on so
             // the first-run gesture-teach reads as instructions, not a
             // wall of text. Splits at the natural period.
@@ -785,12 +776,12 @@ namespace B33p
             const float totalHeight       = lineHeight * 2.0f;
             const float firstLineY        = hintArea.getCentreY() - totalHeight * 0.5f;
 
-            g.drawText("Drag in a lane to draw a beep, or double-click for default size.",
-                       hintArea.withY(firstLineY).withHeight(lineHeight),
-                       juce::Justification::centred);
-            g.drawText("Drag a beep to move it (vertically across lanes); drag its edges to resize.",
-                       hintArea.withY(firstLineY + lineHeight).withHeight(lineHeight),
-                       juce::Justification::centred);
+            drawHouseScreenText(*this, g, "Drag in a lane to draw a beep, or double-click for default size.",
+                       hintArea.withY(firstLineY).withHeight(lineHeight).toNearestInt(),
+                       13.0f, juce::Justification::centred, houseColour::lcdFaint);
+            drawHouseScreenText(*this, g, "Drag a beep to move it (vertically across lanes); drag its edges to resize.",
+                       hintArea.withY(firstLineY + lineHeight).withHeight(lineHeight).toNearestInt(),
+                       13.0f, juce::Justification::centred, houseColour::lcdFaint);
         }
 
         // Events
@@ -811,29 +802,30 @@ namespace B33p
                                          && hover.lane  == lane
                                          && hover.index == i);
 
-                // Fill: selected > hover > idle. The hover lift is
-                // small (10..15 RGB units) — enough to read as
-                // "this is the click target" without competing
-                // with the selection accent.
-                juce::Colour fill { 80, 150, 220 };
-                if (isSelected)   fill = { 120, 200, 255 };
-                else if (isHover) fill = {  95, 170, 235 };
+                // Fill: idle/hover carry the OWNING LANE's channel colour (so a
+                // clip visibly belongs to its row even when scanning quickly);
+                // selected uses the house accent, since "the event I'm currently
+                // editing" is exactly the accent's "active/focused" meaning, never
+                // a data channel. Hard-edged rectangle (style guide section 6).
+                const auto laneColour = Section::houseLaneAccent(lane);
+                juce::Colour fill = laneColour.withAlpha(0.55f);
+                if (isSelected)   fill = houseColour::accent;
+                else if (isHover) fill = laneColour.withAlpha(0.80f);
                 g.setColour(fill);
-                g.fillRoundedRectangle(rect, kEventCorner);
+                g.fillRect(rect);
 
-                g.setColour(isSelected
-                                ? juce::Colour::fromRGB(230, 240, 255)
-                                : juce::Colour::fromRGB(30, 30, 30));
-                g.drawRoundedRectangle(rect, kEventCorner,
-                                        isSelected ? 1.6f : 1.0f);
+                g.setColour(isSelected ? houseColour::logoBright : houseColour::panelBorder);
+                g.drawRect(rect, isSelected ? 1.6f : 1.0f);
 
                 // Resize-handle dots on the selected event so the
                 // edges read as grabbable handles, not just an outline.
+                // Bright neutral (not accent/lane) so the dots stay visible
+                // whether they sit over the orange fill or the dark screen bg.
                 if (isSelected)
                 {
                     const float r  = 2.5f;
                     const float cy = rect.getCentreY();
-                    g.setColour(juce::Colour::fromRGB(230, 240, 255));
+                    g.setColour(houseColour::logoBright);
                     g.fillEllipse(rect.getX()      - r, cy - r, r * 2.0f, r * 2.0f);
                     g.fillEllipse(rect.getRight()  - r, cy - r, r * 2.0f, r * 2.0f);
                 }
@@ -854,29 +846,29 @@ namespace B33p
             // whose feedback can't afford to be subtle. Red vs pale
             // blue + the wall-clamp's thicker stroke still cleanly
             // distinguish "snapping into place" from "hit the wall."
+            // "Hit the wall" is a clamp/limit condition -> warn (danger -> warn
+            // mapping). A valid snap target is a neutral pointer cue, never accent
+            // (it isn't an "active" state) and never a lane colour (it isn't data).
             g.setColour(dragClampedAtWall
-                            ? juce::Colour::fromRGB(255, 100,  90).withAlpha(0.85f)
-                            : juce::Colour::fromRGB(230, 240, 255).withAlpha(0.85f));
+                            ? houseColour::warn.withAlpha(0.85f)
+                            : houseColour::pointer.withAlpha(0.85f));
             g.drawLine(x, frame.getY() + kRulerHeight,
                        x, frame.getBottom(),
                        dragClampedAtWall ? 1.6f : 1.0f);
         }
 
-        // Playhead — orange while playing, cool grey when parked.
-        // Parked acts as the paste-anchor for Cmd+V, so it needs to
-        // be the *most* prominent vertical line in the pattern, not
-        // dimmer than the surrounding bar ticks. Bumped from (140)
-        // to (230) so it tops the bar-tick layer (200) decisively.
-        // Hidden only when stopped at exactly 0 (the no-op resting
-        // state).
+        // Playhead — house accent while playing (the one genuinely "active"
+        // state in this view), a neutral pointer cue when parked. Parked acts
+        // as the paste-anchor for Cmd+V, so it needs to be the *most*
+        // prominent vertical line in the pattern, not dimmer than the
+        // surrounding bar ticks. Hidden only when stopped at exactly 0 (the
+        // no-op resting state).
         {
             const double headSec = processor.getPlayheadSeconds();
             if (processor.isPlaying() || headSec > 0.0)
             {
                 const float x = secondsToX(headSec);
-                g.setColour(processor.isPlaying()
-                                ? juce::Colour::fromRGB(255, 165,  60)
-                                : juce::Colour::fromRGB(230, 230, 240));
+                g.setColour(processor.isPlaying() ? houseColour::accent : houseColour::pointer);
                 g.drawLine(x, frame.getY() + kRulerHeight,
                            x, frame.getBottom(),
                            1.5f);

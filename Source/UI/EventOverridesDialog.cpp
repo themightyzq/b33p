@@ -1,5 +1,7 @@
 #include "EventOverridesDialog.h"
 
+#include <zqsfx_ui/zqsfx_ui.h>
+
 namespace B33p
 {
     namespace
@@ -38,6 +40,10 @@ namespace B33p
         : onApplyCallback(std::move(onApply)),
           onCloseCallback(std::move(onClose))
     {
+        setAccessible(true);
+        setTitle("Event properties");
+        setDescription("Per-event overrides, probability, ratcheting, and humanize");
+
         editing.overrides       = event.overrides;
         editing.probability     = event.probability;
         editing.ratchets        = event.ratchets;
@@ -55,6 +61,8 @@ namespace B33p
             slot.dest.addItemList(kDestNames, 1);
             slot.dest.setSelectedId(static_cast<int>(editing.overrides[static_cast<size_t>(i)].destination) + 1,
                                      juce::dontSendNotification);
+            slot.dest.setTitle("Override slot " + juce::String(i + 1) + " destination");
+            slot.dest.setTooltip("Override destination for slot " + juce::String(i + 1));
             slot.dest.onChange = [this, i]
             {
                 const int sel = slotControls[static_cast<size_t>(i)].dest.getSelectedId() - 1;
@@ -68,6 +76,8 @@ namespace B33p
             slot.amount.setTextBoxStyle(juce::Slider::TextBoxRight, false, 56, 18);
             slot.amount.setValue(static_cast<double>(editing.overrides[static_cast<size_t>(i)].value),
                                   juce::dontSendNotification);
+            slot.amount.setTitle("Override slot " + juce::String(i + 1) + " amount");
+            slot.amount.setTooltip("Override amount for slot " + juce::String(i + 1));
             slot.amount.onValueChange = [this, i]
             {
                 editing.overrides[static_cast<size_t>(i)].value =
@@ -96,6 +106,7 @@ namespace B33p
         {
             editing.probability = static_cast<float>(probabilitySlider.getValue());
         };
+        probabilitySlider.setTitle("Probability");
         probabilitySlider.setTooltip("0 = never fires, 1 = always fires (rolled at snapshot time)");
         addAndMakeVisible(probabilitySlider);
 
@@ -109,6 +120,7 @@ namespace B33p
             editing.ratchets = juce::jlimit(1, kMaxRatchets,
                                              static_cast<int>(ratchetsSlider.getValue()));
         };
+        ratchetsSlider.setTitle("Ratchets");
         ratchetsSlider.setTooltip("1 = single hit; higher = N evenly-spaced retriggers within the event's duration");
         addAndMakeVisible(ratchetsSlider);
 
@@ -121,6 +133,7 @@ namespace B33p
         {
             editing.humanizeAmount = static_cast<float>(humanizeSlider.getValue());
         };
+        humanizeSlider.setTitle("Humanize");
         humanizeSlider.setTooltip("Random jitter on timing + velocity. Re-randomises each snapshot rebuild.");
         addAndMakeVisible(humanizeSlider);
 
@@ -151,10 +164,10 @@ namespace B33p
 
     void EventOverridesDialog::paint(juce::Graphics& g)
     {
-        g.fillAll(juce::Colour::fromRGB(28, 28, 28));
+        g.fillAll(zqsfx::ui::colour::panelBot);
 
-        g.setColour(juce::Colour::fromRGB(180, 180, 180));
-        g.setFont(juce::FontOptions(13.0f).withStyle("Bold"));
+        g.setColour(zqsfx::ui::colour::silkTitle);
+        g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
         g.drawText("Event properties — overrides + probability / ratcheting / humanize",
                    getLocalBounds().reduced(kPadding).removeFromTop(kHeaderHeight),
                    juce::Justification::centredLeft);
@@ -205,7 +218,7 @@ namespace B33p
             EventOverridesDialog::OnApply onApply,
             std::function<void()> onClose)
         : DocumentWindow("Event Properties",
-                         juce::Colour::fromRGB(22, 22, 22),
+                         zqsfx::ui::colour::chassisMid,
                          DocumentWindow::closeButton),
           onCloseCallback(std::move(onClose))
     {

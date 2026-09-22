@@ -1,21 +1,30 @@
 #include "Section.h"
 
+#include <zqsfx_ui/zqsfx_ui.h>
+
 namespace B33p
 {
     namespace
     {
-        constexpr int   kCornerRadius    = 6;
-        constexpr int   kOutlineInset    = 1;
         constexpr int   kTitleStripHeight = 22;
-        constexpr int   kTitleIndent     = 10;
-        constexpr int   kContentPadding  = 8;
-        constexpr float kOutlineThickness = 1.0f;
+        constexpr int   kTitleIndent      = 10;
+        // House inset convention: 6 px inside a titled panel, 8 px left under
+        // the last control row (asymmetric on purpose — see the worked
+        // examples' migration reports).
+        constexpr int   kContentInset        = 6;
+        constexpr int   kContentBottomInset  = 8;
 
-        // Push the lane accent down onto every slider in the subtree so the
-        // custom LookAndFeel paints each knob's value arc / fill in the
-        // current lane's colour — matching the section's accent strip. Safe
-        // to call on lane switches; non-rotary sliders simply ignore the
-        // rotary colour IDs.
+        // Push the lane accent down onto every slider in the subtree so
+        // LabeledSlider's meaning-colour chip (see LabeledSlider::paint) and
+        // any bespoke linear-slider fill (B33pLookAndFeel::drawLinearSlider)
+        // paint in the current lane's colour — matching the section's accent
+        // strip. Safe to call on lane switches; sliders with no rotary/track
+        // colour usage simply ignore the colour IDs. The house filmstrip
+        // rotary knob itself does not consult these IDs (it always draws the
+        // same knob art regardless of dial size), which is why the lane
+        // meaning colour lives on the label chip and the section strip
+        // instead of the knob face — see docs/ZQSFX_UI_STYLE_GUIDE.md and the
+        // migration report's "never colour alone" table.
         void tintSliders(juce::Component& component, juce::Colour accent)
         {
             for (auto* child : component.getChildren())
@@ -40,39 +49,50 @@ namespace B33p
     {
     }
 
+    juce::Colour Section::houseLaneAccent(int lane)
+    {
+        // Table order per style guide section 3: sky, yellow, purple, white.
+        return zqsfx::ui::comp::channel(lane);
+    }
+
     void Section::paint(juce::Graphics& g)
     {
-        auto bounds = getLocalBounds().toFloat()
-                          .reduced(static_cast<float>(kOutlineInset));
+        // House zqsfx::ui::Panel treatment (Panel.h), reproduced here rather than
+        // composed because Section already owns getContentBounds()/the title-suffix/
+        // accent-strip mechanism this product relies on. Hard-edged rectangle, no
+        // rounded corners (style guide section 6).
+        namespace colour = zqsfx::ui::colour;
+        auto bounds = getLocalBounds().toFloat();
 
-        g.setColour(juce::Colour::fromRGB(36, 36, 36));
-        g.fillRoundedRectangle(bounds, static_cast<float>(kCornerRadius));
+        g.setGradientFill(zqsfx::ui::gradients::panel(bounds));
+        g.fillRect(bounds);
+        g.setColour(juce::Colours::white.withAlpha(0.04f));   // inner top highlight
+        g.fillRect(bounds.withHeight(1.0f).translated(0.0f, 1.0f));
+        g.setColour(colour::panelBorder);
+        g.drawRect(bounds, 1.0f);
 
-        g.setColour(juce::Colour::fromRGB(90, 90, 90));
-        g.drawRoundedRectangle(bounds,
-                               static_cast<float>(kCornerRadius),
-                               kOutlineThickness);
-
-        g.setColour(juce::Colours::white);
-        g.setFont(juce::FontOptions(14.0f, juce::Font::bold));
+        g.setColour(colour::silkTitle);
+        g.setFont(juce::Font(juce::FontOptions(14.0f, juce::Font::bold)).withExtraKerningFactor(0.27f));
 
         auto titleArea = getLocalBounds()
                              .removeFromTop(kTitleStripHeight)
                              .withTrimmedLeft(kTitleIndent)
                              .withTrimmedRight(kTitleIndent);
-        g.drawText(title + suffix, titleArea, juce::Justification::centredLeft);
+        g.drawText((title + suffix).toUpperCase(), titleArea, juce::Justification::centredLeft);
 
-        // Per-section accent strip just under the title bar — visual
-        // cue for which lane this section currently edits. 4 px at
-        // full alpha so it carries across the editor without becoming
-        // heavy; the 2 px / α 0.85 version was almost invisible at
-        // normal viewing distance.
+        g.setColour(colour::ruleTitle);
+        g.fillRect(juce::Rectangle<int>(kTitleIndent, kTitleStripHeight,
+                                         getWidth() - 2 * kTitleIndent, 1));
+
+        // Per-section accent strip just under the title hairline — visual
+        // cue for which lane this section currently edits. 4 px at full
+        // alpha so it carries across the editor without becoming heavy.
         if (accentColour.getAlpha() > 0)
         {
             const auto strip = juce::Rectangle<int>(
-                getLocalBounds().getX() + kCornerRadius,
-                kTitleStripHeight,
-                getLocalBounds().getWidth() - 2 * kCornerRadius,
+                getLocalBounds().getX() + kTitleIndent,
+                kTitleStripHeight + 1,
+                getLocalBounds().getWidth() - 2 * kTitleIndent,
                 4);
             g.setColour(accentColour);
             g.fillRect(strip);
@@ -96,8 +116,11 @@ namespace B33p
 
     juce::Rectangle<int> Section::getContentBounds() const
     {
-        return getLocalBounds()
-                   .withTrimmedTop(kTitleStripHeight)
-                   .reduced(kContentPadding);
+        auto bounds = getLocalBounds().withTrimmedTop(kTitleStripHeight);
+        bounds.removeFromLeft(kContentInset);
+        bounds.removeFromRight(kContentInset);
+        bounds.removeFromTop(kContentInset);
+        bounds.removeFromBottom(kContentBottomInset);
+        return bounds;
     }
 }

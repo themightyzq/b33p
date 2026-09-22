@@ -94,6 +94,18 @@ CPMAddPackage(
     SYSTEM              YES
 )
 
+# The ZQ SFX house UI (tokens, LookAndFeel, bound controls, embedded OFL fonts +
+# CC0 knob filmstrips). Must come AFTER JUCE, via CPM per this project's "CPM only"
+# rule (docs/ZQSFX_UI_STYLE_GUIDE.md section 9 uses FetchContent as the generic
+# example; CPMAddPackage is CPM's equivalent one-call fetch+makeAvailable and is
+# what every other dependency in this file uses). Pinned by tag: bump deliberately,
+# then re-run b33p_ui_snapshot and compare before/after renders.
+CPMAddPackage(
+    NAME                zqsfx_ui
+    GITHUB_REPOSITORY   themightyzq/zqsfx_ui
+    GIT_TAG             v0.2.1
+)
+
 # ---------------------------------------------------------------------------
 # Plugin + standalone target
 #
@@ -220,10 +232,39 @@ target_link_libraries(B33p
         juce::juce_audio_utils
         juce::juce_gui_basics
         juce::juce_dsp
+        zqsfx::ui
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
+)
+
+# ---------------------------------------------------------------------------
+# UI snapshot tool — headless before/after render gate for the zqsfx_ui house-UI
+# migration (docs/ZQSFX_UI_STYLE_GUIDE.md, docs/ui_migration_report.md).
+#
+# pamplejuce pattern: link against b33p's own shared-code target ("B33p", produced by
+# juce_add_plugin above) instead of recompiling MainComponent.cpp / the UI sources a second
+# time. B33p has no juce_generate_juce_header() call and no JuceHeader.h dependency, so (unlike
+# LFlOw's snapshot tool) no JUCE_GENERATED_SOURCES_DIRECTORY propagation trick is needed here.
+# B33p's own target_compile_definitions are PRIVATE, so JUCE_WEB_BROWSER / JUCE_USE_CURL are
+# repeated explicitly below to match the plugin's own build rather than relying on propagation.
+# ---------------------------------------------------------------------------
+juce_add_console_app(b33p_ui_snapshot PRODUCT_NAME "b33p_ui_snapshot")
+target_sources(b33p_ui_snapshot PRIVATE tools/ui_snapshot/main.cpp)
+target_include_directories(b33p_ui_snapshot PRIVATE Source)
+target_compile_definitions(b33p_ui_snapshot PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+)
+target_link_libraries(b33p_ui_snapshot
+    PRIVATE
+        B33p
+        zqsfx::ui
+        juce::juce_audio_processors
+        juce::juce_audio_utils
+        juce::juce_gui_basics
+        juce::juce_dsp
 )
 
 # ---------------------------------------------------------------------------

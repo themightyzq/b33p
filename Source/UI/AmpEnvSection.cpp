@@ -59,7 +59,7 @@ namespace B33p
 
         visualizer.retargetLane(lane);
         setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6
-        setAccentColour(processor.laneAccentColour(lane));
+        setAccentColour(Section::houseLaneAccent(lane));
     }
 
     void AmpEnvSection::resized()

@@ -64,6 +64,11 @@ namespace B33p
         // bubble next to the cursor — the small below-knob text box
         // is hard to read mid-gesture.
         slider.setPopupDisplayEnabled(true, false, nullptr);
+        // Accessibility floor: visible label as the accessible name, a
+        // description for screen readers (style guide section 8 / general
+        // JUCE UI rule). setTooltip() also mirrors this text as the hover hint.
+        slider.setTitle(name);
+        slider.setDescription(name + " knob");
         addAndMakeVisible(slider);
 
         label.setText(name, juce::dontSendNotification);
@@ -121,6 +126,10 @@ namespace B33p
     void LabeledSlider::setLabelText(const juce::String& newLabelText)
     {
         label.setText(newLabelText, juce::dontSendNotification);
+        // Keep the accessible name in sync — some sliders relabel at runtime
+        // (e.g. ModEffectsSection's Param 1 / 2 per effect type).
+        slider.setTitle(newLabelText);
+        slider.setDescription(newLabelText + " knob");
     }
 
     LabeledSlider::~LabeledSlider()
@@ -181,6 +190,22 @@ namespace B33p
         lastModulationIntensity = clamped;
         slider.getProperties().set("modulationIntensity", clamped);
         slider.repaint();
+    }
+
+    void LabeledSlider::paint(juce::Graphics& g)
+    {
+        // Meaning-colour chip: a thin bar under the name label, in the slider's
+        // own colour (Section::tintSliders sets this to the selected lane's
+        // channel colour; B33pLookAndFeel defaults it to the house LCD green
+        // otherwise). The house filmstrip rotary knob draws identically
+        // regardless of dial colour ID, so this chip is what now carries the
+        // "which lane does this knob belong to" cue that used to live on the
+        // knob's own fill arc (style guide: "never colour alone").
+        constexpr int kChipHeight = 2;
+        auto chipArea = getLocalBounds().removeFromTop(kLabelHeight)
+                             .removeFromBottom(kChipHeight);
+        g.setColour(slider.findColour(juce::Slider::rotarySliderFillColourId));
+        g.fillRect(chipArea);
     }
 
     void LabeledSlider::resized()

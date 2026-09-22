@@ -15,8 +15,13 @@ namespace B33p
         constexpr int  kControlsGap     = 6;
         constexpr int  kButtonWidth     = 80;
         constexpr int  kExportWidth     = 90;
-        constexpr int  kRandomizeWidth  = 130;   // "Randomize Params"
-        constexpr int  kRandomizePatternWidth = 140;   // "Randomize Pattern"
+        // Widened from 130/140: the house button face (Barlow Condensed,
+        // silkFont, +0.12 extra kerning — see zqsfx::ui::LookAndFeel::
+        // getTextButtonFont) is wider than JUCE's default button font at the
+        // same point size and was clipping "Randomize Params" to
+        // "Randomize Para..." — verified against the AFTER render.
+        constexpr int  kRandomizeWidth  = 150;   // "Randomize Params"
+        constexpr int  kRandomizePatternWidth = 160;   // "Randomize Pattern"
         constexpr int  kComboWidth      = 110;
         constexpr int  kLabelWidth      = 50;
         constexpr int  kTimeWidth       = 180;
@@ -138,11 +143,17 @@ namespace B33p
             else
                 processor.startPlayback();
         };
-        // Initial colour matches the "ready to play" state so the
-        // button doesn't flash default-grey for the first 33 ms
-        // before the timer's first tick.
-        playButton.setColour(juce::TextButton::buttonColourId,
-                             juce::Colour::fromRGB(60, 140, 70));
+        // The house LookAndFeel's drawButtonBackground ignores per-instance
+        // colour overrides (it always paints an "on" TextButton as the accent
+        // fill), so the play/stop state now rides the button's own toggle
+        // state instead of a manual green/red colour swap — "currently
+        // playing" is exactly the accent's "active" meaning, and the "Play"
+        // / "Stop" text label is the non-colour cue that was already there.
+        // Starts false ("ready to play" = off state) so the button doesn't
+        // flash on for the first 33 ms before the timer's first tick.
+        playButton.setClickingTogglesState(false);
+        playButton.setToggleState(false, juce::dontSendNotification);
+        playButton.setTitle("Play / stop");
         addAndMakeVisible(playButton);
 
         loopToggle.setClickingTogglesState(true);
@@ -151,6 +162,7 @@ namespace B33p
         {
             processor.setLooping(loopToggle.getToggleState());
         };
+        loopToggle.setTitle("Loop");
         addAndMakeVisible(loopToggle);
 
         // Host-transport-follow toggle. Inert when running as the
@@ -165,15 +177,15 @@ namespace B33p
         {
             processor.setFollowHostTransport(followToggle.getToggleState());
         };
+        followToggle.setTitle("Follow host transport");
         addAndMakeVisible(followToggle);
 
         // Playhead readout. Updates from the same 30 Hz timer as
         // the grid; shows "0.00 / 5.00s" at rest so the user can
-        // see the pattern's total length without playing it.
+        // see the pattern's total length without playing it. Left as a
+        // plain Label (not a Slider-parented one), so it keeps the house
+        // default silkLabel colour/font rather than needing its own override.
         timeLabel.setJustificationType(juce::Justification::centredLeft);
-        timeLabel.setFont(juce::FontOptions(11.0f, juce::Font::plain));
-        timeLabel.setColour(juce::Label::textColourId,
-                             juce::Colour::fromRGB(170, 170, 170));
         addAndMakeVisible(timeLabel);
 
         // Length combo
@@ -186,6 +198,7 @@ namespace B33p
             lengthCombo.addItem(kLengthPresets[i].label, idForIndex(static_cast<int>(i)));
         syncLengthComboToPattern();
         lengthCombo.onChange = [this] { onLengthChanged(); };
+        lengthCombo.setTitle("Pattern length");
         addAndMakeVisible(lengthCombo);
 
         // Grid combo
@@ -211,6 +224,7 @@ namespace B33p
             gridCombo.setSelectedId(bestId, juce::dontSendNotification);
         }
         gridCombo.onChange = [this] { onGridChanged(); };
+        gridCombo.setTitle("Snap grid");
         addAndMakeVisible(gridCombo);
 
         // BPM input (numeric slider with inc/dec arrows).
@@ -226,6 +240,7 @@ namespace B33p
         bpmSlider.setValue(processor.getPattern().getBpm(),
                             juce::dontSendNotification);
         bpmSlider.onValueChange = [this] { onBpmChanged(); };
+        bpmSlider.setTitle("Tempo (BPM)");
         addAndMakeVisible(bpmSlider);
 
         // Time-signature combo
@@ -238,6 +253,7 @@ namespace B33p
             timeSigCombo.addItem(kTimeSigPresets[i].label,
                                   idForIndex(static_cast<int>(i)));
         timeSigCombo.onChange = [this] { onTimeSigChanged(); };
+        timeSigCombo.setTitle("Time signature");
         addAndMakeVisible(timeSigCombo);
         syncBpmAndTimeSigFromPattern();
 
@@ -251,6 +267,7 @@ namespace B33p
         {
             grid.generateRandomPatternAllLanes();
         };
+        randomizePatternButton.setTitle("Randomize pattern");
         addAndMakeVisible(randomizePatternButton);
 
         // "Randomize Params" rolls the synth parameters only for lanes
@@ -282,6 +299,7 @@ namespace B33p
             for (int lane : lanesToRoll)
                 processor.ensureLaneAudibleAfterRandomize(lane, rng);
         };
+        randomizeParamsButton.setTitle("Randomize params");
         addAndMakeVisible(randomizeParamsButton);
 
         // Randomization scope slider — 0.05..1.0 multiplier applied
@@ -303,9 +321,11 @@ namespace B33p
         // attachment above (setNumDecimalPlacesToDisplay would be reset by
         // it, which is why Scope used to read "1.000…"). (REVIEW-DESIGN.)
         SliderFormatting::applyDecimal(scopeSlider, 2);
+        scopeSlider.setTitle("Randomization scope");
         addAndMakeVisible(scopeSlider);
 
         exportButton.onClick = [this] { onExportClicked(); };
+        exportButton.setTitle("Export pattern to WAV");
         addAndMakeVisible(exportButton);
 
         playButton        .setTooltip("Play the pattern from the start (Space)");
@@ -458,15 +478,13 @@ namespace B33p
     {
         const bool playing = processor.isPlaying();
 
-        // Recolour even when the text is unchanged — JUCE's
-        // setButtonText skips the repaint if the string matches,
-        // and the colour change is the visual cue we care about.
-        const auto stopRed   = juce::Colour::fromRGB(190,  60,  60);
-        const auto playGreen = juce::Colour::fromRGB( 60, 140,  70);
-
+        // The house LookAndFeel paints an "on" TextButton with the accent
+        // fill regardless of any per-instance colour, so "currently playing"
+        // now rides the button's own toggle state (accent = active) instead
+        // of a hand-picked green/red swap. The "Play"/"Stop" text is the
+        // non-colour cue that disambiguates the two states.
         playButton.setButtonText(playing ? "Stop" : "Play");
-        playButton.setColour(juce::TextButton::buttonColourId,
-                             playing ? stopRed : playGreen);
+        playButton.setToggleState(playing, juce::dontSendNotification);
 
         const auto& pattern = processor.getPattern();
         const double headSec   = playing ? processor.getPlayheadSeconds() : 0.0;

@@ -13,6 +13,12 @@ namespace B33p
         constexpr int kMidRowHeight        = 180;   // Effects | Master | Mod FX
         constexpr int kModulationRowHeight = 220;   // Modulation | Pitch Env
         constexpr int kMenuBarHeight  = 24;
+        // Header strip carrying the ZQ SFX logo mark (style guide section 5:
+        // "one instance per window", "the header row, at the far right").
+        // Reserved unconditionally (not just when the embedded menu bar is
+        // hidden under setMacMainMenu) so the logo has a stable home in every
+        // build configuration.
+        constexpr int kLogoHeaderHeight = 28;
         // Initial height handed to the Pattern grid; it grows to fill any
         // extra height when the window is taller than the default.
         constexpr int kInitialPatternHeight = 252;
@@ -104,6 +110,13 @@ namespace B33p
         addAndMakeVisible(pitchEnvelopeSection);
         addAndMakeVisible(patternSection);
 
+        // The logo mark is also the About-box trigger (style guide section 5:
+        // "It is also the About-box trigger, so it is a real control with a
+        // tooltip and an accessible title"). LogoMark's own constructor
+        // already sets the tooltip/title/description to "About b33p".
+        logo.onClick = [this] { showAboutDialog(); };
+        addAndMakeVisible(logo);
+
         // Opening / saving a project moves off any loaded preset, so clear
         // the preset readout alongside the title refresh (P23).
         fileManager.setOnStateChanged([this] { updateWindowTitle(); clearPresetContext(); });
@@ -163,7 +176,7 @@ namespace B33p
         // StandaloneApp.cpp.
         const int reservedMenuBarHeight = usingMacMainMenu ? 0 : kMenuBarHeight;
         setSize(1500,
-                reservedMenuBarHeight + 2 * kOuterPadding
+                reservedMenuBarHeight + kLogoHeaderHeight + 2 * kOuterPadding
               + kTopRowHeight + kGap
               + kMidRowHeight + kGap
               + kModulationRowHeight + kGap
@@ -172,7 +185,10 @@ namespace B33p
 
     void MainComponent::paint(juce::Graphics& g)
     {
-        g.fillAll(juce::Colour::fromRGB(22, 22, 22));
+        // Editor background = the house chassis gradient (style guide section 6
+        // / general Phase 1 instructions).
+        g.setGradientFill(zqsfx::ui::gradients::chassis(getLocalBounds().toFloat()));
+        g.fillRect(getLocalBounds());
     }
 
     void MainComponent::resized()
@@ -183,6 +199,18 @@ namespace B33p
         // layout — nothing to lay out, no height to reserve.
         if (! usingMacMainMenu)
             menuBar.setBounds(fullBounds.removeFromTop(kMenuBarHeight));
+
+        // Logo header strip — always reserved (even under setMacMainMenu,
+        // where the embedded menu bar itself is hidden) so the mark has a
+        // stable, predictable home in every build configuration. The logo is
+        // right-aligned, sized to at least its minimum height (style guide
+        // section 5: "never under 24 px tall").
+        {
+            auto headerRow = fullBounds.removeFromTop(kLogoHeaderHeight);
+            const int logoSize = juce::jmax(zqsfx::ui::LogoMark::minimumHeight(),
+                                            headerRow.getHeight() - 4);
+            logo.setBounds(headerRow.removeFromRight(logoSize + 8).withSizeKeepingCentre(logoSize, logoSize));
+        }
 
         auto bounds = fullBounds.reduced(kOuterPadding);
 
@@ -341,6 +369,22 @@ namespace B33p
 
     MainComponent::~MainComponent()
     {
+        // Pre-existing lifetime bug found while running the required Phase 2
+        // pluginval gate for this migration (docs/ui_migration_report.md,
+        // "Deviations"): the processor outlives the editor/MainComponent
+        // across an open/close cycle, but these three lambdas all capture
+        // `this`. With nothing clearing them here, a later
+        // setStateInformation (pluginval's Automation stage triggers exactly
+        // this) invokes a dangling MainComponent* through
+        // onFullStateLoaded -> PatternSection::refreshFromState() ->
+        // juce::ComboBox::setSelectedId(), which segfaults. Unrelated to any
+        // colour/LookAndFeel change in this pass; fixed here because it
+        // blocked the pluginval gate the spec requires, and the fix is a
+        // three-line addition to a destructor already in scope.
+        processor.setOnDirtyChanged(nullptr);
+        processor.setOnFullStateLoaded(nullptr);
+        processor.setOnSelectedLaneChanged(nullptr);
+
         if (auto* host = keyListenerHost.getComponent())
             host->removeKeyListener(this);
 
@@ -848,6 +892,10 @@ namespace B33p
           + "License "      + license + "\n\n"
           + "Built with " + juceVer + " and Catch2.\n"
           + "Source: github.com/themightyzq/b33p\n\n"
+          + "ZQ SFX - https://www.zq-sfx.com - connect@zq-sfx.com\n"
+          + "Free software under GPL-3.0-or-later. Built with JUCE.\n"
+          + "Fonts: Barlow Condensed, VT323, IBM Plex Mono (SIL OFL).\n"
+          + "Knobs: CC0 designs from the g200kg KnobGallery.\n\n"
           + "------ How it's organized ------\n"
           + "Each of the 4 pattern lanes has its own voice. The voice\n"
           + "editor sections (Oscillator, Amp Envelope, Filter, Effects,\n"

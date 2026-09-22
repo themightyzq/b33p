@@ -2,6 +2,8 @@
 
 #include "State/UndoableActions.h"
 
+#include <zqsfx_ui/zqsfx_ui.h>
+
 #include <algorithm>
 
 namespace B33p
@@ -23,13 +25,11 @@ namespace B33p
             s.setSliderStyle(juce::Slider::LinearBar);
             s.setTextBoxStyle(juce::Slider::TextBoxLeft, false,
                               kTextBoxWidth, kTextBoxHeight);
-            // LinearBar paints a coloured bar over the whole control;
-            // dim it so it reads as a number field with a subtle
-            // value indicator rather than a loud horizontal bar.
-            s.setColour(juce::Slider::trackColourId,
-                         juce::Colour::fromRGB(60, 90, 120));
-            s.setColour(juce::Slider::backgroundColourId,
-                         juce::Colour::fromRGB(34, 34, 34));
+            // LinearBar isn't LinearHorizontal, so B33pLookAndFeel falls back to
+            // JUCE's stock drawLinearSlider for this style, which does read these
+            // colour IDs directly — house LCD tokens instead of a leftover blue.
+            s.setColour(juce::Slider::trackColourId, zqsfx::ui::colour::lcdDim);
+            s.setColour(juce::Slider::backgroundColourId, zqsfx::ui::colour::lcdScreenDark);
         }
 
         void styleLabel(juce::Label& l, const juce::String& text)
@@ -37,20 +37,22 @@ namespace B33p
             l.setText(text, juce::dontSendNotification);
             l.setJustificationType(juce::Justification::centredRight);
             l.setFont(juce::FontOptions(11.0f));
-            l.setColour(juce::Label::textColourId,
-                         juce::Colour::fromRGB(170, 170, 170));
+            l.setColour(juce::Label::textColourId, zqsfx::ui::colour::silkLabel);
         }
     }
 
     InspectorStrip::InspectorStrip(B33pProcessor& processorRef)
         : processor(processorRef)
     {
+        setAccessible(true);
+        setTitle("Event inspector");
+        setDescription("Edit the selected pattern event's lane, start, duration, pitch, and velocity");
+
         placeholder.setText("Click an event to edit it.",
                              juce::dontSendNotification);
         placeholder.setJustificationType(juce::Justification::centred);
         placeholder.setFont(juce::FontOptions(12.0f));
-        placeholder.setColour(juce::Label::textColourId,
-                               juce::Colour::fromRGB(110, 110, 110));
+        placeholder.setColour(juce::Label::textColourId, zqsfx::ui::colour::silkCaption);
         addAndMakeVisible(placeholder);
 
         styleLabel(laneLabel,     "Lane");
@@ -65,6 +67,8 @@ namespace B33p
 
         for (int i = 0; i < Pattern::kNumLanes; ++i)
             laneCombo.addItem(juce::String(i + 1), i + 1);
+        laneCombo.setTitle("Event lane");
+        laneCombo.setTooltip("Move the selected event to a different lane");
         laneCombo.onChange = [this]
         {
             const int newLane = laneCombo.getSelectedId() - 1;
@@ -115,6 +119,11 @@ namespace B33p
         for (auto* s : { &startSlider, &durationSlider, &pitchSlider, &velocitySlider })
             styleField(*s);
 
+        startSlider   .setTitle("Event start");
+        durationSlider.setTitle("Event duration");
+        pitchSlider   .setTitle("Event pitch offset");
+        velocitySlider.setTitle("Event velocity");
+
         startSlider.onValueChange = [this]
         {
             pushEdit([v = startSlider.getValue()](Event& e) { e.startSeconds = v; },
@@ -145,6 +154,7 @@ namespace B33p
         {
             if (onDeleteRequested) onDeleteRequested();
         };
+        deleteButton.setTitle("Delete selected event");
         addAndMakeVisible(deleteButton);
 
         setSelection({});
@@ -284,10 +294,13 @@ namespace B33p
 
     void InspectorStrip::paint(juce::Graphics& g)
     {
-        // Subtle background so the strip is visually distinct from
-        // both the pattern grid above and the section frame.
-        g.setColour(juce::Colour::fromRGB(28, 28, 28));
-        g.fillRoundedRectangle(getLocalBounds().toFloat(), 3.0f);
+        // Subtle background so the strip is visually distinct from both the
+        // pattern grid above and the section frame. Hard-edged (style guide
+        // section 6: no rounded corners).
+        g.setColour(zqsfx::ui::colour::panelBot);
+        g.fillRect(getLocalBounds());
+        g.setColour(zqsfx::ui::colour::panelBorder);
+        g.drawRect(getLocalBounds(), 1);
     }
 
     void InspectorStrip::resized()

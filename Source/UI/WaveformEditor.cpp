@@ -1,5 +1,10 @@
 #include "WaveformEditor.h"
 
+#include "HouseScreenText.h"
+#include "Section.h"
+
+#include <zqsfx_ui/zqsfx_ui.h>
+
 #include <algorithm>
 #include <cmath>
 
@@ -9,7 +14,6 @@ namespace B33p
     {
         constexpr float kInset       = 8.0f;
         constexpr float kStroke      = 2.0f;
-        constexpr float kCorner      = 3.0f;
         constexpr float kFooterH     = 18.0f;
         constexpr float kSlotBarH    = 26.0f;
         constexpr float kSlotBarGap  = 4.0f;
@@ -34,6 +38,11 @@ namespace B33p
     WaveformEditor::WaveformEditor(B33pProcessor& processorRef)
         : processor(processorRef)
     {
+        setAccessible(true);
+        setTitle("Waveform editor");
+        setDescription("Single-cycle waveform editor for the current lane and slot. "
+                       "Click and drag to draw.");
+
         for (int i = 0; i < Oscillator::kNumWavetableSlots; ++i)
         {
             auto& b = slotButtons[static_cast<size_t>(i)];
@@ -44,6 +53,7 @@ namespace B33p
                 ? "Slot 1 — also the table the Custom waveform plays"
                 : "Slot " + juce::String(i + 1)
                   + " — only audible in Wavetable mode at non-zero morph");
+            b.setTitle("Waveform slot " + juce::String(i + 1));
             b.onClick = [this, i] { setSlot(i); };
             addAndMakeVisible(b);
         }
@@ -115,18 +125,17 @@ namespace B33p
 
     void WaveformEditor::paint(juce::Graphics& g)
     {
+        namespace houseColour = zqsfx::ui::colour;
         const auto bounds = getLocalBounds().toFloat().reduced(1.0f);
 
-        g.setColour(juce::Colour::fromRGB(20, 20, 20));
-        g.fillRoundedRectangle(bounds, kCorner);
-        g.setColour(juce::Colour::fromRGB(60, 60, 60));
-        g.drawRoundedRectangle(bounds, kCorner, 1.0f);
+        // Phosphor screen treatment (style guide section 6).
+        zqsfx::ui::LookAndFeel::drawScreen(g, bounds, false);
 
         const auto plot = plotRect();
         const float midY = plot.getCentreY();
 
         // Zero line.
-        g.setColour(juce::Colour::fromRGB(55, 55, 55));
+        g.setColour(houseColour::lcdFaint2);
         g.drawHorizontalLine(static_cast<int>(midY),
                               plot.getX(), plot.getRight());
 
@@ -147,25 +156,25 @@ namespace B33p
         for (int i = 1; i < sampleCount; ++i)
             wave.lineTo(plot.getX() + i * stepX, sampleY(table[static_cast<size_t>(i)]));
 
-        g.setColour(juce::Colour::fromRGB(220, 140, 60));
+        // The waveform is per-lane data — the owning lane's channel colour,
+        // never the accent (style guide: accent means active/lit only, never a
+        // waveform).
+        g.setColour(Section::houseLaneAccent(currentLane));
         g.strokePath(wave, juce::PathStrokeType(kStroke));
 
         // Footer note — explains slot mechanics so a fresh user
         // doesn't spend time wondering what the slot tabs do. Two
         // stacked lines instead of one run-on; each line tells one
         // thing so the eye scans the gesture before the semantics.
-        g.setColour(juce::Colour::fromRGB(120, 120, 120));
-        g.setFont(juce::FontOptions(11.0f));
-
         constexpr float kFooterLineHeight = 14.0f;
         const float footerTop = bounds.getBottom() - 2.0f * kFooterLineHeight - 2.0f;
 
-        g.drawText("Click + drag to draw.",
-                   bounds.withTop(footerTop).withHeight(kFooterLineHeight),
-                   juce::Justification::centred);
-        g.drawText("Custom plays Slot 1; Wavetable blends all four via Morph.",
-                   bounds.withTop(footerTop + kFooterLineHeight).withHeight(kFooterLineHeight),
-                   juce::Justification::centred);
+        drawHouseScreenText(*this, g, "Click + drag to draw.",
+                   bounds.withTop(footerTop).withHeight(kFooterLineHeight).toNearestInt(),
+                   11.0f, juce::Justification::centred, houseColour::lcdFaint);
+        drawHouseScreenText(*this, g, "Custom plays Slot 1; Wavetable blends all four via Morph.",
+                   bounds.withTop(footerTop + kFooterLineHeight).withHeight(kFooterLineHeight).toNearestInt(),
+                   11.0f, juce::Justification::centred, houseColour::lcdFaint);
     }
 
     int WaveformEditor::xToSampleIdx(float x) const
@@ -262,7 +271,7 @@ namespace B33p
 
     WaveformEditorWindow::WaveformEditorWindow(B33pProcessor& processor)
         : DocumentWindow("Custom Waveform Editor",
-                         juce::Colour::fromRGB(22, 22, 22),
+                         zqsfx::ui::colour::chassisMid,
                          DocumentWindow::closeButton)
     {
         auto* ed = new WaveformEditor(processor);

@@ -1,22 +1,23 @@
 #include "IconButton.h"
 
+#include <zqsfx_ui/zqsfx_ui.h>
+
 namespace B33p
 {
     namespace
     {
-        // Tones tuned against the section background (rgb 36,36,36). Idle
-        // ink/button already clear WCAG 3:1 (~4.5:1); the legibility issue was
-        // perceptual — small glyphs, thin strokes, and a button that barely
-        // separated from the panel. A touch more ink + button separation +
-        // crisper strokes (below), without making 30 of these loud.
-        const juce::Colour kIdleInk        { juce::Colour::fromRGB(170, 170, 170) };
-        const juce::Colour kHoverInk       { juce::Colour::fromRGB(225, 225, 225) };
-        const juce::Colour kPressedInk     { juce::Colour::fromRGB(255, 255, 255) };
-        const juce::Colour kLockedAccent   { juce::Colour::fromRGB(120, 200, 255) };
-        const juce::Colour kButtonBgIdle   { juce::Colour::fromRGB( 56,  56,  56) };
-        const juce::Colour kButtonBgHover  { juce::Colour::fromRGB( 72,  72,  72) };
+        namespace houseColour = zqsfx::ui::colour;
 
-        constexpr float kButtonCorner = 3.0f;
+        // House button/legend tokens (style guide section 6: "Hover turns the
+        // legend accent"). Lock in toggle-on state also takes the accent colour
+        // so it reads as "active" at a glance — the same rule as any other lit
+        // toggle.
+        const juce::Colour& kIdleInk      = houseColour::btnText;
+        const juce::Colour& kHoverInk     = houseColour::accent;
+        const juce::Colour& kPressedInk   = houseColour::accent;
+        const juce::Colour& kLockedAccent = houseColour::accent;
+        const juce::Colour& kButtonBgIdle  = houseColour::btnBot;
+        const juce::Colour& kButtonBgHover = houseColour::btnTop;
     }
 
     namespace
@@ -38,12 +39,21 @@ namespace B33p
         : juce::Button(glyphName(g)),
           glyph(g)
     {
-        // Die/Lock carry their own tooltips; chevrons get a context-specific
-        // one from the owner (the preset prev/next caption).
+        // Accessibility floor: accessible title always set (style guide
+        // section 8); chevrons get a context-specific tooltip/description
+        // from the owner (the preset prev/next caption) instead of the
+        // generic ones below.
+        setTitle(glyphName(g));
         if (g == Glyph::Die)
+        {
             setTooltip("Roll a random value");
+            setDescription("Roll a random value for this parameter");
+        }
         else if (g == Glyph::Lock)
+        {
             setTooltip("Lock to exclude from random rolls");
+            setDescription("Lock this parameter to exclude it from random rolls");
+        }
     }
 
     void IconButton::paintButton(juce::Graphics& g,
@@ -52,11 +62,14 @@ namespace B33p
     {
         auto bounds = getLocalBounds().toFloat().reduced(1.0f);
 
-        // Background — flat, subtle. Slightly brighter on hover.
+        // Background — flat, subtle, hard-edged (style guide section 6: no
+        // rounded corners). Slightly brighter on hover.
         const auto bg = shouldDrawButtonAsHighlighted ? kButtonBgHover
                                                       : kButtonBgIdle;
         g.setColour(bg);
-        g.fillRoundedRectangle(bounds, kButtonCorner);
+        g.fillRect(bounds);
+        g.setColour(houseColour::btnBorder);
+        g.drawRect(bounds, 1.0f);
 
         // Pick the foreground tone. Lock in toggle-on state takes the
         // accent colour so it reads as "active" at a glance.
@@ -207,7 +220,7 @@ namespace B33p
         if (locked)
         {
             const float kr = body.getHeight() * 0.16f;
-            g.setColour(juce::Colour::fromRGB(36, 36, 36));
+            g.setColour(houseColour::btnBot);
             g.fillEllipse(body.getCentreX() - kr,
                           body.getCentreY() - kr,
                           2.0f * kr, 2.0f * kr);

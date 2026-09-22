@@ -52,6 +52,7 @@ namespace B33p
         addAndMakeVisible(p2Slider);
         addAndMakeVisible(mixSlider);
 
+        typeSelector.setTitle("Mod FX type");
         typeSelector.setTooltip("Modulation effect at the end of the chain (after distortion)");
         p1Slider .setTooltip("First effect parameter — meaning depends on the type (Rate / Size / Time)");
         p2Slider .setTooltip("Second effect parameter — meaning depends on the type (Depth / Damping / Feedback)");
@@ -111,7 +112,7 @@ namespace B33p
         SliderFormatting::applyDoubleClickReset(mixSlider.getSlider(), processor.getApvts(), ParameterIDs::modEffectMix(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6
-        setAccentColour(processor.laneAccentColour(lane));
+        setAccentColour(Section::houseLaneAccent(lane));
 
         typeSelector.onChange = [this] { onTypeChanged(); };
         onTypeChanged();

@@ -2,6 +2,9 @@
 
 #include "Core/ParameterIDs.h"
 #include "DSP/Filter.h"
+#include "Section.h"
+
+#include <zqsfx_ui/zqsfx_ui.h>
 
 #include <algorithm>
 #include <array>
@@ -12,7 +15,6 @@ namespace B33p
     namespace
     {
         constexpr float kOutlineInset   = 1.0f;
-        constexpr float kCornerRadius   = 3.0f;
         constexpr float kInnerInset     = 6.0f;
         constexpr float kStrokeWidth    = 2.0f;
 
@@ -123,6 +125,9 @@ namespace B33p
     FilterResponseVisualizer::FilterResponseVisualizer(juce::AudioProcessorValueTreeState& apvtsRef)
         : apvts(apvtsRef)
     {
+        setAccessible(true);
+        setTitle("Filter response curve");
+        setDescription("Magnitude response for the selected lane's filter");
         attachListeners(currentLane);
     }
 
@@ -174,11 +179,8 @@ namespace B33p
 
         auto frame = getLocalBounds().toFloat().reduced(kOutlineInset);
 
-        g.setColour(juce::Colour::fromRGB(20, 20, 20));
-        g.fillRoundedRectangle(frame, kCornerRadius);
-
-        g.setColour(juce::Colour::fromRGB(60, 60, 60));
-        g.drawRoundedRectangle(frame, kCornerRadius, 1.0f);
+        // Phosphor screen treatment (style guide section 6).
+        zqsfx::ui::LookAndFeel::drawScreen(g, frame, false);
 
         const auto plotArea = frame.reduced(kInnerInset);
         if (plotArea.getWidth() <= 0.0f || plotArea.getHeight() <= 0.0f)
@@ -203,9 +205,14 @@ namespace B33p
         // 0 dB reference line — anchors the eye so the user can tell
         // passband from boost/cut at a glance.
         const float zeroDbY = yForDb(0.0f);
-        g.setColour(juce::Colour::fromRGB(50, 50, 50));
+        g.setColour(zqsfx::ui::colour::lcdFaint2);
         g.drawHorizontalLine((int) zeroDbY,
                              plotArea.getX(), plotArea.getRight());
+
+        // Both the cutoff guide and the response curve are the owning lane's
+        // channel colour — data, never the house accent (style guide: accent
+        // means active/lit only, never a response curve or category).
+        const auto laneColour = Section::houseLaneAccent(currentLane);
 
         // Vertical guide at the cutoff frequency for the modes that
         // actually use it. Formant ignores cutoff (vowel-driven), so
@@ -213,7 +220,7 @@ namespace B33p
         if (type != Filter::Type::Formant)
         {
             const float cutoffX = xForFreq(juce::jlimit(kMinHz, kMaxHz, cutoff));
-            g.setColour(juce::Colour::fromRGB(120, 200, 255).withAlpha(0.35f));
+            g.setColour(laneColour.withAlpha(0.35f));
             g.drawVerticalLine((int) cutoffX,
                                plotArea.getY(), plotArea.getBottom());
         }
@@ -265,10 +272,10 @@ namespace B33p
         filled.lineTo(plotArea.getX(),     plotArea.getBottom());
         filled.closeSubPath();
 
-        g.setColour(juce::Colour::fromRGB(90, 180, 255).withAlpha(0.18f));
+        g.setColour(laneColour.withAlpha(0.18f));
         g.fillPath(filled);
 
-        g.setColour(juce::Colour::fromRGB(120, 200, 255));
+        g.setColour(laneColour);
         g.strokePath(response, juce::PathStrokeType(kStrokeWidth));
     }
 }

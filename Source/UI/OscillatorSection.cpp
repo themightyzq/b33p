@@ -39,6 +39,8 @@ namespace B33p
         customEditButton.onClick = [this] { openCustomWaveformEditor(); };
         addChildComponent(customEditButton);   // hidden until needed
 
+        waveformSelector.setTitle("Oscillator waveform");
+        customEditButton.setTitle("Edit custom waveform");
         waveformSelector.setTooltip("Oscillator waveform");
         basePitchSlider .setTooltip("Base pitch of the oscillator (carrier pitch in FM / Ring modes)");
         morphSlider     .setTooltip("Wavetable mode: 0 = Slot 1, 1 = Slot 4. Blends adjacent slots in between.");
@@ -195,7 +197,7 @@ namespace B33p
                                                 ParameterIDs::ringMix(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));
-        setAccentColour(processor.laneAccentColour(lane));
+        setAccentColour(Section::houseLaneAccent(lane));
 
         // Whenever the user switches lanes, the combo's selected ID
         // is reset by the new ComboBoxAttachment. Hook the onChange

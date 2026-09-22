@@ -15,6 +15,7 @@
 #include "UI/PitchEnvSection.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <zqsfx_ui/zqsfx_ui.h>
 
 namespace B33p
 {
@@ -135,6 +136,10 @@ namespace B33p
         // and self-contained. (REVIEW-USER J-CONFUSING-5.)
         juce::MenuBarComponent menuBar { this };
         bool usingMacMainMenu = false;
+
+        // ZQ SFX house mark, header row, far right (style guide section 5).
+        // It is also the About-box trigger — see the constructor.
+        zqsfx::ui::LogoMark logo { "b33p" };
 
         OscillatorSection oscillatorSection;
         AmpEnvSection     ampEnvelopeSection;

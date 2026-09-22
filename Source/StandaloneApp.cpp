@@ -31,6 +31,7 @@
 
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
+#include <zqsfx_ui/zqsfx_ui.h>
 
 #include "Core/CommandLineFiles.h"
 #include "MainComponent.h"
@@ -109,6 +110,20 @@ namespace B33p
 
             mainComponent->confirmDiscardThen(doQuit);
         }
+
+        // Installs the ZQ SFX house LookAndFeel (zqsfx_ui) as the JUCE default
+        // for the app's lifetime, the way DePump's MainComponent::
+        // ScopedHouseLookAndFeel does. B33pEditor also installs the richer
+        // B33pLookAndFeel (a zqsfx::ui::LookAndFeel subclass) once the editor
+        // exists, but createWindow() below samples the default LookAndFeel's
+        // background colour BEFORE the editor is created — without this, that
+        // first read would still see JUCE's stock LookAndFeel_V4 colours.
+        struct ScopedHouseLookAndFeel
+        {
+            ScopedHouseLookAndFeel() { juce::LookAndFeel::setDefaultLookAndFeel(&lookAndFeel); }
+            ~ScopedHouseLookAndFeel() { juce::LookAndFeel::setDefaultLookAndFeel(nullptr); }
+            zqsfx::ui::LookAndFeel lookAndFeel;
+        };
 
         // The shipping window. Everything except the close-button override
         // is inherited from JUCE's StandaloneFilterWindow unchanged.
@@ -247,6 +262,12 @@ namespace B33p
                 return window;
             }
 
+            // Declared first so it is constructed before, and destroyed after,
+            // every other member — the house LookAndFeel must already be the
+            // JUCE default by the time createWindow() (called from
+            // initialise(), well after construction) samples it, and must
+            // outlive mainWindow/pluginHolder's teardown.
+            ScopedHouseLookAndFeel                        houseLookAndFeel;
             juce::ApplicationProperties                   appProperties;
             std::unique_ptr<StandaloneWindow>             mainWindow;
             std::unique_ptr<juce::StandalonePluginHolder> pluginHolder;

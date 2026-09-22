@@ -1,6 +1,9 @@
 #include "PitchEnvelopeEditor.h"
 
+#include "HouseScreenText.h"
 #include "State/UndoableActions.h"
+
+#include <zqsfx_ui/zqsfx_ui.h>
 
 #include <algorithm>
 
@@ -12,7 +15,6 @@ namespace B33p
         constexpr float kHitRadius     = 10.0f;
         constexpr float kPlotInset     = 6.0f;
         constexpr float kPointRadius   = 5.0f;
-        constexpr float kCornerRadius  = 3.0f;
         constexpr float kCurveStroke   = 2.0f;
 
         void sortByTime(std::vector<PitchEnvelopePoint>& curve)
@@ -33,6 +35,10 @@ namespace B33p
         // editable surface — and the empty-state hint becomes the
         // only signal that the area is interactive.
         setMouseCursor(juce::MouseCursor::CrosshairCursor);
+        setAccessible(true);
+        setTitle("Pitch envelope curve");
+        setDescription("Pitch envelope breakpoint curve, shared across all lanes. "
+                       "Click to add a point, drag to shape, right-click a point to delete.");
     }
 
     juce::Rectangle<float> PitchEnvelopeEditor::plotArea() const
@@ -78,23 +84,19 @@ namespace B33p
 
     void PitchEnvelopeEditor::paint(juce::Graphics& g)
     {
+        namespace houseColour = zqsfx::ui::colour;
         const auto frame = getLocalBounds().toFloat().reduced(1.0f);
 
-        g.setColour(juce::Colour::fromRGB(20, 20, 20));
-        g.fillRoundedRectangle(frame, kCornerRadius);
-        g.setColour(juce::Colour::fromRGB(60, 60, 60));
-        g.drawRoundedRectangle(frame, kCornerRadius, 1.0f);
+        // Phosphor screen treatment (style guide section 6).
+        zqsfx::ui::LookAndFeel::drawScreen(g, frame, false);
 
         const auto area = plotArea();
         const auto& curve = processor.getPitchCurve();
 
         // Zero-semitones baseline. Brighter when empty (acts as the
         // visible reference axis the user will be drawing relative to);
-        // dimmer when there's an actual curve to avoid competing with
-        // the orange path.
-        const auto baselineColour = curve.empty()
-            ? juce::Colour::fromRGB(85, 85, 85)
-            : juce::Colour::fromRGB(55, 55, 55);
+        // dimmer when there's an actual curve to avoid competing with it.
+        const auto baselineColour = curve.empty() ? houseColour::lcdFaint : houseColour::lcdFaint2;
         g.setColour(baselineColour);
         g.drawHorizontalLine(static_cast<int>(area.getCentreY()),
                              area.getX(), area.getRight());
@@ -102,24 +104,36 @@ namespace B33p
         // Axis reference (P32). Faint vertical gridlines at the quarter
         // points of the note's duration, plus semitone labels down the left
         // edge, so the curve reads against concrete pitch values (±12 st)
-        // instead of unitless space. ASCII labels only (the dark theme's
-        // String paint asserts on non-ASCII glyphs).
-        g.setColour(juce::Colour::fromRGB(42, 42, 46));
+        // instead of unitless space. ASCII labels only.
+        g.setColour(houseColour::lcdFaint2);
         for (const float t : { 0.25f, 0.5f, 0.75f })
             g.drawVerticalLine(static_cast<int>(area.getX() + t * area.getWidth()),
                                area.getY(), area.getBottom());
 
-        g.setColour(juce::Colour::fromRGB(115, 115, 115));
-        g.setFont(juce::FontOptions(9.0f));
-        const auto label = [&](const char* text, float cy)
+        // At the editor's minimum window height, three fixed-pixel rows above
+        // this one (Oscillator/AmpEnv/Filter, Effects/Master/ModFX, plus the
+        // menu/header/padding) can squeeze this shared bottom row to well
+        // under 40 px tall, leaving under 20 px for the three stacked "+12" /
+        // "0" / "-12" labels — not enough room for any legible font, and
+        // VT323 in particular renders visibly taller than its point size
+        // implies (a pixel-styled face), so the labels overlapped each other
+        // and the hint text at that floor size (verified against the AFTER
+        // render at 1000x600). Rather than fight for an illegible font size,
+        // skip the axis numerals below this height; the curve and baseline
+        // still draw either way.
+        if (area.getHeight() >= 40.0f)
         {
-            g.drawText(text,
-                       juce::Rectangle<float>(area.getX() + 2.0f, cy - 6.0f, 26.0f, 12.0f),
-                       juce::Justification::centredLeft);
-        };
-        label("+12", area.getY() + 6.0f);
-        label("0",   area.getCentreY());
-        label("-12", area.getBottom() - 6.0f);
+            const auto label = [&](const char* text, float cy)
+            {
+                drawHouseScreenText(*this, g, text,
+                           juce::Rectangle<int>(static_cast<int>(area.getX()) + 2,
+                                                static_cast<int>(cy) - 6, 26, 12),
+                           9.0f, juce::Justification::centredLeft, houseColour::lcdFaint);
+            };
+            label("+12", area.getY() + 6.0f);
+            label("0",   area.getCentreY());
+            label("-12", area.getBottom() - 6.0f);
+        }
 
         // First-run hint — shown when the curve is effectively flat (the
         // default state is two boundary points at 0 semitones, which
@@ -134,10 +148,9 @@ namespace B33p
             [](const PitchEnvelopePoint& p) { return std::abs(p.semitones) < 1e-3f; });
         if (curve.empty() || curveIsFlat)
         {
-            g.setColour(juce::Colour::fromRGB(140, 140, 140));
-            g.setFont(juce::FontOptions(12.0f));
-            g.drawText("Click anywhere to add a pitch point. Drag to shape; right-click a point to delete.",
-                       area, juce::Justification::centred);
+            drawHouseScreenText(*this, g,
+                       "Click anywhere to add a pitch point. Drag to shape; right-click a point to delete.",
+                       area.toNearestInt(), 12.0f, juce::Justification::centred, houseColour::lcdFaint);
             return;
         }
 
@@ -157,16 +170,20 @@ namespace B33p
         const auto last = toScreen(sorted.back());
         path.lineTo(area.getRight(), last.y);
 
-        g.setColour(juce::Colour::fromRGB(220, 140, 60));
+        // This curve is shared across all lanes (not per-lane data), so it takes
+        // the default phosphor-screen content colour (lcdText) rather than any
+        // one lane's channel colour or the accent (which would misread as
+        // "active" / "this is lane N's data").
+        g.setColour(houseColour::lcdText);
         g.strokePath(path, juce::PathStrokeType(kCurveStroke));
 
         for (const auto& p : sorted)
         {
             const auto screen = toScreen(p);
-            g.setColour(juce::Colour::fromRGB(250, 180, 100));
+            g.setColour(houseColour::lcdText);
             g.fillEllipse(screen.x - kPointRadius, screen.y - kPointRadius,
                           kPointRadius * 2.0f, kPointRadius * 2.0f);
-            g.setColour(juce::Colour::fromRGB(30, 30, 30));
+            g.setColour(houseColour::lcdBg);
             g.drawEllipse(screen.x - kPointRadius, screen.y - kPointRadius,
                           kPointRadius * 2.0f, kPointRadius * 2.0f, 1.5f);
         }

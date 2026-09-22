@@ -1,5 +1,7 @@
 #include "ExportDialog.h"
 
+#include <zqsfx_ui/zqsfx_ui.h>
+
 #include <array>
 
 namespace B33p
@@ -60,7 +62,7 @@ namespace B33p
         juce::DialogWindow::LaunchOptions options;
         options.content.setOwned(dialog);
         options.dialogTitle                  = "Export WAV";
-        options.dialogBackgroundColour       = juce::Colour::fromRGB(36, 36, 36);
+        options.dialogBackgroundColour       = zqsfx::ui::colour::panelBot;
         options.escapeKeyTriggersCloseButton = true;
         options.useNativeTitleBar            = true;
         options.resizable                    = false;
@@ -77,14 +79,17 @@ namespace B33p
         destinationField.setMultiLine(false);
         destinationField.setReadOnly(false);
         destinationField.setTextToShowWhenEmpty("Pick a destination...",
-                                                juce::Colours::grey);
+                                                zqsfx::ui::colour::silkCaption);
+        destinationField.setTitle("Export destination file");
         addAndMakeVisible(destinationField);
 
         browseButton.onClick = [this] { browseClicked(); };
+        browseButton.setTitle("Browse for export destination");
         addAndMakeVisible(browseButton);
 
         styleLabel(formatLabel, "Format:");
         addAndMakeVisible(formatLabel);
+        formatCombo.setTitle("Export file format");
         for (size_t i = 0; i < kFormats.size(); ++i)
             formatCombo.addItem(kFormats[i].label,
                                 idForIndex(static_cast<int>(i)));
@@ -114,6 +119,7 @@ namespace B33p
 
         styleLabel(sampleRateLabel, "Sample Rate:");
         addAndMakeVisible(sampleRateLabel);
+        sampleRateCombo.setTitle("Export sample rate");
         for (size_t i = 0; i < kSampleRates.size(); ++i)
             sampleRateCombo.addItem(kSampleRates[i].label,
                                     idForIndex(static_cast<int>(i)));
@@ -127,6 +133,7 @@ namespace B33p
 
         styleLabel(bitDepthLabel, "Bit Depth:");
         addAndMakeVisible(bitDepthLabel);
+        bitDepthCombo.setTitle("Export bit depth");
         for (size_t i = 0; i < kBitDepths.size(); ++i)
             bitDepthCombo.addItem(kBitDepths[i].label,
                                   idForIndex(static_cast<int>(i)));
@@ -135,6 +142,7 @@ namespace B33p
 
         styleLabel(channelLabel, "Channels:");
         addAndMakeVisible(channelLabel);
+        channelCombo.setTitle("Export channel mode");
         for (size_t i = 0; i < kChannels.size(); ++i)
             channelCombo.addItem(kChannels[i].label,
                                  idForIndex(static_cast<int>(i)));
@@ -148,13 +156,16 @@ namespace B33p
         variationsSlider.setIncDecButtonsMode(juce::Slider::incDecButtonsDraggable_AutoDirection);
         variationsSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 60, 22);
         variationsSlider.setValue(1.0, juce::dontSendNotification);
+        variationsSlider.setTitle("Export variation count");
         variationsSlider.setTooltip("1 = single render. 2+ = render that many dice-rolled variations into numbered files (Filename_001.wav, etc.). The original parameter values are restored when the batch finishes.");
         addAndMakeVisible(variationsSlider);
 
         cancelButton.onClick = [this] { cancelClicked(); };
+        cancelButton.setTitle("Cancel export");
         addAndMakeVisible(cancelButton);
 
         exportButton.onClick = [this] { exportClicked(); };
+        exportButton.setTitle("Start export");
         addAndMakeVisible(exportButton);
     }
 
@@ -226,10 +237,12 @@ namespace B33p
         if (destinationField.getText().trim().isEmpty())
         {
             // Nudge the field so the user notices it's required;
-            // an alert dialog felt heavy for an obvious miss.
+            // an alert dialog felt heavy for an obvious miss. Danger ->
+            // warn (style guide), darkened so it still reads as a text
+            // field background rather than a solid alert block.
             destinationField.setColour(
                 juce::TextEditor::backgroundColourId,
-                juce::Colour::fromRGB(60, 30, 30));
+                zqsfx::ui::colour::warn.darker(0.7f));
             destinationField.repaint();
             destinationField.grabKeyboardFocus();
             return;

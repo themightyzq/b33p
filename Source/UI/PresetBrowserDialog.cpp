@@ -1,5 +1,7 @@
 #include "PresetBrowserDialog.h"
 
+#include <zqsfx_ui/zqsfx_ui.h>
+
 namespace B33p
 {
     namespace
@@ -21,8 +23,13 @@ namespace B33p
           onDeleteCallback(std::move(onDelete)),
           onCloseCallback(std::move(onClose))
     {
+        setAccessible(true);
+        setTitle("Preset browser");
+        setDescription("Browse, load, and delete saved presets");
+
         list.setRowHeight(kRowHeight);
         list.setMultipleSelectionEnabled(false);
+        list.setTitle("Preset list");
         addAndMakeVisible(list);
 
         loadButton.onClick   = [this] { requestLoadSelected();   };
@@ -32,6 +39,9 @@ namespace B33p
             if (onCloseCallback)
                 onCloseCallback();
         };
+        loadButton.setTitle("Load selected preset");
+        deleteButton.setTitle("Delete selected preset");
+        closeButton.setTitle("Close preset browser");
         addAndMakeVisible(loadButton);
         addAndMakeVisible(deleteButton);
         addAndMakeVisible(closeButton);
@@ -48,7 +58,7 @@ namespace B33p
         emptyStateLabel.setJustificationType(juce::Justification::centred);
         emptyStateLabel.setFont(juce::FontOptions(12.0f).withStyle("Italic"));
         emptyStateLabel.setColour(juce::Label::textColourId,
-                                    juce::Colour::fromRGB(140, 140, 140));
+                                    zqsfx::ui::colour::silkCaption);
         emptyStateLabel.setInterceptsMouseClicks(false, false);
         addAndMakeVisible(emptyStateLabel);
 
@@ -81,7 +91,10 @@ namespace B33p
 
         if (rowIsSelected)
         {
-            g.setColour(juce::Colour::fromRGB(60, 90, 130));
+            // Selection = the one focused/active row -> house accent, per the
+            // style guide's "active toggle is an accent fill" rule. Row text
+            // switches to accentInk for contrast against the fill.
+            g.setColour(zqsfx::ui::colour::accent);
             g.fillRect(0, 0, width, height);
         }
 
@@ -89,21 +102,18 @@ namespace B33p
         const auto displayName = f.getFileNameWithoutExtension();
 
         // Factory presets ship with a "Factory - " prefix (see
-        // GeneratorPresets.cpp). Render them italic + slightly cooler
-        // tint so the user can scan factory vs user presets at a
+        // GeneratorPresets.cpp). Render them italic (a shape cue, not just a
+        // colour one) so the user can scan factory vs user presets at a
         // glance — keeps the factory set from disappearing into the
-        // user-saved list as the directory grows.
+        // user-saved list as the directory grows. Both colours below are
+        // neutral house tokens rather than a lane channel, since this
+        // distinction has nothing to do with lane identity.
         const bool isFactory = displayName.startsWith("Factory - ");
-        if (isFactory)
-        {
-            g.setColour(juce::Colour::fromRGB(170, 185, 215));
-            g.setFont(juce::FontOptions(13.0f).withStyle("Italic"));
-        }
+        if (rowIsSelected)
+            g.setColour(zqsfx::ui::colour::accentInk);
         else
-        {
-            g.setColour(juce::Colour::fromRGB(220, 220, 220));
-            g.setFont(juce::FontOptions(13.0f));
-        }
+            g.setColour(isFactory ? zqsfx::ui::colour::silkCaption : zqsfx::ui::colour::btnText);
+        g.setFont(juce::FontOptions(13.0f, isFactory ? juce::Font::italic : juce::Font::plain));
 
         g.drawText(displayName,
                    juce::Rectangle<int>(8, 0, width - 16, height),
@@ -159,10 +169,10 @@ namespace B33p
 
     void PresetBrowserDialog::paint(juce::Graphics& g)
     {
-        g.fillAll(juce::Colour::fromRGB(28, 28, 28));
+        g.fillAll(zqsfx::ui::colour::panelBot);
 
-        g.setColour(juce::Colour::fromRGB(180, 180, 180));
-        g.setFont(juce::FontOptions(13.0f).withStyle("Bold"));
+        g.setColour(zqsfx::ui::colour::silkTitle);
+        g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
         g.drawText("Presets — double-click a row to load",
                    getLocalBounds().reduced(kPadding).removeFromTop(kHeaderHeight),
                    juce::Justification::centredLeft);
@@ -196,7 +206,7 @@ namespace B33p
             PresetBrowserDialog::OnDelete onDelete,
             std::function<void()> onClose)
         : DocumentWindow("Preset Browser",
-                         juce::Colour::fromRGB(22, 22, 22),
+                         zqsfx::ui::colour::chassisMid,
                          DocumentWindow::closeButton),
           onCloseCallback(std::move(onClose))
     {

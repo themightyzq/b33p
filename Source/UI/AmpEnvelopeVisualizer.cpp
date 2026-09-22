@@ -2,14 +2,16 @@
 
 #include "Core/ParameterIDs.h"
 #include "DSP/AmpEnvelope.h"
+#include "Section.h"
 #include "State/B33pProcessor.h"
+
+#include <zqsfx_ui/zqsfx_ui.h>
 
 namespace B33p
 {
     namespace
     {
         constexpr float kOutlineInset   = 1.0f;
-        constexpr float kCornerRadius   = 3.0f;
         constexpr float kInnerInset     = 6.0f;
         constexpr float kStrokeWidth    = 2.0f;
         constexpr float kPlayheadWidth  = 1.5f;
@@ -28,6 +30,9 @@ namespace B33p
         : processor(processorRef),
           apvts(processorRef.getApvts())
     {
+        setAccessible(true);
+        setTitle("Amp envelope curve");
+        setDescription("Amp envelope shape for the selected lane: attack, decay, sustain, release");
         attachListeners(currentLane);
         // 30 Hz playhead repaint while audio is playing. The gate inside
         // timerCallback ensures the timer self-elides repaints when the
@@ -93,11 +98,8 @@ namespace B33p
 
         auto frame = getLocalBounds().toFloat().reduced(kOutlineInset);
 
-        g.setColour(juce::Colour::fromRGB(20, 20, 20));
-        g.fillRoundedRectangle(frame, kCornerRadius);
-
-        g.setColour(juce::Colour::fromRGB(60, 60, 60));
-        g.drawRoundedRectangle(frame, kCornerRadius, 1.0f);
+        // Phosphor screen treatment (style guide section 6).
+        zqsfx::ui::LookAndFeel::drawScreen(g, frame, false);
 
         const float sustainSeconds = sustainDisplaySeconds(a, d, r);
         const float totalSeconds   = a + d + sustainSeconds + r;
@@ -131,10 +133,14 @@ namespace B33p
 
         envelope.closeSubPath();
 
-        g.setColour(juce::Colour::fromRGB(90, 180, 255).withAlpha(0.22f));
+        // Curve is the owning lane's channel colour — data, never the accent
+        // (style guide: "the house accent orange means active only, never a
+        // response curve, a waveform, or a category").
+        const auto laneColour = Section::houseLaneAccent(currentLane);
+        g.setColour(laneColour.withAlpha(0.22f));
         g.fillPath(envelope);
 
-        g.setColour(juce::Colour::fromRGB(120, 200, 255));
+        g.setColour(laneColour);
         g.strokePath(envelope, juce::PathStrokeType(kStrokeWidth));
 
         // Live playhead (P31). Only painted while the selected lane's
@@ -187,7 +193,9 @@ namespace B33p
         }();
         const float playheadX = juce::jlimit(plotArea.getX(), xReleaseEnd, playheadXRaw);
 
-        g.setColour(juce::Colour::fromRGB(220, 235, 255).withAlpha(0.85f));
+        // Playhead is a genuinely "active" state (audio is playing right now) —
+        // the one legitimate accent use here.
+        g.setColour(zqsfx::ui::colour::accent.withAlpha(0.85f));
         g.fillRect(juce::Rectangle<float>(playheadX - kPlayheadWidth * 0.5f,
                                           plotArea.getY(),
                                           kPlayheadWidth,

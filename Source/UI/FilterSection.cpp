@@ -29,6 +29,7 @@ namespace B33p
         // the filter type flips.
         addChildComponent(vowelSlider);
 
+        typeSelector   .setTitle("Filter type");
         typeSelector   .setTooltip("Filter mode: shapes how the voice is filtered before bitcrush + distortion");
         cutoffSlider   .setTooltip("Cutoff / centre / comb fundamental — meaning depends on filter type");
         resonanceSlider.setTooltip("Resonance / Q / comb feedback — meaning depends on filter type");
@@ -89,7 +90,7 @@ namespace B33p
 
         visualizer.retargetLane(lane);
         setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6
-        setAccentColour(processor.laneAccentColour(lane));
+        setAccentColour(Section::houseLaneAccent(lane));
 
         // Re-hook onChange after attachment swap so the listener
         // reflects the new lane's type immediately.
