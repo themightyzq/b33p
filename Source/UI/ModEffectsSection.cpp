@@ -15,7 +15,7 @@ namespace B33p
         // bypass.
         struct TypeLabels { const char* p1; const char* p2; const char* mix; };
         constexpr TypeLabels kTypeLabels[] = {
-            { "—",      "—",      "—"   },   // None — neutral labels rather
+            { "-",      "-",      "-"   },   // None - neutral labels rather
                                               // than the misleading "Rate /
                                               // Depth / Mix" placeholder.
                                               // The dashes pair with the
@@ -54,8 +54,8 @@ namespace B33p
 
         typeSelector.setTitle("Mod FX type");
         typeSelector.setTooltip("Modulation effect at the end of the chain (after distortion)");
-        p1Slider .setTooltip("First effect parameter — meaning depends on the type (Rate / Size / Time)");
-        p2Slider .setTooltip("Second effect parameter — meaning depends on the type (Depth / Damping / Feedback)");
+        p1Slider .setTooltip("First effect parameter - meaning depends on the type (Rate / Size / Time)");
+        p2Slider .setTooltip("Second effect parameter - meaning depends on the type (Depth / Damping / Feedback)");
         mixSlider.setTooltip("Wet/dry blend; 0 keeps the dry signal, 1 = full wet");
 
         retargetLane(processor.getSelectedLane());

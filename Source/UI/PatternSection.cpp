@@ -504,7 +504,7 @@ namespace B33p
 
         timeLabel.setText("Bar " + juce::String(barIdx + 1)
                             + "." + juce::String(beatInBar + 1)
-                            + " — " + juce::String(headSec,   2)
+                            + " - " + juce::String(headSec,   2)
                             + " / " + juce::String(lengthSec, 2) + "s",
                           juce::dontSendNotification);
 

@@ -223,12 +223,20 @@ namespace B33p
                         | juce::FileBrowserComponent::canSelectFiles
                         | juce::FileBrowserComponent::warnAboutOverwriting;
 
-        fileChooser->launchAsync(flags, [this](const juce::FileChooser& fc)
+        // The OS sheet is async and can outlive this dialog (e.g. the user
+        // closes the Export window while the chooser is still up). Guard
+        // with a SafePointer instead of capturing raw `this` - same
+        // convention as LabeledSlider.cpp / StandaloneApp.cpp / MainComponent.cpp.
+        fileChooser->launchAsync(flags,
+            [safe = juce::Component::SafePointer<ExportDialog>(this)](const juce::FileChooser& fc)
         {
-            const auto chosen = fc.getResult();
-            if (chosen != juce::File())
-                destinationField.setText(chosen.getFullPathName(),
-                                         juce::dontSendNotification);
+            if (auto* self = safe.getComponent())
+            {
+                const auto chosen = fc.getResult();
+                if (chosen != juce::File())
+                    self->destinationField.setText(chosen.getFullPathName(),
+                                                   juce::dontSendNotification);
+            }
         });
     }
 

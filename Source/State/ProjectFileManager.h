@@ -98,6 +98,19 @@ namespace B33p
         OnStateChanged                     onStateChangedCallback;
         std::unique_ptr<juce::FileChooser> fileChooser;
 
+        // FileChooser::launchAsync callbacks run after this call returns and
+        // can fire once the OS sheet is dismissed well after this object may
+        // be gone (MainComponent, which owns us as a plain value member, can
+        // be torn down while a Save/Open sheet is still up). ProjectFileManager
+        // is not a juce::Component, so juce::Component::SafePointer (the
+        // convention used elsewhere in this codebase - see LabeledSlider.cpp,
+        // StandaloneApp.cpp, MainComponent.cpp) isn't available here. Instead
+        // each async lambda captures a weak_ptr to this flag: while
+        // ProjectFileManager is alive the weak_ptr locks; once this object
+        // (and therefore this shared_ptr member) is destroyed, the lock fails
+        // and the callback bails out before touching the dead `this`.
+        std::shared_ptr<bool> livenessFlag = std::make_shared<bool>(true);
+
         // Owns the on-disk MRU. Properties file lives under the
         // platform's per-user app-data directory; the list is
         // capped at kMaxRecentFiles entries.

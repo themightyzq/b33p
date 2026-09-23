@@ -1,5 +1,12 @@
 # Changelog
 
+> **Standing correction (2026-09-22).** An entry below says AAX "can be added later behind an
+> opt-in CMake option if the SDK ever becomes available". That is no longer the position: **AAX
+> is never built for any ZQ SFX product**, and Pro Tools is a permanently unsupported host. See
+> `../CLAUDE.md` section 5. The entry itself is left as written, because changelog history is
+> appended to and never rewritten.
+
+
 All notable changes to **b33p** are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions, and
 b33p adheres to [Semantic Versioning](https://semver.org/).

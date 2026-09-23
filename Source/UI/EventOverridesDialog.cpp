@@ -168,7 +168,7 @@ namespace B33p
 
         g.setColour(zqsfx::ui::colour::silkTitle);
         g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
-        g.drawText("Event properties — overrides + probability / ratcheting / humanize",
+        g.drawText("Event properties - overrides + probability / ratcheting / humanize",
                    getLocalBounds().reduced(kPadding).removeFromTop(kHeaderHeight),
                    juce::Justification::centredLeft);
     }

@@ -185,7 +185,7 @@ namespace B33p
             // can't edit multi-event values, but the grid's keyboard
             // shortcuts can.
             placeholder.setText(juce::String(totalCount)
-                                  + " events selected   ·   Delete · ←/→ nudge · Cmd+C / Cmd+V",
+                                  + " events selected   -   Delete - Left/Right nudge - Cmd+C / Cmd+V",
                                  juce::dontSendNotification);
         else
             // Names what the inspector can edit so a first-time user

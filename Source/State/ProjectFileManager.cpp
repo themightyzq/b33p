@@ -80,10 +80,19 @@ namespace B33p
                         | juce::FileBrowserComponent::canSelectFiles
                         | juce::FileBrowserComponent::warnAboutOverwriting;
 
+        // `parent` isn't used inside the async callback (it exists purely so
+        // future dialog-centring code has somewhere to plug in), so it's
+        // dropped from the capture list rather than carried across the async
+        // boundary unguarded; `this` is guarded via weakAlive (see
+        // livenessFlag's declaration in ProjectFileManager.h).
+        juce::ignoreUnused(parent);
+        std::weak_ptr<bool> weakAlive = livenessFlag;
         fileChooser->launchAsync(flags,
-            [this, parent, capturedOnComplete = std::move(onComplete)](const juce::FileChooser& fc) mutable
+            [this, weakAlive, capturedOnComplete = std::move(onComplete)](const juce::FileChooser& fc) mutable
         {
-            juce::ignoreUnused(parent);
+            if (weakAlive.expired())
+                return;   // *this was destroyed while the OS sheet was open.
+
             const auto chosen = fc.getResult();
             if (chosen == juce::File())
             {
@@ -107,9 +116,15 @@ namespace B33p
         const int flags = juce::FileBrowserComponent::openMode
                         | juce::FileBrowserComponent::canSelectFiles;
 
-        fileChooser->launchAsync(flags, [this, parent](const juce::FileChooser& fc)
+        // See the matching comment in saveAs() above: `parent` is unused in
+        // the callback, and `this` is guarded via weakAlive / livenessFlag.
+        juce::ignoreUnused(parent);
+        std::weak_ptr<bool> weakAlive = livenessFlag;
+        fileChooser->launchAsync(flags, [this, weakAlive](const juce::FileChooser& fc)
         {
-            juce::ignoreUnused(parent);
+            if (weakAlive.expired())
+                return;   // *this was destroyed while the OS sheet was open.
+
             const auto chosen = fc.getResult();
             if (chosen == juce::File())
                 return;

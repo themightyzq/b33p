@@ -107,3 +107,6 @@ docs/REVIEW.md
 # Other VCS workspace metadata (Diversion coexisting with git) -------------
 .diversion/
 .dvignore
+
+# CMake build trees other than build/ (review, universal, ui gates). Never committed.
+build-*/

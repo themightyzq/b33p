@@ -12,6 +12,12 @@ namespace B33p
         constexpr int kTopRowHeight        = 260;   // Oscillator | Amp Env | Filter
         constexpr int kMidRowHeight        = 180;   // Effects | Master | Mod FX
         constexpr int kModulationRowHeight = 220;   // Modulation | Pitch Env
+        // Natural, unclamped height of the three stacked rows above, i.e. the
+        // content height of VoiceEditorPanel. When the window is too short to
+        // show this much (see kMinPatternHeight below), the panel's Viewport
+        // scrolls instead of the rows clipping or squeezing Pattern away.
+        constexpr int kVoiceEditorContentHeight =
+            kTopRowHeight + kGap + kMidRowHeight + kGap + kModulationRowHeight;
         constexpr int kMenuBarHeight  = 24;
         // Header strip carrying the ZQ SFX logo mark (style guide section 5:
         // "one instance per window", "the header row, at the far right").
@@ -19,9 +25,17 @@ namespace B33p
         // hidden under setMacMainMenu) so the logo has a stable home in every
         // build configuration.
         constexpr int kLogoHeaderHeight = 28;
-        // Initial height handed to the Pattern grid; it grows to fill any
-        // extra height when the window is taller than the default.
+        // Height handed to the Pattern grid at the default window size; it
+        // grows to fill any extra height when the window is taller than
+        // that. Also doubles as kMinPatternHeight: MainComponent::resized()
+        // never gives Pattern less than this, even at the editor's declared
+        // 1000x600 minimum (setResizeLimits in B33pEditor.cpp) - the voice
+        // editor rows above it scroll instead (see kVoiceEditorContentHeight
+        // and VoiceEditorPanel). Chosen so the default (no-scroll) case and
+        // the floor are the same well-tested value rather than two numbers
+        // that can drift apart.
         constexpr int kInitialPatternHeight = 252;
+        constexpr int kMinPatternHeight     = kInitialPatternHeight;
 
         // Menu item IDs. Kept in one enum so the dispatch in
         // menuItemSelected stays readable. IDs must be > 0 — JUCE
@@ -83,6 +97,9 @@ namespace B33p
           modulationSection   (processor),
           masterSection       (processor),
           pitchEnvelopeSection(processor),
+          voiceEditorPanel(oscillatorSection, ampEnvelopeSection, filterSection,
+                            effectsSection, modEffectsSection, masterSection,
+                            modulationSection, pitchEnvelopeSection),
           patternSection      (processor)
     {
         // Seed factory presets so a fresh install has discoverable
@@ -100,14 +117,14 @@ namespace B33p
        #else
         addAndMakeVisible(menuBar);
        #endif
-        addAndMakeVisible(oscillatorSection);
-        addAndMakeVisible(ampEnvelopeSection);
-        addAndMakeVisible(filterSection);
-        addAndMakeVisible(effectsSection);
-        addAndMakeVisible(modEffectsSection);
-        addAndMakeVisible(modulationSection);
-        addAndMakeVisible(masterSection);
-        addAndMakeVisible(pitchEnvelopeSection);
+        // The eight per-lane / global voice-editor sections are children of
+        // voiceEditorPanel (see MainComponent.h), not of MainComponent
+        // directly - the panel is what scrolls when the window is too short
+        // to show them at full height. voiceEditorPanel's own constructor
+        // adds them; here we just wire up the viewport that displays it.
+        addAndMakeVisible(voiceEditorViewport);
+        voiceEditorViewport.setViewedComponent(&voiceEditorPanel, false);
+        voiceEditorViewport.setScrollBarsShown(true, false);
         addAndMakeVisible(patternSection);
 
         // The logo mark is also the About-box trigger (style guide section 5:
@@ -214,17 +231,84 @@ namespace B33p
 
         auto bounds = fullBounds.reduced(kOuterPadding);
 
-        // Three voice-editor rows stacked above the Pattern grid. Mod FX and
-        // Pitch Env — both wide-but-short — share rows with their neighbours
-        // rather than each claiming a full-width row of their own, which is
-        // what kept the old six-row stack taller than a 1080p screen.
+        // Pattern is the headline feature (the step sequencer) and must stay
+        // fully on-canvas at every editor size, including the declared
+        // 1000x600 minimum (setResizeLimits in B33pEditor.cpp). The three
+        // voice-editor rows above it have a natural, fixed height of
+        // kVoiceEditorContentHeight (676 px); at the 1000x600 minimum there's
+        // only ~524 px of vertical room for everything below the menu bar +
+        // logo header, nowhere near enough for both the full voice-editor
+        // stack and a usable Pattern section. This used to lay out all three
+        // rows at their fixed heights unconditionally, so Pattern (and the
+        // tail of the Modulation row) got clipped to zero/negative height.
+        //
+        // Fix: Pattern always keeps at least kMinPatternHeight (the same
+        // height it gets by default at the comfortable 1500x1012 size) and
+        // grows into whatever space is left above that, exactly as before.
+        // The voice-editor rows live in voiceEditorViewport at their natural
+        // height; when the window is too short to show them in full they
+        // scroll instead of clipping or squeezing Pattern away.
+        const int patternHeight = juce::jmax(
+            kMinPatternHeight, bounds.getHeight() - kVoiceEditorContentHeight - kGap);
+        auto patternRow = bounds.removeFromBottom(patternHeight);
+        bounds.removeFromBottom(kGap);
+
+        // `bounds` is now exactly the area available to the voice-editor
+        // stack. Give the viewport that area; give its panel the natural
+        // content height (so it scrolls when the area is shorter than that),
+        // full width when no scrollbar is needed, minus the scrollbar's
+        // thickness when one is - so the row/column math inside the panel
+        // never has to fight a scrollbar for the same pixels.
+        voiceEditorViewport.setBounds(bounds);
+        const bool needsScroll = kVoiceEditorContentHeight > bounds.getHeight();
+        const int panelWidth = bounds.getWidth()
+                              - (needsScroll ? voiceEditorViewport.getScrollBarThickness() : 0);
+        voiceEditorPanel.setSize(juce::jmax(0, panelWidth), kVoiceEditorContentHeight);
+
+        patternSection.setBounds(patternRow);
+    }
+
+    MainComponent::VoiceEditorPanel::VoiceEditorPanel(OscillatorSection& oscillator,
+                                                       AmpEnvSection& ampEnvelope,
+                                                       FilterSection& filter,
+                                                       EffectsSection& effects,
+                                                       ModEffectsSection& modEffects,
+                                                       MasterSection& master,
+                                                       ModulationSection& modulation,
+                                                       PitchEnvSection& pitchEnvelope)
+        : oscillatorSection(oscillator),
+          ampEnvelopeSection(ampEnvelope),
+          filterSection(filter),
+          effectsSection(effects),
+          modEffectsSection(modEffects),
+          masterSection(master),
+          modulationSection(modulation),
+          pitchEnvelopeSection(pitchEnvelope)
+    {
+        addAndMakeVisible(oscillatorSection);
+        addAndMakeVisible(ampEnvelopeSection);
+        addAndMakeVisible(filterSection);
+        addAndMakeVisible(effectsSection);
+        addAndMakeVisible(modEffectsSection);
+        addAndMakeVisible(modulationSection);
+        addAndMakeVisible(masterSection);
+        addAndMakeVisible(pitchEnvelopeSection);
+    }
+
+    void MainComponent::VoiceEditorPanel::resized()
+    {
+        // Same three-row layout MainComponent::resized() used to do
+        // in-place, just operating on this panel's own bounds (its height is
+        // always exactly kVoiceEditorContentHeight - see MainComponent::
+        // resized() - so removeFromTop never runs out of room here the way
+        // it could when Pattern shared the same bounds object).
+        auto bounds = getLocalBounds();
+
         auto topRow = bounds.removeFromTop(kTopRowHeight);
         bounds.removeFromTop(kGap);
         auto midRow = bounds.removeFromTop(kMidRowHeight);
         bounds.removeFromTop(kGap);
-        auto modulationRow = bounds.removeFromTop(kModulationRowHeight);
-        bounds.removeFromTop(kGap);
-        auto patternRow = bounds;
+        auto modulationRow = bounds;
 
         // Top row: Oscillator | Amp Env | Filter (three equal columns).
         const int topCellWidth = (topRow.getWidth() - 2 * kGap) / 3;
@@ -247,8 +331,6 @@ namespace B33p
         modulationSection.setBounds(modulationRow.removeFromLeft(modCellWidth));
         modulationRow.removeFromLeft(kGap);
         pitchEnvelopeSection.setBounds(modulationRow);
-
-        patternSection.setBounds(patternRow);
     }
 
     void MainComponent::openProjectFile(const juce::File& file)
@@ -851,7 +933,7 @@ namespace B33p
             const juce::String message =
                 "Could not save preset \"" + name + "\".\n\n"
                 "The name may contain invalid characters "
-                "(avoid / \\ : * ? \" |), or the presets folder "
+                "(avoid / \\ : * ? \" |), or the presets folder "
                 "is not writable:\n"
               + presetManager.getPresetsDirectory().getFullPathName();
 
@@ -914,7 +996,7 @@ namespace B33p
           + "  Right-click empty lane: Generate / Clear\n"
           + "  Click in the ruler row: park the playhead\n\n"
           + "------ Playing ------\n"
-          + "  Connect a MIDI keyboard — every input device routes to\n"
+          + "  Connect a MIDI keyboard - every input device routes to\n"
           + "  the selected lane (note 60 = no transposition). Up to 8\n"
           + "  notes ring at once.\n"
           + "  Loop toggle plays the pattern in a loop.\n"
@@ -955,7 +1037,7 @@ namespace B33p
             juce::String("Welcome to b33p.\n\n")
           + "b33p makes short synthesized sounds. Four pattern lanes, each\n"
           + "with its own voice. Click a lane (or any event) to switch which\n"
-          + "lane the editors target — the section headers say \"(Lane N)\"\n"
+          + "lane the editors target - the section headers say \"(Lane N)\"\n"
           + "so you always know what you're editing.\n\n"
           + "------ 30-second quickstart ------\n"
           + "1. Press the orange Audition button to hear the current voice.\n"

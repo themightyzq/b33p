@@ -51,7 +51,7 @@ namespace B33p
                                   zqsfx::ui::colour::lcdBg);
             nameLabel.setTooltip("Double-click to rename");
             nameLabel.setTitle("Lane " + juce::String(i + 1) + " name");
-            nameLabel.setDescription("Lane " + juce::String(i + 1) + " name — double-click to rename");
+            nameLabel.setDescription("Lane " + juce::String(i + 1) + " name - double-click to rename");
             // I-beam cursor on hover signals "this is editable text",
             // turning the previously-buried double-click rename into a
             // discoverable affordance without changing the label's
@@ -116,7 +116,7 @@ namespace B33p
             soloBtn.setClickingTogglesState(true);
             soloBtn.setTooltip("Solo lane (only soloed lanes play)");
             soloBtn.setTitle("Solo lane " + juce::String(i + 1));
-            soloBtn.setDescription("Solo lane " + juce::String(i + 1) + " — only soloed lanes play");
+            soloBtn.setDescription("Solo lane " + juce::String(i + 1) + " - only soloed lanes play");
             // Same house on/off button treatment as Mute — see the comment there.
             soloBtn.onClick = [this, i]
             {

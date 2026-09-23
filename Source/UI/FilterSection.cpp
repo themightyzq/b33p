@@ -31,8 +31,8 @@ namespace B33p
 
         typeSelector   .setTitle("Filter type");
         typeSelector   .setTooltip("Filter mode: shapes how the voice is filtered before bitcrush + distortion");
-        cutoffSlider   .setTooltip("Cutoff / centre / comb fundamental — meaning depends on filter type");
-        resonanceSlider.setTooltip("Resonance / Q / comb feedback — meaning depends on filter type");
+        cutoffSlider   .setTooltip("Cutoff / centre / comb fundamental - meaning depends on filter type");
+        resonanceSlider.setTooltip("Resonance / Q / comb feedback - meaning depends on filter type");
         vowelSlider    .setTooltip("Formant mode: 0 = A, 1 = U with E / I / O at quarter steps in between");
 
         retargetLane(processor.getSelectedLane());

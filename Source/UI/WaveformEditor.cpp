@@ -50,9 +50,9 @@ namespace B33p
             b.setClickingTogglesState(true);
             b.setRadioGroupId(1);
             b.setTooltip(i == 0
-                ? "Slot 1 — also the table the Custom waveform plays"
+                ? "Slot 1 - also the table the Custom waveform plays"
                 : "Slot " + juce::String(i + 1)
-                  + " — only audible in Wavetable mode at non-zero morph");
+                  + " - only audible in Wavetable mode at non-zero morph");
             b.setTitle("Waveform slot " + juce::String(i + 1));
             b.onClick = [this, i] { setSlot(i); };
             addAndMakeVisible(b);

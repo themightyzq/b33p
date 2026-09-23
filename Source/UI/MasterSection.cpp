@@ -57,8 +57,8 @@ namespace B33p
         // old per-instance blue/grey colour overrides are gone.
         abButtonA.setClickingTogglesState(false);
         abButtonB.setClickingTogglesState(false);
-        abButtonA.setTooltip("A/B compare — switch to slot A. First switch to B copies A into B so you can tweak it independently.");
-        abButtonB.setTooltip("A/B compare — switch to slot B. Tweak independently of A; click A again to compare.");
+        abButtonA.setTooltip("A/B compare - switch to slot A. First switch to B copies A into B so you can tweak it independently.");
+        abButtonB.setTooltip("A/B compare - switch to slot B. Tweak independently of A; click A again to compare.");
         abCopyButton.setTooltip("Copy the active A/B slot's settings into the other slot.");
         abButtonA.setTitle("A/B compare slot A");
         abButtonB.setTitle("A/B compare slot B");
@@ -87,7 +87,7 @@ namespace B33p
         // ---- Undo / Redo buttons ----------------------------------
         undoButton.onClick = [this] { processor.getUndoManager().undo(); };
         redoButton.onClick = [this] { processor.getUndoManager().redo(); };
-        undoButton.setTooltip("Undo (Cmd+Z) — the plugin's own undo, in case the host captures the keyboard shortcut.");
+        undoButton.setTooltip("Undo (Cmd+Z) - the plugin's own undo, in case the host captures the keyboard shortcut.");
         redoButton.setTooltip("Redo (Cmd+Shift+Z)");
         undoButton.setTitle("Undo");
         redoButton.setTitle("Redo");
@@ -106,7 +106,7 @@ namespace B33p
         presetNameLabel.setJustificationType(juce::Justification::centred);
         presetNameLabel.setFont(juce::FontOptions(11.0f));
         presetNameLabel.setColour(juce::Label::textColourId, zqsfx::ui::colour::silkLabel);
-        presetNameLabel.setTooltip("Current preset — use < and > to step through your presets");
+        presetNameLabel.setTooltip("Current preset - use < and > to step through your presets");
         presetNameLabel.setTitle("Current preset name");
         presetNameLabel.setInterceptsMouseClicks(false, false);
         setPresetName({});   // starts as the em-dash placeholder

@@ -149,6 +149,45 @@ namespace B33p
         ModulationSection modulationSection;
         MasterSection     masterSection;
         PitchEnvSection   pitchEnvelopeSection;
+
+        // Holds the three stacked voice-editor rows (Oscillator/AmpEnv/Filter,
+        // Effects/Master/ModFX, Modulation/PitchEnv) at their natural, fixed
+        // height (kVoiceEditorContentHeight in MainComponent.cpp). It lives
+        // inside voiceEditorViewport below rather than being added directly
+        // to MainComponent, so a window too short to show the full stack
+        // (down to the editor's declared 1000x600 minimum -
+        // B33pEditor.cpp's setResizeLimits) scrolls it instead of clipping
+        // it or squeezing the Pattern section off-canvas. Pattern itself is
+        // laid out directly by MainComponent, below the viewport, and always
+        // keeps a guaranteed minimum height - see MainComponent::resized().
+        class VoiceEditorPanel : public juce::Component
+        {
+        public:
+            VoiceEditorPanel(OscillatorSection& oscillator,
+                              AmpEnvSection& ampEnvelope,
+                              FilterSection& filter,
+                              EffectsSection& effects,
+                              ModEffectsSection& modEffects,
+                              MasterSection& master,
+                              ModulationSection& modulation,
+                              PitchEnvSection& pitchEnvelope);
+
+            void resized() override;
+
+        private:
+            OscillatorSection& oscillatorSection;
+            AmpEnvSection&     ampEnvelopeSection;
+            FilterSection&     filterSection;
+            EffectsSection&    effectsSection;
+            ModEffectsSection& modEffectsSection;
+            MasterSection&     masterSection;
+            ModulationSection& modulationSection;
+            PitchEnvSection&   pitchEnvelopeSection;
+        };
+
+        juce::Viewport   voiceEditorViewport;
+        VoiceEditorPanel voiceEditorPanel;
+
         PatternSection    patternSection;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)

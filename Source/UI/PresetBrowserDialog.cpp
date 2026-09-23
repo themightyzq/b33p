@@ -53,7 +53,7 @@ namespace B33p
 
         // Empty-state hint overlay (visibility toggled in refresh()).
         emptyStateLabel.setText(
-            "No presets yet.\n\nUse File ▸ Save Preset… to save the current patch.",
+            "No presets yet.\n\nUse File > Save Preset... to save the current patch.",
             juce::dontSendNotification);
         emptyStateLabel.setJustificationType(juce::Justification::centred);
         emptyStateLabel.setFont(juce::FontOptions(12.0f).withStyle("Italic"));
@@ -173,7 +173,7 @@ namespace B33p
 
         g.setColour(zqsfx::ui::colour::silkTitle);
         g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
-        g.drawText("Presets — double-click a row to load",
+        g.drawText("Presets - double-click a row to load",
                    getLocalBounds().reduced(kPadding).removeFromTop(kHeaderHeight),
                    juce::Justification::centredLeft);
     }
