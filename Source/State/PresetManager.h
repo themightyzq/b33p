@@ -56,6 +56,39 @@ namespace B33p
         // even if asked).
         bool deletePreset(const juce::File& presetFile);
 
+        // True when a preset's display name (its filename without the
+        // `.beep` extension) belongs to the curated factory set — the
+        // "Factory - " prefix convention defined in GeneratorPresets.cpp.
+        // Single source of truth shared by the preset browser's italic-row
+        // rendering and by rename gating (factory presets can't be renamed).
+        static bool isFactoryPresetName(const juce::String& displayName) noexcept;
+
+        // Validates a candidate name for renamePreset(): non-empty after
+        // trimming, contains no path separators (so a rename can't escape
+        // the presets directory or create a subfolder), and doesn't collide
+        // case-insensitively with any other preset already on disk.
+        // `beingRenamed` is excluded from the collision check so renaming a
+        // preset to a name that differs from its own only by case is
+        // allowed. Returns an empty string when the name is valid,
+        // otherwise a short reason fit to show the user directly.
+        juce::String validateNewPresetName(const juce::String& candidateName,
+                                            const juce::File& beingRenamed) const;
+
+        // Renames a user preset's on-disk file to candidateName (keeping
+        // the `.beep` extension), re-validating with
+        // validateNewPresetName() first. Returns the renamed file on
+        // success, an invalid juce::File on failure — including when
+        // presetFile isn't inside the presets directory. Factory-vs-user
+        // gating is a UI-layer decision (the browser disables Rename for
+        // factory rows); this check is the last line of defense, not the
+        // first.
+        //
+        // b33p's `.beep` schema (ProjectState) has no name field of its
+        // own — the display name is always derived from the filename — so
+        // renaming only ever touches the file on disk, never file
+        // contents.
+        juce::File renamePreset(const juce::File& presetFile, const juce::String& candidateName);
+
         // Walks the curated list of factory presets (see
         // GeneratorPresets.h) and writes any that don't yet exist
         // on disk. Existing files are NEVER overwritten — once the

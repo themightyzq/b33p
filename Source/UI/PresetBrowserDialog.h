@@ -24,10 +24,16 @@ namespace B33p
     public:
         using OnLoad   = std::function<void(const juce::File&)>;
         using OnDelete = std::function<void(const juce::File&)>;
+        // Fired after a successful rename with (oldFile, newFile) so the
+        // owner can follow a renamed preset if it was the currently loaded
+        // one (its displayed name is derived from the file path, not
+        // stored anywhere else).
+        using OnRename = std::function<void(const juce::File&, const juce::File&)>;
 
         PresetBrowserDialog(PresetManager& manager,
                             OnLoad onLoad,
                             OnDelete onDelete,
+                            OnRename onRename,
                             std::function<void()> onClose);
 
         void paint(juce::Graphics& g) override;
@@ -50,13 +56,26 @@ namespace B33p
 
         void requestLoadSelected();
         void requestDeleteSelected();
+        void requestRenameSelected();
+
+        // Re-selects the row matching f after refresh() has rebuilt the
+        // list (e.g. after a rename), so the renamed preset stays the
+        // active selection instead of dropping back to "nothing selected".
+        void selectPresetFile(const juce::File& f);
 
         PresetManager& manager;
 
         juce::ListBox list { {}, this };
         juce::TextButton loadButton   { "Load"   };
         juce::TextButton deleteButton { "Delete" };
+        juce::TextButton renameButton { "Rename" };
         juce::TextButton closeButton  { "Close"  };
+
+        // Owns the Rename AlertWindow the same way MainComponent owns its
+        // Save Preset one: enterModalState(deleteWhenDismissed=false) needs
+        // somewhere non-transient to keep the object alive, and resetting
+        // this is what actually deletes it.
+        std::unique_ptr<juce::AlertWindow> renameWindow;
 
         // Shown when presets is empty so the user knows where to
         // start instead of staring at a blank list.
@@ -66,6 +85,7 @@ namespace B33p
 
         OnLoad                onLoadCallback;
         OnDelete              onDeleteCallback;
+        OnRename              onRenameCallback;
         std::function<void()> onCloseCallback;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PresetBrowserDialog)
@@ -80,6 +100,7 @@ namespace B33p
         PresetBrowserDialogWindow(PresetManager& manager,
                                    PresetBrowserDialog::OnLoad onLoad,
                                    PresetBrowserDialog::OnDelete onDelete,
+                                   PresetBrowserDialog::OnRename onRename,
                                    std::function<void()> onClose);
 
         void closeButtonPressed() override;

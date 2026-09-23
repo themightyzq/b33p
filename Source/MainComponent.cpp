@@ -814,6 +814,21 @@ namespace B33p
                         if (presetBrowserWindow != nullptr)
                             presetBrowserWindow->refresh();
                 },
+                // Rename: the browser has already renamed the file and
+                // refreshed itself by the time this fires. If the preset
+                // that moved was the one currently loaded, follow it so
+                // the Master section's readout (and prev/next stepping,
+                // which matches on currentPresetFile) stay correct — its
+                // displayed name is derived from the file path, not stored
+                // anywhere else.
+                [this](const juce::File& oldFile, const juce::File& newFile)
+                {
+                    if (currentPresetFile == oldFile)
+                    {
+                        currentPresetFile = newFile;
+                        updatePresetNameDisplay();
+                    }
+                },
                 [this] { presetBrowserWindow.reset(); });
         }
         presetBrowserWindow->setVisible(true);

@@ -102,6 +102,88 @@ namespace B33p
         return presetFile.deleteFile();
     }
 
+    bool PresetManager::isFactoryPresetName(const juce::String& displayName) noexcept
+    {
+        return displayName.startsWith("Factory - ");
+    }
+
+    juce::String PresetManager::validateNewPresetName(const juce::String& candidateName,
+                                                        const juce::File& beingRenamed) const
+    {
+        const auto trimmed = candidateName.trim();
+        if (trimmed.isEmpty())
+            return "Preset name can't be empty.";
+
+        // Reject separators outright rather than silently sanitising them
+        // away via createLegalFileName — a rename that quietly changes the
+        // name the user typed is more confusing here than a flat refusal.
+        // Check both slash styles regardless of host OS: a name typed with
+        // the "wrong" platform's separator should still be rejected rather
+        // than becoming a literal (and confusing) filename character.
+        if (trimmed.containsChar('/') || trimmed.containsChar('\\'))
+            return "Preset name can't contain path separators.";
+
+        const auto candidateFileName = juce::File::createLegalFileName(trimmed) + ".beep";
+
+        for (const auto& existing : listPresets())
+        {
+            if (existing == beingRenamed)
+                continue;
+            if (existing.getFileName().equalsIgnoreCase(candidateFileName))
+                return "A preset named \"" + trimmed + "\" already exists.";
+        }
+
+        return {};
+    }
+
+    juce::File PresetManager::renamePreset(const juce::File& presetFile,
+                                            const juce::String& candidateName)
+    {
+        if (! presetFile.existsAsFile() || ! presetFile.isAChildOf(presetsDirectory))
+            return {};
+
+        if (validateNewPresetName(candidateName, presetFile).isNotEmpty())
+            return {};
+
+        const auto trimmed = candidateName.trim();
+        const auto destination = presetsDirectory.getChildFile(
+            juce::File::createLegalFileName(trimmed) + ".beep");
+
+        // NOT `destination == presetFile`: File::operator== compares names
+        // via compareIgnoreCase on macOS/Windows (juce_File.cpp), which
+        // would fold a case-only rename request ("Foo" -> "foo") into this
+        // "nothing to do" branch and silently drop it. Compare the raw path
+        // strings exactly so only a byte-for-byte-identical destination
+        // short-circuits here; a case-only difference falls through to the
+        // dedicated handling below.
+        if (destination.getFullPathName() == presetFile.getFullPathName())
+            return presetFile;
+
+        // Case-only rename (e.g. "Foo" -> "foo") on a case-insensitive
+        // filesystem (the macOS default): the destination and source refer
+        // to the same inode, so moveFileTo would see the destination as
+        // already existing and refuse. Route through a temporary sibling
+        // name so the OS sees two genuinely distinct moves.
+        if (destination.getFullPathName().equalsIgnoreCase(presetFile.getFullPathName()))
+        {
+            const auto scratch = presetsDirectory.getChildFile(
+                "." + juce::Uuid().toString() + ".beep_rename_tmp");
+            if (! presetFile.moveFileTo(scratch))
+                return {};
+            if (! scratch.moveFileTo(destination))
+            {
+                scratch.moveFileTo(presetFile);   // best-effort restore
+                return {};
+            }
+            return destination;
+        }
+
+        if (! presetFile.moveFileTo(destination))
+            return {};
+
+        return destination;
+    }
+
     void PresetManager::seedFactoryPresetsIfMissing()
     {
         for (const auto& preset : getFactoryPresets())

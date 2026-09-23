@@ -107,7 +107,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME                zqsfx_ui
     GITHUB_REPOSITORY   themightyzq/zqsfx_ui
-    GIT_TAG             v0.2.1
+    GIT_TAG             v0.4.0
 )
 
 # ---------------------------------------------------------------------------
