@@ -193,14 +193,6 @@ namespace B33p
     {
         currentSampleRate = sampleRate;
 
-        // Explicitly declare zero latency so the host's PDC (plugin
-        // delay compensation) has the contract wired even though we
-        // don't introduce any latency today. When something that
-        // does (oversampling, look-ahead limiter, FFT) lands, this
-        // becomes the line to update — much harder to debug a silent
-        // PDC mis-alignment when the call doesn't exist at all.
-        setLatencySamples(0);
-
         for (auto& n : samplesUntilNoteOff) n = 0;
         playheadSeconds.store(0.0);
         for (auto& v : voices)
@@ -213,6 +205,19 @@ namespace B33p
             v.prepare(sampleRate);
             v.reset();
         }
+
+        // Every voice's Bitcrush + Distortion stages are individually
+        // 4x-oversampled (Voice.h; OversampledBitcrush / Oversampled
+        // Distortion) to anti-alias their nonlinearities, which adds a
+        // small, fixed amount of latency. All voices use the same
+        // oversampling factor and were just prepared at the same
+        // sampleRate above, so any one of them reports the whole
+        // processor's latency; report it exactly, and block-size
+        // invariant (Voice has no block-size concept -- it processes
+        // one sample at a time), so the host's PDC stays correct. This
+        // replaces the old hardcoded setLatencySamples(0) from before
+        // oversampling existed (CLAUDE.md's "Latency budget" note).
+        setLatencySamples(voices[0].getLatencySamples());
         for (auto& slot : midiNoteToVoice)
             slot = -1;
         nextMidiVoiceIndex = 0;

@@ -1,11 +1,11 @@
 #pragma once
 
 #include "DSP/AmpEnvelope.h"
-#include "DSP/Bitcrush.h"
-#include "DSP/Distortion.h"
 #include "DSP/Filter.h"
 #include "DSP/ModulationEffect.h"
 #include "DSP/Oscillator.h"
+#include "DSP/OversampledBitcrush.h"
+#include "DSP/OversampledDistortion.h"
 #include "DSP/PitchEnvelope.h"
 
 #include <vector>
@@ -17,9 +17,14 @@ namespace B33p
     //
     //     oscillator -> (x amp envelope)
     //                -> lowpass filter
-    //                -> bitcrush
-    //                -> distortion
+    //                -> bitcrush (4x oversampled, see OversampledBitcrush)
+    //                -> distortion (4x oversampled, see OversampledDistortion)
     //                -> (x gain)
+    //
+    // The bitcrush and distortion stages are each individually wrapped
+    // with 4x oversampling to anti-alias their nonlinearities; that adds
+    // a small, fixed amount of algorithmic latency (getLatencySamples()
+    // below) that B33pProcessor reports via setLatencySamples().
     //
     // The pitch envelope is a frequency modulator, not an audio
     // processor: each sample its semitone-offset output is combined
@@ -116,6 +121,13 @@ namespace B33p
 
         bool isActive() const;
 
+        // Combined latency (samples) added by the bitcrush + distortion
+        // stages' 4x oversampling (OversampledBitcrush /
+        // OversampledDistortion). 0 before prepare(). B33pProcessor
+        // reports this via setLatencySamples() so host PDC compensates
+        // correctly.
+        int getLatencySamples() const;
+
         // Snapshots of the internal envelopes' current output, used by
         // the UI's modulation-glow halos on the gain + base-pitch knobs.
         // Const accessors; safe to call from any thread relative to
@@ -135,10 +147,10 @@ namespace B33p
         Oscillator       oscillator;
         AmpEnvelope      ampEnvelope;
         PitchEnvelope    pitchEnvelope;
-        Filter           filter;
-        Bitcrush         bitcrush;
-        Distortion       distortion;
-        ModulationEffect modEffect;
+        Filter                filter;
+        OversampledBitcrush   bitcrush;
+        OversampledDistortion distortion;
+        ModulationEffect      modEffect;
 
         float basePitchHz          { 440.0f };
         float pitchOffsetSemitones { 0.0f };

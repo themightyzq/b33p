@@ -42,6 +42,11 @@ namespace B33p
 
         drive = driveSmoother.getNextValue();
         firstSetAfterPrepare = false;
-        return std::tanh(drive * input);
+        return shape(input, drive);
+    }
+
+    float Distortion::shape(float input, float driveValue) noexcept
+    {
+        return std::tanh(driveValue * input);
     }
 }

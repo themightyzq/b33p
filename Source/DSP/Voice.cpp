@@ -130,6 +130,11 @@ namespace B33p
         return ampEnvelope.isActive();
     }
 
+    int Voice::getLatencySamples() const
+    {
+        return bitcrush.getLatencySamples() + distortion.getLatencySamples();
+    }
+
     float Voice::processSample()
     {
         if (! prepared)

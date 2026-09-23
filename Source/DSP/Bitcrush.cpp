@@ -58,10 +58,31 @@ namespace B33p
         recomputePhaseIncrement();
         firstSetAfterPrepare = false;
 
+        return step(input);
+    }
+
+    void Bitcrush::beginOversampledTick(double tickRateHz)
+    {
+        bitDepth = bitDepthSmoother.getNextValue();
+        targetHz = targetHzSmoother.getNextValue();
+        recomputeQuantStep();
+        // Same formula as recomputePhaseIncrement(), but against the
+        // caller-supplied tick rate (host rate * oversampling factor)
+        // instead of the member sampleRate, so step() below -- called
+        // `factor` times for this one smoother advance -- still only
+        // captures a new held sample targetHz times per real second.
+        if (tickRateHz > 0.0)
+            phaseIncrement = static_cast<double>(targetHz) / tickRateHz;
+        firstSetAfterPrepare = false;
+    }
+
+    float Bitcrush::step(float input)
+    {
         if (phase >= 1.0)
         {
-            // floor handles targetHz > sampleRate (phase increments
-            // larger than 1) — phase always ends up in [0, 1).
+            // floor handles a phase increment >= 1 (target tick rate
+            // above the effective sample rate) — phase always ends up
+            // in [0, 1).
             phase     -= std::floor(phase);
             heldSample = quantize(input);
         }

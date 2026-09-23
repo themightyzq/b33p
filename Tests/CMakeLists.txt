@@ -10,6 +10,8 @@ set(B33P_DSP_SOURCES
     ${CMAKE_SOURCE_DIR}/Source/DSP/ModulationEffect.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Bitcrush.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Distortion.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/OversampledBitcrush.cpp
+    ${CMAKE_SOURCE_DIR}/Source/DSP/OversampledDistortion.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/OutputLimiter.cpp
     ${CMAKE_SOURCE_DIR}/Source/DSP/Voice.cpp
 )
@@ -24,12 +26,15 @@ add_executable(B33pTests
     DSP/ModulationEffectTests.cpp
     DSP/BitcrushTests.cpp
     DSP/DistortionTests.cpp
+    DSP/OversampledDistortionTests.cpp
+    DSP/OversampledBitcrushTests.cpp
     DSP/OutputLimiterTests.cpp
     DSP/VoiceTests.cpp
     Core/CommandLineFilesTests.cpp
     State/AudibilityCheckTests.cpp
     State/AmpEnvSnapshotTests.cpp
     State/ConcurrencyTests.cpp
+    State/LatencyTests.cpp
     State/ParameterLayoutTests.cpp
     State/ParameterRandomizerTests.cpp
     State/ProjectStateTests.cpp

@@ -22,6 +22,12 @@ namespace B33p
     // Lifecycle: construct -> prepare(sampleRate) -> setBitDepth /
     // setTargetSampleRate -> processSample ... . Before prepare(),
     // processSample() returns silence (0.0f).
+    //
+    // This class itself has no oversampling and no latency -- it stays
+    // a plain sample-and-hold quantizer so its own tests can assert
+    // exact, immediate sample values. OversampledBitcrush.h wraps an
+    // instance of this class with 4x oversampling for the anti-alias
+    // benefit; Voice uses the wrapper, not this class directly.
     class Bitcrush
     {
     public:
@@ -32,6 +38,31 @@ namespace B33p
         void setTargetSampleRate(float targetHz);
 
         float processSample(float input);
+
+        // --- Oversampling support (OversampledBitcrush.h only) --------
+        //
+        // processSample() above fuses three things every call: advancing
+        // the bit-depth/rate smoothers, recomputing the derived
+        // quantStep/phaseIncrement, and running one sample-and-hold tick.
+        // OversampledBitcrush needs to split that: advance the smoothers
+        // once per host-rate sample (so their 30 ms ramps keep the timing
+        // CLAUDE.md's "Parameter smoothing" section specifies), but run
+        // the sample-and-hold tick once per oversampled sub-sample, with
+        // the phase increment computed against the oversampled tick rate
+        // rather than the host sample rate -- otherwise the "hold"
+        // captures targetHz*factor times a second instead of targetHz,
+        // changing the audible reduction ratio the factor is supposed to
+        // leave alone.
+        //
+        // beginOversampledTick(tickRateHz) is the once-per-host-sample
+        // half (smoothers + quantStep + phase increment, using
+        // tickRateHz in place of sampleRate); step() is the per-tick half
+        // (the sample-and-hold + quantize itself, using whatever phase
+        // increment is currently set). processSample() is unchanged and
+        // still does both at the host rate in one call, for callers that
+        // don't oversample (i.e. its own unit tests).
+        void  beginOversampledTick(double tickRateHz);
+        float step(float input);
 
     private:
         float quantize(float x) const;
