@@ -146,7 +146,7 @@ namespace B33p
             return {};
 
         const auto trimmed = candidateName.trim();
-        const auto destination = presetsDirectory.getChildFile(
+        auto destination = presetsDirectory.getChildFile(
             juce::File::createLegalFileName(trimmed) + ".beep");
 
         // NOT `destination == presetFile`: File::operator== compares names

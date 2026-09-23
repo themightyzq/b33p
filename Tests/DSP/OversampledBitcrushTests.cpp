@@ -156,7 +156,7 @@ TEST_CASE("Bitcrush: the oversampled-tick hold counter captures at the same real
     // aliasing measurement below.
     constexpr double sampleRate = 48000.0;
     constexpr float  targetHz   = 4800.0f;   // sampleRate / 10
-    constexpr int    numSamples = 4800;      // 0.1 s -> ~targetHz * 0.1 = 480 captures
+    static constexpr int numSamples = 4800; // 0.1 s -> ~targetHz * 0.1 = 480 captures (static: MSVC will not implicitly capture a local constexpr in the lambda below)
 
     auto countCaptures = [](auto&& renderOneHostSample) -> int
     {
