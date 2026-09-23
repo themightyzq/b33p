@@ -29,6 +29,8 @@ b33p is unsigned, so each OS gates the first launch:
 After the first successful launch on each OS, b33p runs normally. Or build from source
 (below).
 
+Requires macOS 11.0 or later.
+
 ## Use
 
 Make a beep:

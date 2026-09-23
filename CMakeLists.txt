@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
 
+if(APPLE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version (universal binaries cannot go below 11.0)")
+endif()
+
 project(B33p
     VERSION 0.2.0
     DESCRIPTION "Sound design tool for short synthesized beeps, blips, alarms, and droid chatter"
