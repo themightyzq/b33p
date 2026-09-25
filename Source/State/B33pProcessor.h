@@ -470,12 +470,15 @@ namespace B33p
         // at a time" fix in CHANGELOG.md). processBlock fills [lane/voice]
         // scratch sample-by-sample (pattern event timing is still
         // sample-accurate), then batches the effects tail across the
-        // whole chunk. Preallocated here as fixed-size array members so
-        // nothing allocates on the audio thread.
-        std::array<std::array<float, kMaxOversampledBlockSize>, Pattern::kNumLanes> laneVoiceScratch {};
-        std::array<std::array<float, kMaxOversampledBlockSize>, Pattern::kNumLanes> laneVelocityScratch {};
-        std::array<std::array<float, kMaxOversampledBlockSize>, kMidiPolyphony>     midiVoiceScratch {};
-        std::array<std::array<float, kMaxOversampledBlockSize>, kMidiPolyphony>     midiVelocityScratch {};
+        // whole chunk. Allocated once, on the heap, when the processor is
+        // constructed (never on the audio thread): as inline std::array
+        // members they made B33pProcessor ~200 KB, and two processors on
+        // the stack overflowed Windows' 1 MB default stack in the tests.
+        using ScratchBlock = std::array<float, kMaxOversampledBlockSize>;
+        std::vector<ScratchBlock> laneVoiceScratch    = std::vector<ScratchBlock>(Pattern::kNumLanes);
+        std::vector<ScratchBlock> laneVelocityScratch = std::vector<ScratchBlock>(Pattern::kNumLanes);
+        std::vector<ScratchBlock> midiVoiceScratch    = std::vector<ScratchBlock>(kMidiPolyphony);
+        std::vector<ScratchBlock> midiVelocityScratch = std::vector<ScratchBlock>(kMidiPolyphony);
 
         // Two free-running LFOs per lane. Phase advances once per
         // audio block (block-rate modulation) — pushParametersToLane

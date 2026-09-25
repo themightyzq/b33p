@@ -334,7 +334,9 @@ if(PROJECT_IS_TOP_LEVEL)
         # construction size, since a layout budget can be fine at one and broken at the other
         # (ModulationSection's LFO row was: fine-looking at both sizes, but its Rate knob had
         # silently collapsed to 0 px tall at every size until this gate existed).
-        if(TARGET b33p_ui_snapshot)
+        # Not under sanitizers: that CI job builds only B33pTests, so the snapshot tool
+        # would be registered but never built ("Not Run"); the three normal OS jobs run it.
+        if(TARGET b33p_ui_snapshot AND NOT B33P_ENABLE_SANITIZERS)
             add_test(NAME ui_hit_audit_min_size
                      COMMAND b33p_ui_snapshot --hit-audit 1000 600)
             add_test(NAME ui_hit_audit_default_size
