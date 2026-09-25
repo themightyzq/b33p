@@ -245,9 +245,12 @@ To move a single voice between lanes or between two b33p instances, use **Edit �
 
 The presets directory is platform-specific:
 
-- macOS  : `~/Library/Application Support/b33p/Presets`
+- macOS  : `~/Library/Audio/Presets/ZQ SFX/b33p`
 - Windows: `%APPDATA%\b33p\Presets`
 - Linux  : `~/.config/b33p/Presets`
+
+(On macOS, presets saved before this location changed are copied across automatically on first
+launch — nothing is deleted from the old `~/Library/b33p/Presets` folder.)
 
 Loading a preset routes through the same dirty-prompt as File ▸ Open, so you can't lose unsaved work by clicking a preset.
 

@@ -1229,73 +1229,134 @@ namespace B33p
             }
         }
 
-        for (int i = 0; i < numSamples; ++i)
+        // The block below used to be one tight per-sample loop that
+        // generated each voice's fully-effected sample and mixed it to
+        // output immediately. That called OversampledBitcrush /
+        // OversampledDistortion's juce::dsp::Oversampling up/down filter
+        // pair once per SINGLE sample, paying its per-call overhead
+        // numSamples times per block instead of once. Bitcrush and
+        // distortion state intentionally carries across triggers (Voice.h)
+        // and neither cares about pattern event boundaries, so the tail of
+        // the chain can be batched across a whole chunk without changing
+        // behaviour: split into (1) a per-sample pass that still handles
+        // pattern timing and trigger/noteOff exactly as before, generating
+        // each voice's PRE-bitcrush sample into scratch, (2) one batched
+        // bitcrush -> distortion -> modEffect -> gain call per voice over
+        // the whole chunk, then (3) a per-sample pass that sums, limits,
+        // and writes output -- same sample order and signal chain as
+        // before, just regrouped. Chunked at kMaxOversampledBlockSize so
+        // the preallocated scratch (sized to that ceiling) never overflows
+        // even for an out-of-contract host block larger than 2048 samples.
+        int blockOffset = 0;
+        while (blockOffset < numSamples)
         {
-            // ---- Pattern playback: advance playhead, fire events --
-            if (audioThreadPlaying && activeSnapshot != nullptr)
-            {
-                if (playhead >= activeSnapshot->lengthSeconds)
-                {
-                    if (looping.load())
-                    {
-                        playhead       -= activeSnapshot->lengthSeconds;
-                        nextEventIndex  = 0;
-                    }
-                    else
-                    {
-                        for (auto& v : voices)              v.noteOff();
-                        for (auto& n : samplesUntilNoteOff) n = 0;
-                        playing.store(false, std::memory_order_release);
-                        audioThreadPlaying  = false;
-                        activeSnapshot.reset();
-                    }
-                }
+            const int chunkLen = std::min(numSamples - blockOffset, kMaxOversampledBlockSize);
 
+            // ---- Pass 1: pattern timing + oscillator/envelope/filter ---
+            for (int i = 0; i < chunkLen; ++i)
+            {
+                // ---- Pattern playback: advance playhead, fire events --
                 if (audioThreadPlaying && activeSnapshot != nullptr)
                 {
-                    const auto& events = activeSnapshot->events;
-                    while (nextEventIndex < static_cast<int>(events.size())
-                           && events[static_cast<size_t>(nextEventIndex)].event.startSeconds <= playhead)
+                    if (playhead >= activeSnapshot->lengthSeconds)
                     {
-                        const auto& sched = events[static_cast<size_t>(nextEventIndex)];
-                        triggerVoiceFromEvent(sched.lane, sched.event);
-                        ++nextEventIndex;
+                        if (looping.load())
+                        {
+                            playhead       -= activeSnapshot->lengthSeconds;
+                            nextEventIndex  = 0;
+                        }
+                        else
+                        {
+                            for (auto& v : voices)              v.noteOff();
+                            for (auto& n : samplesUntilNoteOff) n = 0;
+                            playing.store(false, std::memory_order_release);
+                            audioThreadPlaying  = false;
+                            activeSnapshot.reset();
+                        }
+                    }
+
+                    if (audioThreadPlaying && activeSnapshot != nullptr)
+                    {
+                        const auto& events = activeSnapshot->events;
+                        while (nextEventIndex < static_cast<int>(events.size())
+                               && events[static_cast<size_t>(nextEventIndex)].event.startSeconds <= playhead)
+                        {
+                            const auto& sched = events[static_cast<size_t>(nextEventIndex)];
+                            triggerVoiceFromEvent(sched.lane, sched.event);
+                            ++nextEventIndex;
+                        }
                     }
                 }
-            }
 
-            // ---- Per-lane sample-accurate noteOff -----------------
-            for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
-            {
-                int& count = samplesUntilNoteOff[static_cast<size_t>(lane)];
-                if (count > 0)
+                // ---- Per-lane sample-accurate noteOff -----------------
+                for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
                 {
-                    --count;
-                    if (count == 0)
-                        voices[static_cast<size_t>(lane)].noteOff();
+                    int& count = samplesUntilNoteOff[static_cast<size_t>(lane)];
+                    if (count > 0)
+                    {
+                        --count;
+                        if (count == 0)
+                            voices[static_cast<size_t>(lane)].noteOff();
+                    }
                 }
+
+                // Generate this sample's pre-effect signal for every lane
+                // voice + the MIDI pool, snapshotting the trigger velocity
+                // in effect right now -- a retrigger later in this same
+                // chunk changes it for the rest of the chunk, and pass 2
+                // needs the value as of each individual sample, not
+                // whatever it ends up being once the chunk is done.
+                for (size_t v = 0; v < voices.size(); ++v)
+                {
+                    laneVoiceScratch[v][static_cast<size_t>(i)]    = voices[v].generateCore();
+                    laneVelocityScratch[v][static_cast<size_t>(i)] = voices[v].getTriggerVelocity();
+                }
+                for (size_t v = 0; v < midiVoices.size(); ++v)
+                {
+                    midiVoiceScratch[v][static_cast<size_t>(i)]    = midiVoices[v].generateCore();
+                    midiVelocityScratch[v][static_cast<size_t>(i)] = midiVoices[v].getTriggerVelocity();
+                }
+
+                playhead += sampleDuration;
             }
 
-            // ---- Mix all four lane voices + the MIDI voice pool ---
-            float s = 0.0f;
-            for (auto& v : voices)     s += v.processSample();
-            for (auto& v : midiVoices) s += v.processSample();
+            // ---- Pass 2: batched bitcrush -> distortion -> modEffect ->
+            // gain tail, one oversampler call pair per voice for the
+            // whole chunk instead of one pair per sample.
+            for (size_t v = 0; v < voices.size(); ++v)
+                voices[v].applyEffectsBlock(laneVoiceScratch[v].data(), laneVelocityScratch[v].data(), chunkLen);
+            for (size_t v = 0; v < midiVoices.size(); ++v)
+                midiVoices[v].applyEffectsBlock(midiVoiceScratch[v].data(), midiVelocityScratch[v].data(), chunkLen);
 
-            // Soft-clip safety on the summed output. The voices sum with
-            // no headroom, so a dense pattern or a hot randomized patch
-            // can drive the sum well past +/-1.0; the limiter rounds those
-            // peaks toward a ceiling just below 0 dBFS so nothing hard-clips
-            // (clean signal below the knee is untouched).
-            s = outputLimiter.processSample(s);
-            // Bypass-exit fade-in. At steady state (not just-exited) this
-            // is a 1.0 multiply — free. Just after un-bypass it ramps
-            // from 0 to 1 over 10 ms.
-            s *= bypassFadeGain.getNextValue();
+            // ---- Pass 3: mix, limit, and write output — same per-sample
+            // order and signal chain as the old single-pass loop; the
+            // limiter and bypass fade are both applied once per sample
+            // here exactly as before, just after pass 2 instead of
+            // interleaved with generation.
+            for (int i = 0; i < chunkLen; ++i)
+            {
+                float s = 0.0f;
+                for (size_t v = 0; v < voices.size(); ++v)     s += laneVoiceScratch[v][static_cast<size_t>(i)];
+                for (size_t v = 0; v < midiVoices.size(); ++v) s += midiVoiceScratch[v][static_cast<size_t>(i)];
 
-            if (left  != nullptr) left[i]  = s;
-            if (right != nullptr) right[i] = s;
+                // Soft-clip safety on the summed output. The voices sum
+                // with no headroom, so a dense pattern or a hot randomized
+                // patch can drive the sum well past +/-1.0; the limiter
+                // rounds those peaks toward a ceiling just below 0 dBFS so
+                // nothing hard-clips (clean signal below the knee is
+                // untouched).
+                s = outputLimiter.processSample(s);
+                // Bypass-exit fade-in. At steady state (not just-exited)
+                // this is a 1.0 multiply — free. Just after un-bypass it
+                // ramps from 0 to 1 over 10 ms.
+                s *= bypassFadeGain.getNextValue();
 
-            playhead += sampleDuration;
+                const int outIdx = blockOffset + i;
+                if (left  != nullptr) left[outIdx]  = s;
+                if (right != nullptr) right[outIdx] = s;
+            }
+
+            blockOffset += chunkLen;
         }
 
         if (audioThreadPlaying)

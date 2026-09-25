@@ -39,6 +39,22 @@ namespace B33p
 
         void setDrive(float drive);
 
+        // Processes numSamples samples in place (data[0..numSamples) is
+        // both input and output). Equivalent sample-for-sample to calling
+        // processSample() numSamples times, but runs the oversampler's
+        // up/down filter pair once per call instead of once per sample --
+        // amortizing juce::dsp::Oversampling's per-call overhead across
+        // the whole span. Internally chunks at kMaxOversampledBlockSize
+        // (OversamplingConfig.h), so numSamples beyond that ceiling still
+        // processes correctly with no extra allocation. Preallocated
+        // scratch buffers only -- safe to call from the audio thread.
+        void processBlock(float* data, int numSamples);
+
+        // Convenience single-sample form, implemented as
+        // processBlock(&input, 1) so it is guaranteed identical to the
+        // block path rather than a second, potentially-diverging
+        // implementation. Kept for callers that don't batch (unit tests,
+        // the B33pRenderVoice CLI).
         float processSample(float input);
 
         // Rounded latency (samples) added by the oversampling filters.
@@ -60,13 +76,14 @@ namespace B33p
     private:
         Distortion                     distortion;
         juce::dsp::Oversampling<float> oversampler;
-        // Fixed 1-sample-per-channel scratch buffers for the up/down
-        // AudioBlocks -- Voice submits one sample per processSample()
-        // call, so processSamplesUp/Down are always called with a
-        // 1-sample block. Sized once here (construction / prepare never
-        // resizes in the audio path), never in processSample().
-        juce::AudioBuffer<float>       osIn  { 1, 1 };
-        juce::AudioBuffer<float>       osOut { 1, 1 };
+        // Scratch buffers for the up/down AudioBlocks, sized to the
+        // largest chunk processBlock() ever hands the oversampler in one
+        // call (kMaxOversampledBlockSize). Sized once here and in
+        // prepare() (oversampler.initProcessing()); processBlock() never
+        // resizes them on the audio thread, only takes sub-blocks of a
+        // fixed-capacity buffer.
+        juce::AudioBuffer<float>       osIn  { 1, kMaxOversampledBlockSize };
+        juce::AudioBuffer<float>       osOut { 1, kMaxOversampledBlockSize };
         bool                           prepared            { false };
         bool                           oversamplingEnabled { true };
     };

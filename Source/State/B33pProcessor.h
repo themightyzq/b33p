@@ -463,6 +463,20 @@ namespace B33p
         std::array<int,   128>                midiNoteToVoice;     // -1 = note not held
         int                                   nextMidiVoiceIndex { 0 };
 
+        // Per-voice pre-effect / post-effect scratch for the block-batched
+        // bitcrush + distortion oversampling path (Voice::generateCore /
+        // applyEffectsBlock; see OversamplingConfig.h's
+        // kMaxOversampledBlockSize and the "oversampler steps one sample
+        // at a time" fix in CHANGELOG.md). processBlock fills [lane/voice]
+        // scratch sample-by-sample (pattern event timing is still
+        // sample-accurate), then batches the effects tail across the
+        // whole chunk. Preallocated here as fixed-size array members so
+        // nothing allocates on the audio thread.
+        std::array<std::array<float, kMaxOversampledBlockSize>, Pattern::kNumLanes> laneVoiceScratch {};
+        std::array<std::array<float, kMaxOversampledBlockSize>, Pattern::kNumLanes> laneVelocityScratch {};
+        std::array<std::array<float, kMaxOversampledBlockSize>, kMidiPolyphony>     midiVoiceScratch {};
+        std::array<std::array<float, kMaxOversampledBlockSize>, kMidiPolyphony>     midiVelocityScratch {};
+
         // Two free-running LFOs per lane. Phase advances once per
         // audio block (block-rate modulation) — pushParametersToLane
         // reads currentValue() before deciding which Voice setters

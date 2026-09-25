@@ -117,7 +117,45 @@ namespace B33p
                      float velocity = 1.0f);
         void noteOff();
 
+        // Advances the oscillator -> amp envelope -> filter chain by one
+        // sample and returns the result BEFORE the bitcrush / distortion /
+        // modEffect / gain stages. Exists so B33pProcessor can batch the
+        // (expensive) oversampled bitcrush + distortion stages across a
+        // whole block instead of paying juce::dsp::Oversampling's per-call
+        // overhead once per single sample -- see applyEffectsBlock() below
+        // and OversamplingConfig.h. trigger()/noteOff() must still be
+        // called once per sample before generateCore() for that sample,
+        // exactly as before this split -- only where the bitcrush/
+        // distortion work happens moved, not when triggers take effect.
+        float generateCore();
+
+        // Runs the bitcrush -> distortion -> modEffect -> gain tail of the
+        // chain across a whole block of pre-effect samples produced by
+        // generateCore() (`buffer`, overwritten in place with the final
+        // output) and the per-sample trigger velocities in effect when
+        // each was generated (`velocities`, same length -- a mid-block
+        // retrigger changes triggerVelocity for the rest of the block, so
+        // the caller snapshots it per sample via getTriggerVelocity()
+        // rather than relying on the member's value after the fact).
+        // numSamples should not exceed OversamplingConfig.h's
+        // kMaxOversampledBlockSize; larger spans still work (bitcrush /
+        // distortion chunk internally) but lose some of the batching
+        // benefit. No allocation -- safe on the audio thread.
+        void applyEffectsBlock(float* buffer, const float* velocities, int numSamples);
+
+        // Convenience single-sample form: generateCore() followed by
+        // applyEffectsBlock() on a one-sample span. Produces output
+        // identical to calling those two directly, and is what all
+        // existing single-sample callers (unit tests, the B33pRenderVoice
+        // CLI) use.
         float processSample();
+
+        // The trigger velocity latched by the most recent trigger() call
+        // (0..1). B33pProcessor snapshots this once per sample right after
+        // calling generateCore() so applyEffectsBlock() applies the value
+        // that was in effect at generation time, even if a later sample in
+        // the same block retriggers the voice with a different velocity.
+        float getTriggerVelocity() const noexcept { return triggerVelocity; }
 
         bool isActive() const;
 

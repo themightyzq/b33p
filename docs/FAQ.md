@@ -80,9 +80,13 @@ When off (the default), b33p's pattern playhead runs independently of host trans
 
 Per-user preset directory:
 
-- **macOS**: `~/Library/Application Support/b33p/Presets/`
+- **macOS**: `~/Library/Audio/Presets/ZQ SFX/b33p/`
 - **Windows**: `%APPDATA%\b33p\Presets\`
 - **Linux**: `~/.config/b33p/Presets/` (or `$XDG_CONFIG_HOME/b33p/Presets/` if set)
+
+If you saved presets on macOS before this location changed, they're copied across automatically
+the first time you launch the new version — nothing is deleted from the old location
+(`~/Library/b33p/Presets/`), just copied.
 
 Each preset is a single `.beep` file. You can copy them between machines, email them, drop them into git.
 
@@ -97,9 +101,12 @@ Yes. **File ▸ Restore Factory Presets...** rewrites the four shipped presets (
 1. Delete the app bundle / executable.
 2. Delete the plugin bundles you copied into your VST3 / AU directories (see "b33p doesn't show up in my DAW" above for paths).
 3. Delete the per-user state directory:
-   - **macOS**: `~/Library/Application Support/b33p/` (presets + preferences)
-   - **Windows**: `%APPDATA%\b33p\`
-   - **Linux**: `~/.config/b33p/` (or `$XDG_CONFIG_HOME/b33p/`)
+   - **macOS**: `~/Library/Application Support/b33p/` (preferences + the welcome popover flag) and
+     `~/Library/Audio/Presets/ZQ SFX/b33p/` (presets). If you've had b33p installed since before
+     the preset location changed, also check `~/Library/b33p/` for a leftover copy — presets are
+     migrated by copying, so the old folder isn't removed automatically.
+   - **Windows**: `%APPDATA%\b33p\` (presets + preferences)
+   - **Linux**: `~/.config/b33p/` (or `$XDG_CONFIG_HOME/b33p/`) (presets + preferences)
 4. Delete `~/Library/Preferences/com.zqsfx.b33p.plist` on macOS (window geometry + recent-files list).
 
 Nothing else is written outside your home directory.

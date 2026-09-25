@@ -28,13 +28,16 @@ add_executable(B33pTests
     DSP/DistortionTests.cpp
     DSP/OversampledDistortionTests.cpp
     DSP/OversampledBitcrushTests.cpp
+    DSP/OversamplingBlockProcessingTests.cpp
     DSP/OutputLimiterTests.cpp
     DSP/VoiceTests.cpp
+    DSP/VoiceBlockProcessingTests.cpp
     Core/CommandLineFilesTests.cpp
     State/AudibilityCheckTests.cpp
     State/AmpEnvSnapshotTests.cpp
     State/ConcurrencyTests.cpp
     State/LatencyTests.cpp
+    State/PresetMigrationTests.cpp
     State/ParameterLayoutTests.cpp
     State/ParameterRandomizerTests.cpp
     State/ProjectStateTests.cpp

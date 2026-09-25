@@ -135,7 +135,7 @@ namespace B33p
         return bitcrush.getLatencySamples() + distortion.getLatencySamples();
     }
 
-    float Voice::processSample()
+    float Voice::generateCore()
     {
         if (! prepared)
             return 0.0f;
@@ -148,13 +148,37 @@ namespace B33p
         float sample = oscillator.processSample();
         sample *= ampEnvelope.processSample();
         sample  = filter.processSample(sample);
-        sample  = bitcrush.processSample(sample);
-        sample  = distortion.processSample(sample);
-        sample  = modEffect.processSample(sample);
-        gain    = gainSmoother.getNextValue();
-        firstGainSetAfterPrepare = false;
-        sample *= gain * triggerVelocity;
+        return sample;
+    }
 
+    void Voice::applyEffectsBlock(float* buffer, const float* velocities, int numSamples)
+    {
+        if (! prepared)
+        {
+            std::fill(buffer, buffer + numSamples, 0.0f);
+            return;
+        }
+
+        bitcrush.processBlock(buffer, numSamples);
+        distortion.processBlock(buffer, numSamples);
+
+        for (int i = 0; i < numSamples; ++i)
+        {
+            float sample = modEffect.processSample(buffer[i]);
+            gain = gainSmoother.getNextValue();
+            firstGainSetAfterPrepare = false;
+            buffer[i] = sample * gain * velocities[i];
+        }
+    }
+
+    float Voice::processSample()
+    {
+        if (! prepared)
+            return 0.0f;
+
+        float sample = generateCore();
+        const float velocity = triggerVelocity;
+        applyEffectsBlock(&sample, &velocity, 1);
         return sample;
     }
 }

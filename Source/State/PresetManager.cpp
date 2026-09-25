@@ -2,6 +2,7 @@
 
 #include "B33pProcessor.h"
 #include "GeneratorPresets.h"
+#include "PresetMigration.h"
 #include "ProjectState.h"
 
 #include <algorithm>
@@ -10,24 +11,65 @@ namespace B33p
 {
     namespace
     {
-        // Build the platform-appropriate path for our presets
-        // directory. macOS gets ~/Library/Application Support/b33p/
-        // Presets; Windows gets %APPDATA%\b33p\Presets; Linux gets
-        // ~/.config/b33p/Presets. JUCE handles the platform split
-        // via userApplicationDataDirectory.
-        juce::File defaultPresetsDirectory()
+        // Pre-fix per-user presets location. userApplicationDataDirectory
+        // resolves to plain ~/Library on macOS (juce_Files_mac.mm's
+        // userApplicationDataDirectory case is literally "~/Library", NOT
+        // "~/Library/Application Support" as this file's comment used to
+        // claim), so on macOS this actually landed presets at
+        // ~/Library/b33p/Presets -- not the house location, and not even
+        // the path every doc (README/FAQ/USAGE) described. Windows gets
+        // %APPDATA%\b33p\Presets and Linux gets ~/.config/b33p/Presets (or
+        // $XDG_CONFIG_HOME/b33p/Presets): both match this project's docs
+        // and JUCE's own platform convention, so they are correct as-is.
+        // Kept around (unconditionally, on every platform) purely as the
+        // source directory for the one-time macOS migration below --
+        // never written to.
+        juce::File legacyPresetsDirectory()
         {
             return juce::File::getSpecialLocation(
                        juce::File::userApplicationDataDirectory)
                    .getChildFile("b33p")
                    .getChildFile("Presets");
         }
+
+#if JUCE_MAC
+        // House convention (../../CLAUDE.md section 2, "User-data folders
+        // keyed on the company use ZQ SFX"): ~/Library/Audio/Presets/ZQ SFX/b33p.
+        // Windows/Linux are unaffected (see legacyPresetsDirectory() above)
+        // -- the house rule as written is macOS-specific, and those two
+        // platforms weren't wrong to begin with.
+        juce::File defaultPresetsDirectory()
+        {
+            return juce::File::getSpecialLocation(juce::File::userHomeDirectory)
+                       .getChildFile("Library")
+                       .getChildFile("Audio")
+                       .getChildFile("Presets")
+                       .getChildFile("ZQ SFX")
+                       .getChildFile("b33p");
+        }
+#else
+        juce::File defaultPresetsDirectory()
+        {
+            return legacyPresetsDirectory();
+        }
+#endif
     }
 
     PresetManager::PresetManager(B33pProcessor& processorRef)
         : processor(processorRef),
           presetsDirectory(defaultPresetsDirectory())
     {
+#if JUCE_MAC
+        // One-time, copy-not-move migration from the pre-fix location.
+        // Idempotent (PresetMigration.h's marker file) and safe to run on
+        // every launch: a no-op once migrated, a no-op with nothing
+        // written when the legacy folder doesn't exist (fresh install),
+        // and it never touches or deletes the legacy files. Runs before
+        // the unconditional createDirectory() below so a fresh migration
+        // and a fresh install both leave presetsDirectory existing either
+        // way.
+        PresetMigration::migrateLegacyUserPresets(legacyPresetsDirectory(), presetsDirectory);
+#endif
         // Create on construction so subsequent save / list calls
         // never have to guard against a missing root. createDirectory
         // is idempotent (returns Result::ok on an existing folder).

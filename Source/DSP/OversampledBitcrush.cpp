@@ -1,5 +1,7 @@
 #include "OversampledBitcrush.h"
 
+#include <algorithm>
+
 namespace B33p
 {
     namespace
@@ -34,12 +36,11 @@ namespace B33p
     {
         sampleRate = newSampleRate;
         bitcrush.prepare(newSampleRate);
-        // Voice calls processSample() one sample at a time (see the
-        // class comment), so every processSamplesUp/Down call this
-        // wrapper makes is always a 1-sample block -- initProcessing(1)
-        // sizes the internal buffers for exactly that, not the host's
-        // block size (which this class never sees or needs).
-        oversampler.initProcessing(1);
+        // processBlock() chunks at kMaxOversampledBlockSize, so size the
+        // oversampler's internal buffers for that -- one initProcessing()
+        // call here at prepare() time, never resized from the audio
+        // thread afterward.
+        oversampler.initProcessing(static_cast<size_t>(kMaxOversampledBlockSize));
         oversampler.reset();
         prepared = true;
     }
@@ -65,38 +66,69 @@ namespace B33p
         return juce::roundToInt(oversampler.getLatencyInSamples());
     }
 
-    float OversampledBitcrush::processSample(float input)
+    void OversampledBitcrush::processBlock(float* data, int numSamples)
     {
         if (! prepared)
-            return 0.0f;
-
-        if (! oversamplingEnabled)
-            return bitcrush.processSample(input);
-
-        // Advance the bit-depth/rate smoothers exactly once per external
-        // (host-rate) sample -- their 30 ms ramps were set up in
-        // Bitcrush::prepare() against the host sample rate -- and
-        // recompute the phase increment against the OVERSAMPLED tick
-        // rate (host rate * kOversamplingFactor). step() below then runs
-        // once per oversampled tick, so the "hold" still only captures a
-        // new sample targetHz times per real second: the audible
-        // reduction ratio for a given Rate setting is unchanged by the
-        // oversampling factor, per the CLAUDE.md/task requirement that a
-        // preset saved at 48 kHz must sound the same.
-        bitcrush.beginOversampledTick(sampleRate * static_cast<double>(kOversamplingFactor));
-
-        osIn.setSample(0, 0, input);
-        const juce::dsp::AudioBlock<const float> inBlock(osIn);
-        auto upBlock = oversampler.processSamplesUp(inBlock);
-
-        for (size_t i = 0; i < upBlock.getNumSamples(); ++i)
         {
-            const int idx = static_cast<int>(i);
-            upBlock.setSample(0, idx, bitcrush.step(upBlock.getSample(0, idx)));
+            std::fill(data, data + numSamples, 0.0f);
+            return;
         }
 
-        juce::dsp::AudioBlock<float> outBlock(osOut);
-        oversampler.processSamplesDown(outBlock);
-        return osOut.getSample(0, 0);
+        if (! oversamplingEnabled)
+        {
+            for (int i = 0; i < numSamples; ++i)
+                data[i] = bitcrush.processSample(data[i]);
+            return;
+        }
+
+        int offset = 0;
+        while (offset < numSamples)
+        {
+            const int chunk = std::min(numSamples - offset, kMaxOversampledBlockSize);
+
+            for (int i = 0; i < chunk; ++i)
+                osIn.setSample(0, i, data[offset + i]);
+
+            const juce::dsp::AudioBlock<const float> inBlock(
+                juce::dsp::AudioBlock<const float>(osIn).getSubBlock(0, static_cast<size_t>(chunk)));
+            auto upBlock = oversampler.processSamplesUp(inBlock);
+
+            // Advance the bit-depth/rate smoothers exactly once per
+            // external (host-rate) sample -- their 30 ms ramps were set
+            // up in Bitcrush::prepare() against the host sample rate --
+            // and recompute the phase increment against the OVERSAMPLED
+            // tick rate (host rate * kOversamplingFactor). step() below
+            // then runs once per oversampled tick, so the "hold" still
+            // only captures a new sample targetHz times per real second:
+            // the audible reduction ratio for a given Rate setting is
+            // unchanged by the oversampling factor, per the CLAUDE.md/
+            // task requirement that a preset saved at 48 kHz must sound
+            // the same.
+            for (int j = 0; j < chunk; ++j)
+            {
+                bitcrush.beginOversampledTick(sampleRate * static_cast<double>(kOversamplingFactor));
+                const int idx0 = j * kOversamplingFactor;
+                for (int k = 0; k < kOversamplingFactor; ++k)
+                {
+                    const int idx = idx0 + k;
+                    upBlock.setSample(0, idx, bitcrush.step(upBlock.getSample(0, idx)));
+                }
+            }
+
+            juce::dsp::AudioBlock<float> outBlock(
+                juce::dsp::AudioBlock<float>(osOut).getSubBlock(0, static_cast<size_t>(chunk)));
+            oversampler.processSamplesDown(outBlock);
+
+            for (int i = 0; i < chunk; ++i)
+                data[offset + i] = osOut.getSample(0, i);
+
+            offset += chunk;
+        }
+    }
+
+    float OversampledBitcrush::processSample(float input)
+    {
+        processBlock(&input, 1);
+        return input;
     }
 }
