@@ -15,6 +15,8 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-25
+
 ### Added
 
 - **First-launch welcome popover** (standalone only). On the user's first run, b33p shows a one-time welcome window that names the "4 lanes, each with its own voice" model and walks through a 30-second quickstart (Audition → Randomize Voice → draw a clip and Play → Save Preset). Persisted via a `welcomeShown` flag in the per-user `~/Library/Application Support/b33p/b33p.settings` file (XDG / `%APPDATA%` on Linux / Windows), so it appears exactly once per machine. A "Read the FAQ" button on the popover opens the new `docs/FAQ.md` in the browser. Plugins skip the popover — the host owns onboarding, and a modal in a plugin window is hostile.

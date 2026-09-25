@@ -5,7 +5,7 @@ if(APPLE)
 endif()
 
 project(B33p
-    VERSION 0.2.0
+    VERSION 0.3.0
     DESCRIPTION "Sound design tool for short synthesized beeps, blips, alarms, and droid chatter"
     HOMEPAGE_URL "https://github.com/themightyzq/b33p"
     LANGUAGES CXX C
