@@ -452,8 +452,7 @@ namespace B33p
     MainComponent::~MainComponent()
     {
         // Pre-existing lifetime bug found while running the required Phase 2
-        // pluginval gate for this migration (docs/ui_migration_report.md,
-        // "Deviations"): the processor outlives the editor/MainComponent
+        // pluginval gate for this migration: the processor outlives the editor/MainComponent
         // across an open/close cycle, but these three lambdas all capture
         // `this`. With nothing clearing them here, a later
         // setStateInformation (pluginval's Automation stage triggers exactly

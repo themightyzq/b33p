@@ -247,7 +247,7 @@ target_link_libraries(B33p
 
 # ---------------------------------------------------------------------------
 # UI snapshot tool — headless before/after render gate for the zqsfx_ui house-UI
-# migration (docs/ZQSFX_UI_STYLE_GUIDE.md, docs/ui_migration_report.md).
+# migration (docs/ZQSFX_UI_STYLE_GUIDE.md).
 #
 # pamplejuce pattern: link against b33p's own shared-code target ("B33p", produced by
 # juce_add_plugin above) instead of recompiling MainComponent.cpp / the UI sources a second

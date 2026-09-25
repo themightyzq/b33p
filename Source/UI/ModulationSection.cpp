@@ -181,9 +181,20 @@ namespace B33p
         // Divide the remaining height evenly across the slots so all four
         // always fit inside the (column-packed, short) section — fixed row
         // heights previously overflowed and clipped slot 4.
+        //
+        // Accessibility floor: each row hosts a source/dest combo box and an
+        // amount slider, so the row height IS their hit target — it must
+        // never drop below the house 22 px minimum (../CLAUDE.md section 6),
+        // even if this section's fixed height (kModulationRowHeight in
+        // MainComponent.cpp) or the rows above (LFO row / hint) ever change.
+        // At today's constants the natural even-split is 23 px, comfortably
+        // clear of the floor with no reflow needed; jmax(22, ...) only ever
+        // bites if a future edit shrinks the budget, and it fails toward a
+        // guaranteed-legible row rather than a silent sub-22-px shrink.
         constexpr int kSlotGap = 2;
+        constexpr int kMinRowHeight = 22;
         const int slotRowHeight = juce::jmax(
-            16, (bounds.getHeight() - (kNumModSlots - 1) * kSlotGap) / kNumModSlots);
+            kMinRowHeight, (bounds.getHeight() - (kNumModSlots - 1) * kSlotGap) / kNumModSlots);
         for (int i = 0; i < kNumModSlots; ++i)
         {
             auto row = bounds.removeFromTop(slotRowHeight);

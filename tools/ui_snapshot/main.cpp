@@ -7,7 +7,7 @@
 //                                                         (1000, 600, 3200, 2200) in B33pEditor)
 //
 // The look-and-feel regression gate for the ZQ SFX house-UI migration (see
-// docs/ZQSFX_UI_STYLE_GUIDE.md and docs/ui_migration_report.md): render before a UI change,
+// docs/ZQSFX_UI_STYLE_GUIDE.md): render before a UI change,
 // render after, compare. Follows the same "pamplejuce pattern" as LFlOw's lflow_ui_snapshot and
 // Broken's ts_ui_snapshot: links against b33p's own shared-code CMake target (B33p, produced by
 // juce_add_plugin) instead of recompiling the plugin sources a second time — see CMakeLists.txt
@@ -17,8 +17,7 @@
 // juce::Timer owned by the editor or its children never actually fires before the snapshot is
 // taken — JUCE dispatches timer callbacks through the message queue, not directly from a
 // background timer thread. The snapshot is taken immediately after construction, which is what
-// makes two successive renders of unchanged code byte-identical (verified in
-// docs/ui_migration_report.md).
+// makes two successive renders of unchanged code byte-identical.
 
 #include "State/B33pProcessor.h"
 #include "UI/B33pEditor.h"

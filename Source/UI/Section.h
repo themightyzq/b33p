@@ -37,7 +37,7 @@ namespace B33p
         // comp.purple, comp.white"). This is the house-token replacement for
         // B33pProcessor::laneAccentColour(int) — the per-lane colour VALUES moved
         // here (a UI-owned helper) because Source/State/B33pProcessor.cpp is out of
-        // scope for this migration (see docs/ui_migration_report.md, Deviations).
+        // scope for this migration.
         // Every call site that used to read processor.laneAccentColour(lane) now
         // reads this instead; the processor's own method is unchanged and unused
         // by the UI.
