@@ -524,7 +524,15 @@ namespace B33p
         auto bounds = getContentBounds();
 
         constexpr int kScopeSliderWidth = 110;
-        constexpr int kBpmWidth         = 100;
+        // bpmSlider is Slider::IncDecButtons: JUCE gives the +/- buttons whatever's left
+        // of this width after the 60 px text box (Slider::resizeIncDecButtons splits it
+        // in half, minus a 2 px inset each side). At 100 that split was (100-60-4)/2 =
+        // 18 px wide, under the house 22 px floor — b33p_ui_snapshot --hit-audit caught
+        // it as the Slider's own child "+"/"-" Buttons. 112 gives (112-60-4)/2 = 24.
+        // Both settingsRow layouts (wide row 1 / narrow row 2) have plenty of slack to
+        // absorb the extra 12 px — see the screenshot: Length/Grid/BPM/Sig never fill
+        // the row.
+        constexpr int kBpmWidth         = 112;
         constexpr int kSigWidth         = 70;
 
         // The full single-row toolbar needs ~1600 pt to fit every control

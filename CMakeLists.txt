@@ -324,5 +324,21 @@ if(PROJECT_IS_TOP_LEVEL)
         include(Catch)
 
         add_subdirectory(Tests)
+
+        # UI accessibility gate (../CLAUDE.md section 6 / ../../CLAUDE.md section 6: every
+        # interactive control needs a hit area >= 22 px in both dimensions). b33p_ui_snapshot
+        # --hit-audit constructs the real editor, walks every visible Button/ComboBox/Slider
+        # (including custom clickables built on them), and exits non-zero if anything is
+        # under the floor — see tools/ui_snapshot/main.cpp. Wired in at both the editor's
+        # declared minimum (setResizeLimits(1000, 600, ...) in B33pEditor.cpp) and its default
+        # construction size, since a layout budget can be fine at one and broken at the other
+        # (ModulationSection's LFO row was: fine-looking at both sizes, but its Rate knob had
+        # silently collapsed to 0 px tall at every size until this gate existed).
+        if(TARGET b33p_ui_snapshot)
+            add_test(NAME ui_hit_audit_min_size
+                     COMMAND b33p_ui_snapshot --hit-audit 1000 600)
+            add_test(NAME ui_hit_audit_default_size
+                     COMMAND b33p_ui_snapshot --hit-audit)
+        endif()
     endif()
 endif()

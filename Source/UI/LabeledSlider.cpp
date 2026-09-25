@@ -9,7 +9,20 @@ namespace B33p
         constexpr int kLabelHeight      = 14;
         constexpr int kTextBoxHeight    = 16;
         constexpr int kTextBoxWidth     = 64;
-        constexpr int kDiceLockHeight   = 20;
+        // House accessibility floor (../../CLAUDE.md section 6 / ../CLAUDE.md UI
+        // section): every interactive control needs a hit area of at least 22 px in
+        // both dimensions. This was 20 — the dice + lock buttons filled the row
+        // exactly, so both came up 2 px short in height everywhere a LabeledSlider
+        // is shown with showRandomizer = true. IconButton's glyph size tracks
+        // min(bounds.width, bounds.height) proportionally (see IconButton::
+        // paintButton), so this 2 px bump only grows the drawn glyph by the same
+        // ~10% the hit box grows by — visually "barely changes" rather than a
+        // redraw. The row's width split is untouched (dice/lock widths were
+        // already comfortably above the floor everywhere this ships), so the fix
+        // is this one constant plus, where a slider's total height budget was
+        // already this tight, giving the row more room — see ModulationSection's
+        // LFO row / MainComponent's kModulationRowHeight.
+        constexpr int kDiceLockHeight   = 22;
         constexpr int kDiceLockGap      = 4;
     }
 

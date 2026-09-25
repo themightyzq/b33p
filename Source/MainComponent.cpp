@@ -11,7 +11,15 @@ namespace B33p
         constexpr int kGap            = 8;
         constexpr int kTopRowHeight        = 260;   // Oscillator | Amp Env | Filter
         constexpr int kMidRowHeight        = 180;   // Effects | Master | Mod FX
-        constexpr int kModulationRowHeight = 220;   // Modulation | Pitch Env
+        // Modulation | Pitch Env. Was 220; grown by 30 px (the same 30 ModulationSection's
+        // LFO row grew by — see its resized()) so its LFO Rate knob and dice/lock row both
+        // clear the house 22 px hit-area floor instead of clipping to 0. PitchEnvSection
+        // shares this row and simply fills whatever height it gets (its editor has no fixed
+        // sub-heights), so it just gains a little extra room, nothing to rebalance there.
+        // The extra 30 px only ever lengthens voiceEditorPanel's content height inside
+        // voiceEditorViewport (kVoiceEditorContentHeight below), which already scrolls
+        // instead of clipping at the editor's 1000x600 minimum — see MainComponent::resized().
+        constexpr int kModulationRowHeight = 250;
         // Natural, unclamped height of the three stacked rows above, i.e. the
         // content height of VoiceEditorPanel. When the window is too short to
         // show this much (see kMinPatternHeight below), the panel's Viewport

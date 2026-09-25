@@ -146,13 +146,22 @@ namespace B33p
         // Lane label children sit in the kLaneLabelWidth strip on
         // the left, one row per lane. Each row is name + mute side
         // by side, vertically centred in the lane row.
+        //
+        // Horizontal-only inset: at the pattern grid's usual height (kMinPatternHeight
+        // in MainComponent.cpp), each lane row is exactly 22 px tall (laneStripHeight /
+        // kNumLanes). Insetting vertically too (the old .reduced(kLaneLabelInset) on
+        // both axes) left mute/solo at 22 - 2*4 = 14 px tall, under the house floor —
+        // b33p_ui_snapshot --hit-audit caught it. Dropping the vertical inset gives
+        // them the full row (22, exactly at the floor) with no knock-on layout change
+        // needed elsewhere; the horizontal inset (breathing room from the grid's left
+        // edge) is unaffected.
         for (int i = 0; i < Pattern::kNumLanes; ++i)
         {
             auto laneRow = laneArea(i).toNearestInt();
             auto strip   = juce::Rectangle<int> { 0, laneRow.getY(),
                                                    static_cast<int>(kLaneLabelWidth),
                                                    laneRow.getHeight() }
-                              .reduced(static_cast<int>(kLaneLabelInset));
+                              .reduced(static_cast<int>(kLaneLabelInset), 0);
 
             const int muteW = static_cast<int>(kMuteButtonWidth);
             const int soloW = static_cast<int>(kSoloButtonWidth);

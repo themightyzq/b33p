@@ -144,7 +144,18 @@ namespace B33p
     {
         auto bounds = getContentBounds();
 
-        constexpr int kLfoRowHeight  = 56;   // leaves room for all 4 matrix rows
+        // kLfoRowHeight = shape combo (22) + gap (4) + the Rate LabeledSlider's own
+        // budget (60 = 14 label + 24 knob + 22 dice/lock row). That 60 is the
+        // accessibility floor speaking: a LabeledSlider with showRandomizer = true
+        // needs label(14) + slider(>=22) + diceLock(22) = 50 at an absolute
+        // minimum, and 60 leaves the rotary knob a couple of extra px so it still
+        // reads as a knob rather than a dot. At the old 56 (cell = 30) the Rate
+        // knob itself silently collapsed to 0 px tall and its dice/lock row
+        // clipped to 16 — b33p_ui_snapshot --hit-audit caught both. The 30 px this
+        // grew by comes back out of MainComponent's kModulationRowHeight (220 ->
+        // 250), which only lengthens the voiceEditorViewport's scroll content —
+        // see the comment there.
+        constexpr int kLfoRowHeight  = 86;   // leaves room for all 4 matrix rows
         constexpr int kRowGap        = 6;
         constexpr int kInnerGap      = 6;
 
@@ -161,7 +172,8 @@ namespace B33p
             if (i < kNumLfosPerLane - 1)
                 lfoRow.removeFromLeft(kInnerGap);
 
-            // Shape combo on top, rate slider below.
+            // Shape combo on top, rate slider (LabeledSlider: label + knob +
+            // dice/lock row) filling the rest.
             auto& lfo = lfoControls[static_cast<size_t>(i)];
             auto shapeRow = cell.removeFromTop(22);
             cell.removeFromTop(4);
