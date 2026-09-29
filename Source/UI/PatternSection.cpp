@@ -451,17 +451,27 @@ namespace B33p
 
     void PatternSection::onExportClicked()
     {
-        ExportDialog::showAsync(this, [this](ExportDialog::Result result)
+        // The export DialogWindow is not owned by the editor, so it (and
+        // the deferred launch below) can outlive this PatternSection when
+        // the host closes the plugin window. Guard both hops with a
+        // SafePointer instead of capturing raw `this` - same convention as
+        // ExportDialog.cpp / LabeledSlider.cpp / MainComponent.cpp.
+        ExportDialog::showAsync(this,
+            [safe = juce::Component::SafePointer<PatternSection>(this)](ExportDialog::Result result)
         {
+            if (safe == nullptr)
+                return;
+
             if (! result.accepted)
                 return;
 
             // Defer the actual launch to the message thread so the
             // dialog has fully closed before the export-progress
-            // window opens — avoids overlapping modal stacks.
-            juce::MessageManager::callAsync([this, r = std::move(result)]
+            // window opens - avoids overlapping modal stacks.
+            juce::MessageManager::callAsync([safe, r = std::move(result)]
             {
-                runExport(r);
+                if (auto* self = safe.getComponent())
+                    self->runExport(r);
             });
         });
     }

@@ -8,12 +8,11 @@ AU and play it from a MIDI keyboard. Built with JUCE for macOS, Windows, and Lin
 ## Install
 
 Download the latest release from the
-[Releases page](https://github.com/themightyzq/b33p/releases/tag/v0.2.0) (v0.2.0,
-pre-release, 2026-05-27):
+[Releases page](https://github.com/themightyzq/b33p/releases/tag/v0.3.0) (v0.3.0):
 
-- macOS: `b33p-0.2.0-macos-universal.zip`
-- Windows: `b33p-0.2.0-windows-x64.zip`
-- Linux: `b33p-0.2.0-linux-x86_64.tar.gz`
+- macOS: `b33p-0.3.0-macos-universal.zip`
+- Windows: `b33p-0.3.0-windows-x64.zip`
+- Linux: `b33p-0.3.0-linux-x86_64.tar.gz`
 
 Each archive bundles the Standalone app, VST3, and (macOS) AU plugins.
 
