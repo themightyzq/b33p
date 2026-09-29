@@ -35,8 +35,8 @@ namespace B33p
             // that many dice-rolled variations into numbered
             // siblings (Filename_001.wav, Filename_002.wav, ...);
             // unlocked parameters get re-rolled between each
-            // variation, then the original parameter values are
-            // restored when the batch finishes.
+            // variation on the exporter's private copy of the
+            // patch (OfflineExporter); the live patch is untouched.
             int          variationCount { 1 };
         };
 

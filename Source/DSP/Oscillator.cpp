@@ -111,6 +111,11 @@ namespace B33p
         firstSetAfterPrepare = true;
     }
 
+    void Oscillator::setNoiseSeed(std::uint32_t seed)
+    {
+        rng.seed(seed);
+    }
+
     void Oscillator::setWaveform(Waveform newWaveform)
     {
         waveform = newWaveform;

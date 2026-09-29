@@ -30,6 +30,17 @@ After the first successful launch on each OS, b33p runs normally. Or build from 
 
 Requires macOS 11.0 or later.
 
+### Upgrading from v0.2.0
+
+b33p v0.2.0 used a different manufacturer code (`Zqsf`) from later versions (`ZQSF`).
+Hosts identify a plugin by that code, so a session saved with v0.2.0 refers to a plugin
+that later versions do not match by code alone.
+
+- VST3: later builds declare the v0.2.0 plugin as compatible. VST3 hosts that support
+  plugin compatibility load the new version in its place automatically.
+- Other VST3 hosts, and AU in every host: the session shows b33p as missing. Insert b33p
+  again on that track.
+
 ## Use
 
 Make a beep:

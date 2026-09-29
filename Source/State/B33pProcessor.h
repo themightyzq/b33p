@@ -122,6 +122,15 @@ namespace B33p
         // pattern edits into a running playback session.
         void   refreshPatternSnapshot();
 
+        // Seeds every random source the engine owns: the snapshot RNG
+        // (per-event probability, ratchet humanize jitter) and each
+        // voice's noise generator. Live playback never calls this, so
+        // it stays varied from run to run; the offline export
+        // (OfflineExporter) calls it on its own processor instance so
+        // one project always renders the same file. Call off the audio
+        // thread, before prepareToPlay / startPlayback.
+        void   seedRandomSources(juce::int64 seed);
+
         void   setLooping(bool shouldLoop);
         bool   getLooping() const          { return looping.load(); }
 
@@ -508,7 +517,8 @@ namespace B33p
         // ratchet expansion humanize jitter, and any other future
         // randomised pattern features. Re-seeded by the system on
         // construction; unseeded re-snapshots will pick up wherever
-        // the previous call left off.
+        // the previous call left off. seedRandomSources() makes it
+        // deterministic for an offline render.
         juce::Random snapshotRng;
 
         // Curve writes lock on the message thread; audio-thread reads

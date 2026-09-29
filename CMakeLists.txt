@@ -159,6 +159,7 @@ target_sources(B33p PRIVATE
     Source/State/PresetManager.cpp
     Source/State/ProjectFileManager.cpp
     Source/State/ProjectState.cpp
+    Source/State/OfflineExporter.cpp
     Source/UI/AmpEnvSection.cpp
     Source/UI/AmpEnvelopeVisualizer.cpp
     Source/UI/B33pEditor.cpp
@@ -198,7 +199,6 @@ target_sources(B33p PRIVATE
     Source/DSP/OutputLimiter.cpp
     Source/DSP/Voice.cpp
     Source/Pattern/Pattern.cpp
-    Source/Pattern/PatternRenderer.cpp
     Source/Pattern/PatternSnapshot.cpp
     Source/Pattern/AudioFileWriter.cpp
 )
@@ -221,6 +221,12 @@ target_compile_definitions(B33p PRIVATE
     # (Build_VST=0) and JUCE_VST3_CAN_REPLACE_VST2 isn't explicitly
     # zero.
     JUCE_VST3_CAN_REPLACE_VST2=0
+    # v0.2.0 shipped with manufacturer code 'Zqsf'; later builds use
+    # 'ZQSF', which changes the VST3 class ID. Listing the old ID makes
+    # the plugin declare IPluginCompatibility (and a "Compatibility"
+    # section in moduleinfo.json), so VST3 hosts that support it load
+    # this build in place of the v0.2.0 plugin in saved sessions.
+    "JUCE_VST3_COMPATIBLE_CLASSES=VST3Interface::jucePluginId('Zqsf','B33p')"
     # Replace JUCE's default StandaloneFilterApp with the custom one in
     # Source/StandaloneApp.cpp so the standalone window/Cmd+Q gestures
     # prompt before discarding unsaved work. PRIVATE defs on B33p reach

@@ -157,7 +157,7 @@ namespace B33p
         variationsSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 60, 22);
         variationsSlider.setValue(1.0, juce::dontSendNotification);
         variationsSlider.setTitle("Export variation count");
-        variationsSlider.setTooltip("1 = single render. 2+ = render that many dice-rolled variations into numbered files (Filename_001.wav, etc.). The original parameter values are restored when the batch finishes.");
+        variationsSlider.setTooltip("1 = single render. 2+ = render that many dice-rolled variations into numbered files (Filename_001.wav, etc.). Rolls apply to the export's own copy; your patch is not changed.");
         addAndMakeVisible(variationsSlider);
 
         cancelButton.onClick = [this] { cancelClicked(); };

@@ -112,6 +112,11 @@ namespace B33p
                           firstGainSetAfterPrepare);
     }
 
+    void Voice::setNoiseSeed(std::uint32_t seed)
+    {
+        oscillator.setNoiseSeed(seed);
+    }
+
     void Voice::trigger(float durationSeconds, float pitchOffsetSt, float velocity)
     {
         pitchOffsetSemitones = pitchOffsetSt;

@@ -194,6 +194,13 @@ namespace B33p
         currentSampleRate = sampleRate;
 
         for (auto& n : samplesUntilNoteOff) n = 0;
+        // The voices are reset below, so per-event overrides latched by
+        // the last event of a previous run no longer describe anything
+        // sounding. Clearing them lets a re-prepared processor (the
+        // offline exporter renders several variations on one instance)
+        // start exactly like a freshly constructed one.
+        for (auto& laneOverrides : activeOverrides)
+            laneOverrides.fill(EventOverride {});
         playheadSeconds.store(0.0);
         for (auto& v : voices)
         {
@@ -493,6 +500,19 @@ namespace B33p
         retiredWavetableSlots.clear();
         if (p)
             retiredWavetableSlots.push_back(std::move(p));
+    }
+
+    void B33pProcessor::seedRandomSources(juce::int64 seed)
+    {
+        snapshotRng.setSeed(seed);
+
+        // One derived seed per voice so lanes playing Noise at once
+        // don't produce the same (correlated) sequence.
+        juce::Random seeder(seed);
+        for (auto& v : voices)
+            v.setNoiseSeed(static_cast<std::uint32_t>(seeder.nextInt()));
+        for (auto& v : midiVoices)
+            v.setNoiseSeed(static_cast<std::uint32_t>(seeder.nextInt()));
     }
 
     void B33pProcessor::setLooping(bool shouldLoop)

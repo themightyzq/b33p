@@ -3,6 +3,7 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 
 #include <array>
+#include <cstdint>
 #include <random>
 #include <vector>
 
@@ -97,6 +98,14 @@ namespace B33p
         // carrier × modulator. Both inputs are clamped.
         void setRingRatio(float ratio);
         void setRingMix(float mix01);
+
+        // Reseeds the Noise waveform's generator. The constructor seeds
+        // it from std::random_device, so two oscillators never share a
+        // noise sequence unless both are seeded here; the offline export
+        // does that so a render is reproducible. prepare() / reset()
+        // leave the generator alone. Not for the audio thread (the
+        // engine only calls it before prepareToPlay).
+        void setNoiseSeed(std::uint32_t seed);
 
         float processSample();
 

@@ -1,74 +1,29 @@
 #include "ExportTask.h"
 
-#include "Core/ParameterIDs.h"
-#include "DSP/Oscillator.h"
-#include "Pattern/PatternRenderer.h"
 #include "Pattern/AudioFileWriter.h"
 
 namespace B33p
 {
-    namespace
-    {
-        // Pulls every voice parameter for one lane out of APVTS into
-        // a plain LaneConfig.
-        PatternRenderer::LaneConfig buildLaneConfig(
-            const juce::AudioProcessorValueTreeState& apvts, int lane)
-        {
-            PatternRenderer::LaneConfig lc;
-            lc.waveform = static_cast<Oscillator::Waveform>(
-                juce::jlimit(0, 4,
-                    static_cast<int>(apvts.getRawParameterValue(
-                        ParameterIDs::oscWaveform(lane))->load())));
-            lc.basePitchHz          = apvts.getRawParameterValue(ParameterIDs::basePitchHz(lane))->load();
-            lc.ampAttack            = apvts.getRawParameterValue(ParameterIDs::ampAttack(lane))->load();
-            lc.ampDecay             = apvts.getRawParameterValue(ParameterIDs::ampDecay(lane))->load();
-            lc.ampSustain           = apvts.getRawParameterValue(ParameterIDs::ampSustain(lane))->load();
-            lc.ampRelease           = apvts.getRawParameterValue(ParameterIDs::ampRelease(lane))->load();
-            lc.filterCutoffHz       = apvts.getRawParameterValue(ParameterIDs::filterCutoffHz(lane))->load();
-            lc.filterResonanceQ     = apvts.getRawParameterValue(ParameterIDs::filterResonanceQ(lane))->load();
-            lc.bitcrushBitDepth     = apvts.getRawParameterValue(ParameterIDs::bitcrushBitDepth(lane))->load();
-            lc.bitcrushSampleRateHz = apvts.getRawParameterValue(ParameterIDs::bitcrushSampleRateHz(lane))->load();
-            lc.distortionDrive      = apvts.getRawParameterValue(ParameterIDs::distortionDrive(lane))->load();
-            lc.gain                 = apvts.getRawParameterValue(ParameterIDs::voiceGain(lane))->load();
-            return lc;
-        }
-
-        // Pulls every lane's voice parameters out of APVTS into a
-        // plain PatternRenderer::Config — keeps the renderer ignorant
-        // of APVTS and gives the export thread a value-type snapshot
-        // decoupled from later UI edits.
-        PatternRenderer::Config buildConfig(const B33pProcessor& processor,
-                                            double sampleRate)
-        {
-            PatternRenderer::Config c;
-            c.sampleRate     = sampleRate;
-            c.maxTailSeconds = 5.0;
-            c.pitchCurve     = processor.getPitchCurveCopy();
-
-            const auto& apvts = processor.getApvts();
-            for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
-                c.lanes[static_cast<size_t>(lane)] = buildLaneConfig(apvts, lane);
-
-            return c;
-        }
-    }
-
     void ExportTask::launchAsync(B33pProcessor& processor,
                                   ExportDialog::Result settings)
     {
-        auto* task = new ExportTask(processor, std::move(settings));
+        // Capture here, on the message thread, so the export sees one
+        // consistent snapshot even if the user keeps editing while it
+        // renders.
+        auto* task = new ExportTask(OfflineExporter::captureState(processor),
+                                    std::move(settings));
         task->launchThread();
         // task is now owned by itself — self-deletes in threadComplete().
     }
 
-    ExportTask::ExportTask(B33pProcessor& processorRef,
+    ExportTask::ExportTask(const juce::MemoryBlock& liveState,
                            ExportDialog::Result settingsIn)
         : juce::ThreadWithProgressWindow(
               settingsIn.variationCount > 1 ? "Batch exporting WAVs..."
                                              : "Exporting WAV...",
               /*hasProgressBar=*/ true,
               /*hasCancelButton=*/ true),
-          processor(processorRef),
+          exporter(std::make_unique<OfflineExporter>(liveState)),
           settings(std::move(settingsIn))
     {
     }
@@ -88,26 +43,17 @@ namespace B33p
         return parent.getChildFile(stem + suffix + ext);
     }
 
-    std::unique_ptr<juce::XmlElement> ExportTask::snapshotApvtsState() const
-    {
-        return processor.getApvts().copyState().createXml();
-    }
-
-    void ExportTask::restoreApvtsState(const juce::XmlElement& snapshot)
-    {
-        processor.getApvts().replaceState(juce::ValueTree::fromXml(snapshot));
-    }
-
     void ExportTask::run()
     {
         const int variations = juce::jmax(1, settings.variationCount);
         const bool isBatch   = variations > 1;
 
-        // Snapshot APVTS state so a batch run can restore the
-        // user's patch when it finishes. Single-render path skips
-        // the snapshot to avoid the extra XML serialisation cost.
-        auto snapshot = isBatch ? snapshotApvtsState()
-                                : std::unique_ptr<juce::XmlElement>{};
+        OfflineExporter::Settings renderSettings;
+        renderSettings.sampleRate = settings.sampleRate;
+
+        // Batch dice rolls land on the exporter's private processor, so
+        // the user's patch is never modified and needs no restore.
+        juce::Random rollRng;
 
         setProgress(0.0);
         successfulRenders = 0;
@@ -122,18 +68,10 @@ namespace B33p
                   + " of " + juce::String(variations) + "..."
                 : juce::String("Rendering..."));
 
-            // Re-roll on every iteration except the first — the
-            // first variation captures the user's current patch
-            // verbatim so they always have a clean reference,
-            // and subsequent variations roll outward from there.
-            if (isBatch && i > 0)
-            {
-                juce::Random rng;
-                processor.getRandomizer().rollAllUnlocked(rng);
-            }
-
-            const auto config = buildConfig(processor, settings.sampleRate);
-            const auto buffer = PatternRenderer::render(processor.getPattern(), config);
+            // Variation 0 is the user's current patch verbatim, so
+            // they always have a clean reference; later variations
+            // roll outward from there.
+            const auto buffer = exporter->renderVariation(i, renderSettings, rollRng, this);
 
             if (threadShouldExit())
                 break;
@@ -157,11 +95,6 @@ namespace B33p
             setProgress(static_cast<double>(i + 1)
                             / static_cast<double>(variations));
         }
-
-        // Always restore the snapshot, even on cancel / failure —
-        // never strand the user with mid-batch random parameters.
-        if (snapshot != nullptr)
-            restoreApvtsState(*snapshot);
 
         exportSucceeded = (successfulRenders == variations);
     }

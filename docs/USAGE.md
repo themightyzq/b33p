@@ -288,11 +288,15 @@ Click the **Export...** button in the Pattern controls (right of the grid combo)
 - **Channels** — Mono or Stereo (mono content duplicated across both channels).
 - **Variations** — 1 = single render; 2..100 = batch render N dice-rolled variations.
 
-The render runs offline in a background thread with a progress window — for typical patterns it's sub-second.
+The render runs offline in a background thread with a progress window. It plays the pattern once, from the start, through a private copy of the same engine that plays it live, so the file contains everything you hear on playback: every oscillator mode, the filter type, Mod FX, the LFO matrix, per-event overrides and the output limiter. Loop, Follow and host bypass are ignored.
+
+- The file starts at pattern time 0 and is at least the pattern length. After the last pattern step it keeps going through the release and effect tail (reverb, delay echoes) until the output stays below -100 dBFS for 2.5 seconds, up to 10 seconds past the pattern end.
+- Probability, humanize and the Noise waveform use a fixed seed during export, so the same project always exports the same file. Live playback is not seeded, so an export is one of the ways the pattern can play out.
+- Parameters and LFOs update once per 512-sample block during export, the same way they do in a host running at a 512-sample buffer.
 
 ### Batch export
 
-Set Variations > 1 to render multiple dice-rolled takes in one shot. Variation 1 captures the user's current patch verbatim — they always have a clean reference; subsequent variations re-roll every unlocked parameter before rendering. APVTS state is snapshotted before the batch and restored after, so the user's patch survives the dice rolls.
+Set Variations > 1 to render multiple dice-rolled takes in one shot. Variation 1 is your current patch unchanged, so you always have a clean reference; each later variation re-rolls every unlocked parameter before rendering. The rolls apply to the export's private copy of the patch: your open patch is never changed, and locked parameters stay locked. Each variation also uses a different seed, so its probability and humanize rolls differ too.
 
 Outputs are written to numbered siblings of the chosen path: `my_export.wav` with Variations=10 produces `my_export_001.wav` through `my_export_010.wav`, three-digit zero-padded so 100 variations sort naturally even in alphabetical listings.
 

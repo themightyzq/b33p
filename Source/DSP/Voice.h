@@ -8,6 +8,7 @@
 #include "DSP/OversampledDistortion.h"
 #include "DSP/PitchEnvelope.h"
 
+#include <cstdint>
 #include <vector>
 
 namespace B33p
@@ -108,6 +109,9 @@ namespace B33p
         void setModEffectMix(float v01);
 
         void setGain(float linearGain);
+
+        // Passthrough to Oscillator::setNoiseSeed (offline export only).
+        void setNoiseSeed(std::uint32_t seed);
 
         // velocity is a per-trigger 0..1 scalar applied on top of
         // gain. Defaults to 1.0 so existing callers (audition,

@@ -15,6 +15,37 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+### Changed
+
+- **Export renders through the playback engine.** Export now plays the pattern once through
+  a private copy of the same engine that plays it live, so the file matches playback. Earlier
+  exports used a reduced voice model that rendered Custom, Wavetable, FM and Ring lanes as
+  Noise and left out filter types and vowel, FM and ring settings, wavetable slots, Mod FX,
+  the LFO matrix, per-event overrides and the output limiter. All of these are now in the
+  file.
+- The exported file starts at pattern time 0 (the 12-sample oversampling latency is
+  trimmed), is at least the pattern length, and continues through the release and effect
+  tail (reverb, delay echoes) until the output stays below -100 dBFS for 2.5 seconds, up to
+  10 seconds past the pattern end. Earlier exports stopped the tail when the amp envelopes
+  finished, at most 5 seconds past the end.
+- Probability, humanize and Noise use a fixed seed during export, so the same project
+  always exports the same file. Live playback is not seeded and varies from run to run; an
+  export is one realisation of it. Each batch variation uses a different seed.
+- Export ignores the Loop and Follow toggles and host bypass: it always plays the pattern
+  once from the start.
+
+### Fixed
+
+- **Batch export no longer changes the open project.** Dice rolls for variations 2 and up
+  are applied to the export's private copy. Before, they were applied to the live patch on
+  a background thread and restored afterwards, which could race with playback and editing.
+  Locked parameters stay locked in the copy.
+- **VST3 sessions saved with v0.2.0.** v0.2.0 shipped with manufacturer code `Zqsf`; later
+  versions use `ZQSF`, which changes the VST3 class ID. The VST3 now declares the v0.2.0
+  class ID (`ABCDEF019182FAEB5A71736642333370`) as compatible, so VST3 hosts that support
+  plugin compatibility substitute the new version automatically. Other hosts, and AU, show
+  b33p as missing in v0.2.0 sessions; insert b33p again.
+
 ## [0.3.0] — 2026-09-25
 
 ### Added

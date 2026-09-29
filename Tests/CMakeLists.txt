@@ -41,9 +41,9 @@ add_executable(B33pTests
     State/ParameterLayoutTests.cpp
     State/ParameterRandomizerTests.cpp
     State/ProjectStateTests.cpp
+    State/OfflineExporterTests.cpp
     Pattern/PatternTests.cpp
     Pattern/PatternSnapshotTests.cpp
-    Pattern/PatternRendererTests.cpp
     Pattern/SnapMathTests.cpp
     Pattern/AudioFileWriterTests.cpp
     Harness/VoiceRenderer.cpp
@@ -55,9 +55,9 @@ add_executable(B33pTests
     ${CMAKE_SOURCE_DIR}/Source/State/ParameterRandomizer.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/ProjectFileManager.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/ProjectState.cpp
+    ${CMAKE_SOURCE_DIR}/Source/State/OfflineExporter.cpp
     ${CMAKE_SOURCE_DIR}/Source/State/B33pProcessor.cpp
     ${CMAKE_SOURCE_DIR}/Source/Pattern/Pattern.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Pattern/PatternRenderer.cpp
     ${CMAKE_SOURCE_DIR}/Source/Pattern/PatternSnapshot.cpp
     ${CMAKE_SOURCE_DIR}/Source/Pattern/AudioFileWriter.cpp
 )
