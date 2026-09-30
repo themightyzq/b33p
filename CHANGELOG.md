@@ -15,6 +15,8 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-29
+
 ### Changed
 
 - **Export renders through the playback engine.** Export now plays the pattern once through
