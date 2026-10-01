@@ -74,18 +74,56 @@ jobs:
         working-directory: build
         run: ctest --output-on-failure --build-config ${{ env.CMAKE_BUILD_TYPE }}
 
-      # pluginval — format-conformance check on the built VST3.
-      # REVIEW-AUDIO #10. Informational for now (continue-on-error);
-      # flip to blocking after one clean pass on every platform.
-      # `--strictness-level 5` is the typical release gate;
-      # --validate-in-process keeps the report alongside the runner log.
-      - name: pluginval (VST3) — informational
-        continue-on-error: true
+      # Every shipping macOS binary must be universal (arm64 + x86_64) with a
+      # minimum macOS of exactly 11.0 on both slices: Soundminer loads only
+      # universal plugins, and the README promises macOS 11.0. A deployment
+      # target below 10.14 writes LC_VERSION_MIN_MACOSX instead of
+      # LC_BUILD_VERSION and has no minos line, so that command fails too.
+      - name: Universal binaries, minimum macOS 11.0 (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          REL=build/B33p_artefacts/Release
+          fail=0
+          for bin in "$REL/VST3/b33p.vst3/Contents/MacOS/b33p" \
+                     "$REL/AU/b33p.component/Contents/MacOS/b33p" \
+                     "$REL/Standalone/b33p.app/Contents/MacOS/b33p"; do
+            if [ ! -f "$bin" ]; then
+              echo "::error::missing binary $bin"; fail=1; continue
+            fi
+            archs=$(lipo -archs "$bin" | tr ' ' '\n' | sort | xargs)
+            echo "$bin: $archs"
+            if [ "$archs" != "arm64 x86_64" ]; then
+              echo "::error::$bin has architectures '$archs', want arm64 and x86_64"; fail=1
+            fi
+            for arch in arm64 x86_64; do
+              lc=$(otool -arch "$arch" -l "$bin" || true)
+              if grep -q LC_VERSION_MIN_MACOSX <<< "$lc"; then
+                echo "::error::$bin ($arch) has LC_VERSION_MIN_MACOSX (deployment target below 10.14)"; fail=1
+              fi
+              minos=$(awk '/LC_BUILD_VERSION/ { found = 1 } found && $1 == "minos" { print $2; exit }' <<< "$lc")
+              echo "  $arch minos ${minos:-none}"
+              if [ "$minos" != "11.0" ]; then
+                echo "::error::$bin ($arch) minimum macOS is '${minos:-none}', want exactly 11.0"; fail=1
+              fi
+            done
+          done
+          exit $fail
+
+      # pluginval: format-conformance check on the built VST3 (REVIEW-AUDIO
+      # #10). Blocking: a non-zero exit fails the job. `--strictness-level 5`
+      # is the release gate; --validate-in-process keeps the report alongside
+      # the runner log. The Linux runner has no display, so its run skips the
+      # tests that open an editor window (they crashed at the Editor stage);
+      # macOS and Windows run the full set.
+      - name: pluginval (VST3)
         shell: bash
         run: |
           set -e
           PV_DIR="$RUNNER_TEMP/pluginval"
           mkdir -p "$PV_DIR"
+          GUI_FLAG=""
           case "${{ runner.os }}" in
             Linux)
               curl -sL https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Linux.zip -o "$PV_DIR/pv.zip"
@@ -93,6 +131,7 @@ jobs:
               chmod +x "$PV_DIR/pluginval"
               PV="$PV_DIR/pluginval"
               VST3=$(find build/B33p_artefacts/Release/VST3 -name 'b33p.vst3' | head -1)
+              GUI_FLAG="--skip-gui-tests"
               ;;
             macOS)
               curl -sL https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip -o "$PV_DIR/pv.zip"
@@ -109,14 +148,13 @@ jobs:
           esac
           echo "pluginval: $PV"
           echo "VST3:      $VST3"
-          "$PV" --strictness-level 5 --validate-in-process --validate "$VST3" || echo "pluginval finished non-zero (informational)"
+          "$PV" --strictness-level 5 --validate-in-process $GUI_FLAG --validate "$VST3"
 
-      # auval — macOS-only AU conformance. Also informational while we
-      # bring the report clean. Requires installing the AU into the
-      # user's Components folder for the runner to see it.
-      - name: auval (AU, macOS) — informational
+      # auval: macOS-only AU conformance. Blocking: a non-zero exit fails
+      # the job. Requires installing the AU into the user's Components
+      # folder for the runner to see it.
+      - name: auval (AU, macOS)
         if: runner.os == 'macOS'
-        continue-on-error: true
         run: |
           set -e
           AU_SRC=$(find build/B33p_artefacts/Release/AU -name 'b33p.component' -type d | head -1)
@@ -132,7 +170,7 @@ jobs:
           SUB=$(plutil -extract  "AudioComponents.0.subtype"         raw -o - "$PLIST")
           MFR=$(plutil -extract  "AudioComponents.0.manufacturer"    raw -o - "$PLIST")
           echo "auval: -strict -v $TYPE $SUB $MFR"
-          auval -strict -v "$TYPE" "$SUB" "$MFR" || echo "auval finished non-zero (informational)"
+          auval -strict -v "$TYPE" "$SUB" "$MFR"
 
       - name: Upload bundles
         uses: actions/upload-artifact@v7

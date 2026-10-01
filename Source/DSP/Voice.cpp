@@ -19,6 +19,8 @@ namespace B33p
         gainSmoother.reset(sampleRate, 0.010);    // 10 ms gain ramp
         gainSmoother.setCurrentAndTargetValue(gain);
         firstGainSetAfterPrepare = true;
+        silentEffectsSamples = 0;
+        effectsIdle          = false;
         prepared = true;
     }
 
@@ -33,6 +35,15 @@ namespace B33p
         modEffect.reset();
         // Re-arm the snap-on-first-set flag for the gain smoother too.
         firstGainSetAfterPrepare = true;
+        silentEffectsSamples = 0;
+        effectsIdle          = false;
+    }
+
+    void Voice::setIdleSkipEnabledForTests(bool enabled)
+    {
+        idleSkipEnabled = enabled;
+        if (! enabled)
+            effectsIdle = false;
     }
 
     void Voice::setWaveform(Oscillator::Waveform waveform)
@@ -164,8 +175,40 @@ namespace B33p
             return;
         }
 
-        bitcrush.processBlock(buffer, numSamples);
-        distortion.processBlock(buffer, numSamples);
+        const auto allZero = [](const float* data, int n)
+        {
+            for (int i = 0; i < n; ++i)
+                if (! juce::exactlyEqual(data[i], 0.0f))
+                    return false;
+            return true;
+        };
+
+        const bool inputSilent = allZero(buffer, numSamples);
+        if (effectsIdle && inputSilent)
+        {
+            // buffer already holds the zeros the full path would output.
+            bitcrush.processSilentBlock(numSamples);
+            distortion.processSilentBlock(numSamples);
+        }
+        else
+        {
+            effectsIdle = false;
+            bitcrush.processBlock(buffer, numSamples);
+            distortion.processBlock(buffer, numSamples);
+
+            if (inputSilent && bitcrush.isHoldingZero() && allZero(buffer, numSamples))
+                silentEffectsSamples = std::min(silentEffectsSamples + numSamples,
+                                                kSamplesBeforeEffectsIdle);
+            else
+                silentEffectsSamples = 0;
+
+            if (idleSkipEnabled && silentEffectsSamples >= kSamplesBeforeEffectsIdle)
+            {
+                bitcrush.clearOversamplerState();
+                distortion.clearOversamplerState();
+                effectsIdle = true;
+            }
+        }
 
         for (int i = 0; i < numSamples; ++i)
         {

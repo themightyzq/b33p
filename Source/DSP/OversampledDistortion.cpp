@@ -125,6 +125,19 @@ namespace B33p
         }
     }
 
+    void OversampledDistortion::processSilentBlock(int numSamples)
+    {
+        if (! prepared)
+            return;
+        for (int i = 0; i < numSamples; ++i)
+            distortion.processSample(0.0f);
+    }
+
+    void OversampledDistortion::clearOversamplerState()
+    {
+        oversampler.reset();
+    }
+
     float OversampledDistortion::processSample(float input)
     {
         processBlock(&input, 1);

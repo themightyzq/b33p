@@ -89,6 +89,43 @@ jobs:
         working-directory: build
         run: ctest --output-on-failure --build-config ${{ env.CMAKE_BUILD_TYPE }}
 
+      # Every shipping macOS binary must be universal (arm64 + x86_64) with a
+      # minimum macOS of exactly 11.0 on both slices: Soundminer loads only
+      # universal plugins, and the README promises macOS 11.0. A deployment
+      # target below 10.14 writes LC_VERSION_MIN_MACOSX instead of
+      # LC_BUILD_VERSION and has no minos line, so that command fails too.
+      - name: Universal binaries, minimum macOS 11.0 (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          REL=build/B33p_artefacts/Release
+          fail=0
+          for bin in "$REL/VST3/b33p.vst3/Contents/MacOS/b33p" \
+                     "$REL/AU/b33p.component/Contents/MacOS/b33p" \
+                     "$REL/Standalone/b33p.app/Contents/MacOS/b33p"; do
+            if [ ! -f "$bin" ]; then
+              echo "::error::missing binary $bin"; fail=1; continue
+            fi
+            archs=$(lipo -archs "$bin" | tr ' ' '\n' | sort | xargs)
+            echo "$bin: $archs"
+            if [ "$archs" != "arm64 x86_64" ]; then
+              echo "::error::$bin has architectures '$archs', want arm64 and x86_64"; fail=1
+            fi
+            for arch in arm64 x86_64; do
+              lc=$(otool -arch "$arch" -l "$bin" || true)
+              if grep -q LC_VERSION_MIN_MACOSX <<< "$lc"; then
+                echo "::error::$bin ($arch) has LC_VERSION_MIN_MACOSX (deployment target below 10.14)"; fail=1
+              fi
+              minos=$(awk '/LC_BUILD_VERSION/ { found = 1 } found && $1 == "minos" { print $2; exit }' <<< "$lc")
+              echo "  $arch minos ${minos:-none}"
+              if [ "$minos" != "11.0" ]; then
+                echo "::error::$bin ($arch) minimum macOS is '${minos:-none}', want exactly 11.0"; fail=1
+              fi
+            done
+          done
+          exit $fail
+
       # Derive the version from the tag so artefact names embed it.
       # GitHub gives us refs/tags/v0.2.0 -> we want 0.2.0.
       - name: Extract version
@@ -115,8 +152,11 @@ jobs:
             cp -R build/B33p_artefacts/Release/AU "$stage/"
           fi
           # Bundle the README + LICENSE + CHANGELOG so users have
-          # everything they need from a single download.
-          cp README.md LICENSE CHANGELOG.md "$stage/" || true
+          # everything they need from a single download, plus NOTICE and
+          # LICENSES/ (the SIL OFL 1.1 texts for the fonts embedded in the
+          # binaries, which the OFL requires to travel with them).
+          cp README.md LICENSE CHANGELOG.md NOTICE "$stage/" || true
+          cp -R LICENSES "$stage/" || true
           echo "stage=$stage" >> "$GITHUB_ENV"
 
       - name: Pack archive (zip)

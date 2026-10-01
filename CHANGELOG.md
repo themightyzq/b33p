@@ -15,6 +15,42 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+### Changed
+
+- MIDI notes start and stop on their own sample. Earlier, every MIDI note-on and note-off
+  in a host buffer took effect at the buffer's first sample, so notes landed up to one
+  buffer early (up to 10.7 ms at 512 samples and 48 kHz).
+- Per-event overrides on Distortion Drive, Mod FX P1, P2 and Mix, and Voice Gain take
+  effect on the event's own sample. Earlier they reached the effects stage from the start
+  of the processing block holding the event, up to 2047 samples (43 ms at 48 kHz) before
+  it, which changed the end of the previous note. Overrides on Base Pitch, Wavetable Morph,
+  FM Depth, Ring Mix, Filter Cutoff and Resonance were already on time. Export renders
+  through the same engine and changes the same way.
+- The editor opens at 1280 x 800 (was 1500 x 1042) so it fits a 13-inch laptop screen. At
+  this size the voice editor rows scroll above a full-height Pattern section; a taller
+  window shows every row. A session that saved a window size keeps it.
+- Modulation: each LFO's Shape menu sits beside its Rate knob, so the Rate value reads at
+  the same size as every other knob value. It was squeezed to about half size.
+- Release archives include `NOTICE` and the font licence texts in `LICENSES/`.
+
+### Fixed
+
+- The audio thread no longer allocates memory. Parameter lookups by name made about a
+  thousand heap allocations per audio block, each filter allocated new coefficients every
+  16 samples, and on Linux each note sorted the pitch curve through a temporary buffer.
+  Output is unchanged, bit for bit.
+- Silent voices skip the oversampling filters of their Bitcrush and Distortion stages until
+  their next note, which cuts the processing cost while b33p is idle. Output is unchanged,
+  bit for bit, including release, reverb and delay tails.
+- Closing the editor while a "project changed" notification was queued could call into the
+  closed editor. Notifications now check for a live editor when they arrive.
+
+### Added
+
+- Font credits. The interface fonts (Barlow Condensed, VT323, IBM Plex Mono, SIL Open Font
+  License 1.1) are credited in `README.md` and `NOTICE`; their licence texts are in
+  `LICENSES/`.
+
 ## [0.4.0] — 2026-09-29
 
 ### Changed

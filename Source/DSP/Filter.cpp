@@ -88,6 +88,18 @@ namespace B33p
         samplesUntilCoeffUpdate = 0;
         firstSetAfterPrepare    = true;
 
+        // Grow every biquad's coefficient storage to its steady
+        // (second-order) size now, on the message thread, whatever the
+        // current type: updateCoefficients later rewrites these objects in
+        // place from the audio thread, including after a type switch, and
+        // must never be the call that first grows them. The values are
+        // placeholders; the active type's real coefficients follow, and a
+        // type switch resets and recomputes them before they are used.
+        using Coeffs = juce::dsp::IIR::ArrayCoefficients<float>;
+        *biquad.coefficients = Coeffs::makeLowPass(sampleRate, 1000.0f, 0.707f);
+        for (auto& b : formantBands)
+            *b.coefficients = Coeffs::makeBandPass(sampleRate, 1000.0f, kFormantQ);
+
         updateCoefficients();
     }
 
@@ -163,23 +175,31 @@ namespace B33p
         if (! prepared)
             return;
 
+        // Coefficients are written in place into each filter's own
+        // Coefficients object (the array form computes the same values as
+        // the Coefficients::makeX factories, which wrap it in `new`). This
+        // runs every kCoeffUpdateIntervalSamples on the audio thread, so it
+        // must not allocate: the factories heap-allocated a new object per
+        // call. The first call (from prepare) grows each object's storage
+        // to its steady size on the message thread.
+        using Coeffs = juce::dsp::IIR::ArrayCoefficients<float>;
+
         const float nyquistLimit = static_cast<float>(sampleRate * 0.499);
         const float safeCutoff   = std::clamp(cutoffHz,   20.0f, nyquistLimit);
         const float safeQ        = std::clamp(resonanceQ, 0.1f,  20.0f);
 
+        // NOLINTBEGIN(bugprone-branch-clone): each case calls a different
+        // design function; the in-place assignments only look alike.
         switch (type)
         {
             case Type::Lowpass:
-                biquad.coefficients = juce::dsp::IIR::Coefficients<float>::makeLowPass(
-                    sampleRate, safeCutoff, safeQ);
+                *biquad.coefficients = Coeffs::makeLowPass(sampleRate, safeCutoff, safeQ);
                 break;
             case Type::Highpass:
-                biquad.coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(
-                    sampleRate, safeCutoff, safeQ);
+                *biquad.coefficients = Coeffs::makeHighPass(sampleRate, safeCutoff, safeQ);
                 break;
             case Type::Bandpass:
-                biquad.coefficients = juce::dsp::IIR::Coefficients<float>::makeBandPass(
-                    sampleRate, safeCutoff, safeQ);
+                *biquad.coefficients = Coeffs::makeBandPass(sampleRate, safeCutoff, safeQ);
                 break;
             case Type::Comb:
                 // No biquad coefficients to install — the comb mode
@@ -192,13 +212,13 @@ namespace B33p
                 {
                     const float f = std::clamp(formants[static_cast<size_t>(i)],
                                                 20.0f, nyquistLimit);
-                    formantBands[static_cast<size_t>(i)].coefficients =
-                        juce::dsp::IIR::Coefficients<float>::makeBandPass(
-                            sampleRate, f, kFormantQ);
+                    *formantBands[static_cast<size_t>(i)].coefficients =
+                        Coeffs::makeBandPass(sampleRate, f, kFormantQ);
                 }
                 break;
             }
         }
+        // NOLINTEND(bugprone-branch-clone)
     }
 
     float Filter::processSample(float input)

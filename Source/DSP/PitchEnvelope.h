@@ -81,6 +81,7 @@ namespace B33p
         float interpolateAt(double normalizedTime) const;
 
         double                          sampleRate    { 0.0 };
+        static constexpr size_t kReservedCurvePoints = 64;
         std::vector<PitchEnvelopePoint> curve         { { 0.0f, 0.0f } };
         Stage                           stage         { Stage::Idle };
         double                          currentTime   { 0.0 };

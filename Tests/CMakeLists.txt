@@ -42,6 +42,9 @@ add_executable(B33pTests
     State/ParameterRandomizerTests.cpp
     State/ProjectStateTests.cpp
     State/OfflineExporterTests.cpp
+    State/ProcessorTimingTests.cpp
+    State/RealtimeAllocationTests.cpp
+    State/IdleVoiceSkipTests.cpp
     Pattern/PatternTests.cpp
     Pattern/PatternSnapshotTests.cpp
     Pattern/SnapMathTests.cpp

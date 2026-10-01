@@ -33,17 +33,21 @@ namespace B33p
         // hidden under setMacMainMenu) so the logo has a stable home in every
         // build configuration.
         constexpr int kLogoHeaderHeight = 28;
-        // Height handed to the Pattern grid at the default window size; it
-        // grows to fill any extra height when the window is taller than
-        // that. Also doubles as kMinPatternHeight: MainComponent::resized()
-        // never gives Pattern less than this, even at the editor's declared
-        // 1000x600 minimum (setResizeLimits in B33pEditor.cpp) - the voice
-        // editor rows above it scroll instead (see kVoiceEditorContentHeight
-        // and VoiceEditorPanel). Chosen so the default (no-scroll) case and
-        // the floor are the same well-tested value rather than two numbers
-        // that can drift apart.
+        // Height handed to the Pattern grid when the window is just tall
+        // enough to show every voice-editor row; it grows to fill any extra
+        // height beyond that. Also doubles as kMinPatternHeight:
+        // MainComponent::resized() never gives Pattern less than this, at
+        // the 1280x800 default or even at the editor's declared 1000x600
+        // minimum (setResizeLimits in B33pEditor.cpp) - the voice editor
+        // rows above it scroll instead (see kVoiceEditorContentHeight and
+        // VoiceEditorPanel). One value for both so the no-scroll case and
+        // the floor cannot drift apart.
         constexpr int kInitialPatternHeight = 252;
         constexpr int kMinPatternHeight     = kInitialPatternHeight;
+
+        // Default editor size; see the MainComponent constructor.
+        constexpr int kDefaultEditorWidth  = 1280;
+        constexpr int kDefaultEditorHeight = 800;
 
         // Menu item IDs. Kept in one enum so the dispatch in
         // menuItemSelected stays readable. IDs must be > 0 — JUCE
@@ -187,25 +191,16 @@ namespace B33p
 
         setWantsKeyboardFocus(true);
 
-        // 1500 wide accommodates the Pattern toolbar's full set of controls
-        // (Play / Loop / Follow / time readout / Length / Grid / BPM / Time-sig
-        // on the left, Randomize All / Scope / Export on the right — see
-        // PatternSection::resized). At the old 900 width, BPM + Time-sig +
-        // the Length label were squeezed into zero-width slivers.
-        //
-        // Height = menu + padding + the three voice-editor rows + an initial
-        // Pattern grid. The voice editor is column-packed (Mod FX shares the
-        // mid row, Pitch Env shares the modulation row) so the whole window
-        // fits a 1080p display instead of overflowing it. The standalone
-        // window additionally clamps to the screen on launch — see
-        // StandaloneApp.cpp.
-        const int reservedMenuBarHeight = usingMacMainMenu ? 0 : kMenuBarHeight;
-        setSize(1500,
-                reservedMenuBarHeight + kLogoHeaderHeight + 2 * kOuterPadding
-              + kTopRowHeight + kGap
-              + kMidRowHeight + kGap
-              + kModulationRowHeight + kGap
-              + kInitialPatternHeight);
+        // Default size fits a 13-inch laptop: 1280 x 800 leaves room for a
+        // host's title bar and the macOS menu bar on a 1440 x 900 screen
+        // (hosts open a plugin editor at this size; the standalone window
+        // additionally clamps to the screen on launch, see StandaloneApp.cpp).
+        // At this height Pattern keeps its full kMinPatternHeight and the
+        // three voice-editor rows scroll in voiceEditorViewport (see
+        // resized()); a window of about 1500 x 1042 shows every row at once.
+        // At 1280 wide the Pattern toolbar uses its two-row layout
+        // (PatternSection::resized), which keeps every control reachable.
+        setSize(kDefaultEditorWidth, kDefaultEditorHeight);
     }
 
     void MainComponent::paint(juce::Graphics& g)
@@ -251,7 +246,7 @@ namespace B33p
         // tail of the Modulation row) got clipped to zero/negative height.
         //
         // Fix: Pattern always keeps at least kMinPatternHeight (the same
-        // height it gets by default at the comfortable 1500x1012 size) and
+        // height it gets when the window is tall enough for every row) and
         // grows into whatever space is left above that, exactly as before.
         // The voice-editor rows live in voiceEditorViewport at their natural
         // height; when the window is too short to show them in full they

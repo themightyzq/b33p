@@ -163,6 +163,24 @@ namespace B33p
 
         bool isActive() const;
 
+        // Idle-voice skipping. Once the bitcrush + distortion stages have
+        // had kSamplesBeforeEffectsIdle consecutive samples of exactly-zero
+        // input and output (the voice has finished, its release has died
+        // away, and ScopedNoDenormals has flushed the filter memory), their
+        // oversampling filters are zeroed and skipped for as long as the
+        // input stays exactly zero: zeros in, zeros out, with the
+        // smoothers and the sample-and-hold phase still advanced exactly.
+        // The Mod FX stage keeps running, so reverb and delay tails ring
+        // out unchanged. The first non-zero input sample resumes the full
+        // path. Output is identical with or without the skip (asserted in
+        // Tests/State/IdleVoiceSkipTests.cpp).
+        static constexpr int kSamplesBeforeEffectsIdle = 4096;
+        bool isEffectsTailIdle() const noexcept { return effectsIdle; }
+
+        // Test-only A/B hook for the null test above: false always runs the
+        // full path. Production code never calls it.
+        void setIdleSkipEnabledForTests(bool enabled);
+
         // Combined latency (samples) added by the bitcrush + distortion
         // stages' 4x oversampling (OversampledBitcrush /
         // OversampledDistortion). 0 before prepare(). B33pProcessor
@@ -206,5 +224,10 @@ namespace B33p
         // from the randomizer but the user can still automate it).
         juce::SmoothedValue<float> gainSmoother;
         bool                       firstGainSetAfterPrepare { true };
+
+        // See isEffectsTailIdle().
+        int  silentEffectsSamples { 0 };
+        bool effectsIdle          { false };
+        bool idleSkipEnabled      { true };
     };
 }

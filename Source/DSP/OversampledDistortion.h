@@ -57,6 +57,15 @@ namespace B33p
         // the B33pRenderVoice CLI).
         float processSample(float input);
 
+        // Idle-voice fast path, see OversampledBitcrush::processSilentBlock.
+        // tanh(drive * 0) is 0, so only the drive smoother has to advance
+        // (once per host sample, as processBlock() advances it).
+        void processSilentBlock(int numSamples);
+
+        // Zeroes the oversampling filters' memory; see
+        // OversampledBitcrush::clearOversamplerState.
+        void clearOversamplerState();
+
         // Rounded latency (samples) added by the oversampling filters.
         // Deterministic given kOversamplingFactor -- does not depend on
         // drive or sample rate (juce::dsp::Oversampling's filter design

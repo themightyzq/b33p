@@ -120,4 +120,7 @@ Output: `build/B33p_artefacts/Release/Standalone/b33p`,
 
 GPL-3.0-or-later. See `LICENSE`. Built with JUCE.
 
+The interface uses the fonts Barlow Condensed, VT323 and IBM Plex Mono, licensed under the
+SIL Open Font License 1.1. Their licence texts are in `LICENSES/`; see `NOTICE`.
+
 ZQ SFX, https://www.zq-sfx.com, connect@zq-sfx.com.

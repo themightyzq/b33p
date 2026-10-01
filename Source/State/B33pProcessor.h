@@ -10,6 +10,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <functional>
@@ -41,6 +42,7 @@ namespace B33p
     // stubbed out — that lands in Phase 6 with the .beep file format.
     class B33pProcessor : public juce::AudioProcessor
                         , private juce::AudioProcessorValueTreeState::Listener
+                        , private juce::AsyncUpdater
     {
     public:
         B33pProcessor();
@@ -131,6 +133,18 @@ namespace B33p
         // thread, before prepareToPlay / startPlayback.
         void   seedRandomSources(juce::int64 seed);
 
+        // Test-only hooks for Voice's idle effects-tail skip (Voice.h,
+        // isEffectsTailIdle): switch it off on every voice for an A/B null
+        // test, and count the voices currently skipping. Production code
+        // never calls these.
+        void   setIdleSkipEnabledForTests(bool enabled);
+        int    getNumIdleVoicesForTests() const;
+
+        // Test-only: delivers any queued dirty / full-state notification
+        // synchronously (the test binary has no message loop), exactly as
+        // the message thread would.
+        void   deliverPendingNotificationsForTests() { handleAsyncUpdate(); }
+
         void   setLooping(bool shouldLoop);
         bool   getLooping() const          { return looping.load(); }
 
@@ -153,7 +167,7 @@ namespace B33p
         // project state (APVTS values, pitch curve, pattern, locks)
         // marks the processor dirty; saving / loading clears it.
         // The callback fires on dirty<->clean transitions only,
-        // marshalled to the message thread via callAsync so the UI
+        // marshalled to the message thread (AsyncUpdater) so the UI
         // can update safely regardless of which thread mutated.
         bool isDirty() const noexcept { return dirty.load(); }
         void markDirty();
@@ -413,6 +427,18 @@ namespace B33p
         void pushParametersToVoiceImpl(int lane, Voice& v, bool applyOverrides);
         void triggerVoiceFromEvent(int lane, const Event& event);
 
+        // processBlock helpers (audio thread). handleMidiMessage applies
+        // one note-on / note-off / all-notes-off at the sample the
+        // caller has reached. finishSegment runs passes 2 and 3 (effects
+        // tail, then mix / limit / write) over scratch samples
+        // [from, to) of the current chunk, writing output at
+        // outOffset + from. isMidiNoteOn reads the raw bytes, so the
+        // caller can split the segment before a note-on re-pushes a
+        // voice's parameters.
+        void handleMidiMessage(const juce::MidiMessageMetadata& meta);
+        static bool isMidiNoteOn(const juce::MidiMessageMetadata& meta);
+        void finishSegment(int from, int to, int outOffset, float* left, float* right);
+
         // Reads APVTS LFO params + modulation-matrix slots for the
         // lane and updates each LFO's runtime config; computes the
         // total modulation contribution per destination so
@@ -442,9 +468,59 @@ namespace B33p
         // juce::AudioProcessorValueTreeState::Listener
         void parameterChanged(const juce::String& parameterID, float newValue) override;
 
+        // juce::AsyncUpdater: delivers the dirty / full-state-loaded
+        // notifications on the message thread, reading the callbacks as
+        // they are at delivery time. The editor clears them in its
+        // destructor, so a notification queued before the editor closed
+        // finds no callback instead of calling into a destroyed editor
+        // (a queued copy of the callback, as callAsync made, would). The
+        // processor's destructor cancels anything still pending.
+        // Triggering reuses the updater's one pre-allocated message (it
+        // still posts to the OS message queue), far cheaper than callAsync's
+        // per-call copy of the std::function when a host calls
+        // parameterChanged on the audio thread.
+        void handleAsyncUpdate() override;
+
         void registerAsApvtsListener();
         void unregisterAsApvtsListener();
         void notifyDirtyChanged();
+
+        // Every per-lane APVTS parameter the audio thread reads, resolved
+        // once in the constructor (cacheParameterPointers). processBlock and
+        // the voice-update path read only these pointers: looking a
+        // parameter up by ID builds a juce::String, which heap-allocates,
+        // and the old per-block lookups did that about a thousand times
+        // per block. The APVTS owns every pointee for the processor's
+        // lifetime.
+        struct LaneParameters
+        {
+            std::atomic<float>* oscWaveform          { nullptr };
+            std::atomic<float>* fmRatio              { nullptr };
+            std::atomic<float>* ringRatio            { nullptr };
+            std::atomic<float>* ampAttack            { nullptr };
+            std::atomic<float>* ampDecay             { nullptr };
+            std::atomic<float>* ampSustain           { nullptr };
+            std::atomic<float>* ampRelease           { nullptr };
+            std::atomic<float>* filterType           { nullptr };
+            std::atomic<float>* filterVowel          { nullptr };
+            std::atomic<float>* bitcrushBitDepth     { nullptr };
+            std::atomic<float>* bitcrushSampleRateHz { nullptr };
+            std::atomic<float>* modEffectType        { nullptr };
+
+            std::array<std::atomic<float>*, kNumLfosPerLane> lfoShape  {};
+            std::array<std::atomic<float>*, kNumLfosPerLane> lfoRateHz {};
+            std::array<std::atomic<float>*, kNumModSlots>    modSlotSource {};
+            std::array<std::atomic<float>*, kNumModSlots>    modSlotDest   {};
+            std::array<std::atomic<float>*, kNumModSlots>    modSlotAmount {};
+
+            // The modulatable destinations, indexed by ModDestination
+            // (index 0 = None stays null): the raw value for the
+            // unmodulated read, and the parameter object for the
+            // normalised-range maths (getValue / convertFrom0to1).
+            std::array<std::atomic<float>*,          kNumModDestinations> destinationRaw   {};
+            std::array<juce::RangedAudioParameter*,  kNumModDestinations> destinationParam {};
+        };
+        void cacheParameterPointers();
 
         juce::UndoManager                  undoManager;
         juce::AudioProcessorValueTreeState apvts;
@@ -477,9 +553,10 @@ namespace B33p
         // applyEffectsBlock; see OversamplingConfig.h's
         // kMaxOversampledBlockSize and the "oversampler steps one sample
         // at a time" fix in CHANGELOG.md). processBlock fills [lane/voice]
-        // scratch sample-by-sample (pattern event timing is still
-        // sample-accurate), then batches the effects tail across the
-        // whole chunk. Allocated once, on the heap, when the processor is
+        // scratch sample-by-sample (pattern events and MIDI land on their
+        // own sample), then batches the effects tail across each segment
+        // between triggers (finishSegment), so a trigger's parameter
+        // changes never reach samples before it. Allocated once, on the heap, when the processor is
         // constructed (never on the audio thread): as inline std::array
         // members they made B33pProcessor ~200 KB, and two processors on
         // the stack overflowed Windows' 1 MB default stack in the tests.
@@ -589,6 +666,12 @@ namespace B33p
         // every processBlock to decide whether to clear and bail.
         std::atomic<float>*                    bypassParam { nullptr };
 
+        // See LaneParameters. oscWaveformIds lets parameterChanged (which a
+        // VST3 host can call on the audio thread) compare IDs without
+        // building a String per call.
+        std::array<LaneParameters, Pattern::kNumLanes> laneParameters {};
+        std::array<juce::String,   Pattern::kNumLanes> oscWaveformIds;
+
         // A/B slot snapshots — APVTS state XML for each side. Both
         // can be nullptr (then a switch from A → B captures the
         // current state into A and copies it into B). activeAbSlot
@@ -632,6 +715,8 @@ namespace B33p
         std::atomic<bool>     dirty                       { false };
         OnDirtyChanged        onDirtyChangedCallback;
         OnFullStateLoaded     onFullStateLoadedCallback;
+        std::atomic<bool>     dirtyNotificationPending     { false };
+        std::atomic<bool>     fullStateNotificationPending { false };
 
         // Lane the editor UI currently targets. Atomic because the
         // audio thread reads it when routing the audition trigger.

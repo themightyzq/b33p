@@ -44,6 +44,7 @@ namespace B33p
         // Cache the bypass parameter pointer once — processBlock
         // reads it every block.
         bypassParam = apvts.getRawParameterValue(ParameterIDs::bypass());
+        cacheParameterPointers();
 
         registerAsApvtsListener();
     }
@@ -121,6 +122,7 @@ namespace B33p
 
     B33pProcessor::~B33pProcessor()
     {
+        cancelPendingUpdate();
         unregisterAsApvtsListener();
     }
 
@@ -150,7 +152,7 @@ namespace B33p
         // any individual slot.
         for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
         {
-            if (parameterID != ParameterIDs::oscWaveform(lane))
+            if (parameterID != oscWaveformIds[static_cast<size_t>(lane)])
                 continue;
 
             const int newIndex = static_cast<int>(newValue);
@@ -515,6 +517,20 @@ namespace B33p
             v.setNoiseSeed(static_cast<std::uint32_t>(seeder.nextInt()));
     }
 
+    void B33pProcessor::setIdleSkipEnabledForTests(bool enabled)
+    {
+        for (auto& v : voices)     v.setIdleSkipEnabledForTests(enabled);
+        for (auto& v : midiVoices) v.setIdleSkipEnabledForTests(enabled);
+    }
+
+    int B33pProcessor::getNumIdleVoicesForTests() const
+    {
+        int n = 0;
+        for (const auto& v : voices)     n += v.isEffectsTailIdle() ? 1 : 0;
+        for (const auto& v : midiVoices) n += v.isEffectsTailIdle() ? 1 : 0;
+        return n;
+    }
+
     void B33pProcessor::setLooping(bool shouldLoop)
     {
         if (looping.exchange(shouldLoop) != shouldLoop)
@@ -731,14 +747,24 @@ namespace B33p
 
     void B33pProcessor::notifyDirtyChanged()
     {
-        if (onDirtyChangedCallback)
-            juce::MessageManager::callAsync(onDirtyChangedCallback);
+        dirtyNotificationPending.store(true);
+        triggerAsyncUpdate();
     }
 
     void B33pProcessor::notifyFullStateLoaded()
     {
-        if (onFullStateLoadedCallback)
-            juce::MessageManager::callAsync(onFullStateLoadedCallback);
+        fullStateNotificationPending.store(true);
+        triggerAsyncUpdate();
+    }
+
+    void B33pProcessor::handleAsyncUpdate()
+    {
+        // Same order the separate callAsync posts used to arrive in for a
+        // bulk load: the dirty flag first, then the full resync.
+        if (dirtyNotificationPending.exchange(false) && onDirtyChangedCallback)
+            onDirtyChangedCallback();
+        if (fullStateNotificationPending.exchange(false) && onFullStateLoadedCallback)
+            onFullStateLoadedCallback();
     }
 
     void B33pProcessor::resetToDefaults()
@@ -786,17 +812,17 @@ namespace B33p
     std::array<float, kNumModDestinations>
     B33pProcessor::evaluateModulationContributions(int lane)
     {
+        const auto& lp = laneParameters[static_cast<size_t>(lane)];
+
         // Re-sync each LFO's runtime config from APVTS. Cheap to do
         // every block; the LFO's setShape / setRate are no-ops when
         // values haven't actually changed.
         for (int i = 0; i < kNumLfosPerLane; ++i)
         {
             auto& l = lfos[static_cast<size_t>(lane)][static_cast<size_t>(i)];
-            const auto* shapeParam = apvts.getRawParameterValue(ParameterIDs::lfoShape (lane, i));
-            const auto* rateParam  = apvts.getRawParameterValue(ParameterIDs::lfoRateHz(lane, i));
             l.setShape(static_cast<LFO::Shape>(
-                juce::jlimit(0, 3, static_cast<int>(shapeParam->load()))));
-            l.setRate(rateParam->load());
+                juce::jlimit(0, 3, static_cast<int>(lp.lfoShape[static_cast<size_t>(i)]->load()))));
+            l.setRate(lp.lfoRateHz[static_cast<size_t>(i)]->load());
         }
 
         std::array<float, kNumModDestinations> contributions {};
@@ -804,11 +830,12 @@ namespace B33p
 
         for (int slot = 0; slot < kNumModSlots; ++slot)
         {
+            const auto s = static_cast<size_t>(slot);
             const int srcIdx = juce::jlimit(0, kNumModSources - 1,
-                static_cast<int>(apvts.getRawParameterValue(ParameterIDs::modSlotSource(lane, slot))->load()));
+                static_cast<int>(lp.modSlotSource[s]->load()));
             const int dstIdx = juce::jlimit(0, kNumModDestinations - 1,
-                static_cast<int>(apvts.getRawParameterValue(ParameterIDs::modSlotDest(lane, slot))->load()));
-            const float amount = apvts.getRawParameterValue(ParameterIDs::modSlotAmount(lane, slot))->load();
+                static_cast<int>(lp.modSlotDest[s]->load()));
+            const float amount = lp.modSlotAmount[s]->load();
 
             const auto src = static_cast<ModSource>(srcIdx);
             if (src == ModSource::None || dstIdx == 0)
@@ -832,8 +859,8 @@ namespace B33p
     {
         // Maps each modulation destination back to the lane's
         // corresponding APVTS parameter ID. None returns an empty
-        // string; the caller is expected to never call this with
-        // ModDestination::None.
+        // string. Message thread only (cacheParameterPointers): it
+        // builds a juce::String.
         juce::String paramIdForDest(int lane, ModDestination dest)
         {
             switch (dest)
@@ -855,14 +882,60 @@ namespace B33p
         }
     }
 
+    void B33pProcessor::cacheParameterPointers()
+    {
+        auto raw = [this](const juce::String& id)
+        {
+            auto* p = apvts.getRawParameterValue(id);
+            jassert(p != nullptr);   // every ID comes from ParameterLayout
+            return p;
+        };
+
+        for (int lane = 0; lane < Pattern::kNumLanes; ++lane)
+        {
+            auto& lp = laneParameters[static_cast<size_t>(lane)];
+            oscWaveformIds[static_cast<size_t>(lane)] = ParameterIDs::oscWaveform(lane);
+
+            lp.oscWaveform          = raw(ParameterIDs::oscWaveform(lane));
+            lp.fmRatio              = raw(ParameterIDs::fmRatio(lane));
+            lp.ringRatio            = raw(ParameterIDs::ringRatio(lane));
+            lp.ampAttack            = raw(ParameterIDs::ampAttack(lane));
+            lp.ampDecay             = raw(ParameterIDs::ampDecay(lane));
+            lp.ampSustain           = raw(ParameterIDs::ampSustain(lane));
+            lp.ampRelease           = raw(ParameterIDs::ampRelease(lane));
+            lp.filterType           = raw(ParameterIDs::filterType(lane));
+            lp.filterVowel          = raw(ParameterIDs::filterVowel(lane));
+            lp.bitcrushBitDepth     = raw(ParameterIDs::bitcrushBitDepth(lane));
+            lp.bitcrushSampleRateHz = raw(ParameterIDs::bitcrushSampleRateHz(lane));
+            lp.modEffectType        = raw(ParameterIDs::modEffectType(lane));
+
+            for (int i = 0; i < kNumLfosPerLane; ++i)
+            {
+                lp.lfoShape [static_cast<size_t>(i)] = raw(ParameterIDs::lfoShape (lane, i));
+                lp.lfoRateHz[static_cast<size_t>(i)] = raw(ParameterIDs::lfoRateHz(lane, i));
+            }
+            for (int i = 0; i < kNumModSlots; ++i)
+            {
+                lp.modSlotSource[static_cast<size_t>(i)] = raw(ParameterIDs::modSlotSource(lane, i));
+                lp.modSlotDest  [static_cast<size_t>(i)] = raw(ParameterIDs::modSlotDest  (lane, i));
+                lp.modSlotAmount[static_cast<size_t>(i)] = raw(ParameterIDs::modSlotAmount(lane, i));
+            }
+            for (int d = 1; d < kNumModDestinations; ++d)
+            {
+                const auto id = paramIdForDest(lane, static_cast<ModDestination>(d));
+                lp.destinationRaw  [static_cast<size_t>(d)] = raw(id);
+                lp.destinationParam[static_cast<size_t>(d)] = apvts.getParameter(id);
+                jassert(lp.destinationParam[static_cast<size_t>(d)] != nullptr);
+            }
+        }
+    }
+
     float B33pProcessor::effectiveParamValue(int lane,
                                               ModDestination destination,
                                               float modAmount) const
     {
-        const auto id = paramIdForDest(lane, destination);
-        if (id.isEmpty())
-            return 0.0f;
-        auto* param = apvts.getParameter(id);
+        auto* param = laneParameters[static_cast<size_t>(lane)]
+                          .destinationParam[static_cast<size_t>(destination)];
         if (param == nullptr)
             return 0.0f;
         const float baseNorm = param->getValue();
@@ -883,10 +956,8 @@ namespace B33p
         {
             if (slot.destination != destination)
                 continue;
-            const auto id = paramIdForDest(lane, destination);
-            if (id.isEmpty())
-                return false;
-            auto* param = apvts.getParameter(id);
+            auto* param = laneParameters[static_cast<size_t>(lane)]
+                              .destinationParam[static_cast<size_t>(destination)];
             if (param == nullptr)
                 return false;
             outValue = param->convertFrom0to1(juce::jlimit(0.0f, 1.0f, slot.value));
@@ -907,6 +978,7 @@ namespace B33p
                                                    bool applyOverrides)
     {
         const auto modContribs = evaluateModulationContributions(lane);
+        const auto& lp = laneParameters[static_cast<size_t>(lane)];
 
         // Picks the effective value for a modulatable destination.
         // Priority: per-event override (wins outright if set, when
@@ -915,7 +987,7 @@ namespace B33p
         // entirely so a clip can pin a parameter independently of
         // any wiring. MIDI voices skip the override path because
         // they aren't event-driven.
-        auto modulated = [&](ModDestination d, const juce::String& fallbackId)
+        auto modulated = [&](ModDestination d)
         {
             if (applyOverrides)
             {
@@ -926,21 +998,20 @@ namespace B33p
             const float c = modContribs[static_cast<size_t>(d)];
             if (c != 0.0f)
                 return effectiveParamValue(lane, d, c);
-            return apvts.getRawParameterValue(fallbackId)->load();
+            return lp.destinationRaw[static_cast<size_t>(d)]->load();
         };
 
-        const auto* wfParam = apvts.getRawParameterValue(ParameterIDs::oscWaveform(lane));
         v.setWaveform(static_cast<Oscillator::Waveform>(
             juce::jlimit(0,
                          static_cast<int>(Oscillator::Waveform::Ring),
-                         static_cast<int>(wfParam->load()))));
+                         static_cast<int>(lp.oscWaveform->load()))));
 
-        v.setBasePitchHz         (modulated(ModDestination::OscBasePitch,    ParameterIDs::basePitchHz(lane)));
-        v.setWavetableMorph      (modulated(ModDestination::WavetableMorph,  ParameterIDs::wavetableMorph(lane)));
-        v.setFmRatio             (apvts.getRawParameterValue(ParameterIDs::fmRatio(lane))->load());
-        v.setFmDepth             (modulated(ModDestination::FmDepth,         ParameterIDs::fmDepth(lane)));
-        v.setRingRatio           (apvts.getRawParameterValue(ParameterIDs::ringRatio(lane))->load());
-        v.setRingMix             (modulated(ModDestination::RingMix,         ParameterIDs::ringMix(lane)));
+        v.setBasePitchHz         (modulated(ModDestination::OscBasePitch));
+        v.setWavetableMorph      (modulated(ModDestination::WavetableMorph));
+        v.setFmRatio             (lp.fmRatio->load());
+        v.setFmDepth             (modulated(ModDestination::FmDepth));
+        v.setRingRatio           (lp.ringRatio->load());
+        v.setRingMix             (modulated(ModDestination::RingMix));
 
         // Push every slot only when its shared_ptr has changed since
         // last push — keeps the common no-edit path zero-cost.
@@ -967,32 +1038,30 @@ namespace B33p
                 last = current;
             }
         }
-        v.setAmpAttack           (apvts.getRawParameterValue(ParameterIDs::ampAttack(lane))->load());
-        v.setAmpDecay            (apvts.getRawParameterValue(ParameterIDs::ampDecay(lane))->load());
-        v.setAmpSustain          (apvts.getRawParameterValue(ParameterIDs::ampSustain(lane))->load());
-        v.setAmpRelease          (apvts.getRawParameterValue(ParameterIDs::ampRelease(lane))->load());
-        const auto* ftParam = apvts.getRawParameterValue(ParameterIDs::filterType(lane));
+        v.setAmpAttack           (lp.ampAttack->load());
+        v.setAmpDecay            (lp.ampDecay->load());
+        v.setAmpSustain          (lp.ampSustain->load());
+        v.setAmpRelease          (lp.ampRelease->load());
         v.setFilterType(static_cast<Filter::Type>(
             juce::jlimit(0,
                          static_cast<int>(Filter::Type::Formant),
-                         static_cast<int>(ftParam->load()))));
-        v.setFilterCutoff        (modulated(ModDestination::FilterCutoff,    ParameterIDs::filterCutoffHz(lane)));
-        v.setFilterResonance     (modulated(ModDestination::FilterResonance, ParameterIDs::filterResonanceQ(lane)));
-        v.setFilterVowel         (apvts.getRawParameterValue(ParameterIDs::filterVowel(lane))->load());
-        v.setBitcrushBitDepth    (apvts.getRawParameterValue(ParameterIDs::bitcrushBitDepth(lane))->load());
-        v.setBitcrushSampleRate  (apvts.getRawParameterValue(ParameterIDs::bitcrushSampleRateHz(lane))->load());
-        v.setDistortionDrive     (modulated(ModDestination::DistortionDrive, ParameterIDs::distortionDrive(lane)));
+                         static_cast<int>(lp.filterType->load()))));
+        v.setFilterCutoff        (modulated(ModDestination::FilterCutoff));
+        v.setFilterResonance     (modulated(ModDestination::FilterResonance));
+        v.setFilterVowel         (lp.filterVowel->load());
+        v.setBitcrushBitDepth    (lp.bitcrushBitDepth->load());
+        v.setBitcrushSampleRate  (lp.bitcrushSampleRateHz->load());
+        v.setDistortionDrive     (modulated(ModDestination::DistortionDrive));
 
-        const auto* mxParam = apvts.getRawParameterValue(ParameterIDs::modEffectType(lane));
         v.setModEffectType(static_cast<ModulationEffect::Type>(
             juce::jlimit(0,
                          static_cast<int>(ModulationEffect::Type::Phaser),
-                         static_cast<int>(mxParam->load()))));
-        v.setModEffectParam1     (modulated(ModDestination::ModEffectParam1, ParameterIDs::modEffectParam1(lane)));
-        v.setModEffectParam2     (modulated(ModDestination::ModEffectParam2, ParameterIDs::modEffectParam2(lane)));
-        v.setModEffectMix        (modulated(ModDestination::ModEffectMix,    ParameterIDs::modEffectMix(lane)));
+                         static_cast<int>(lp.modEffectType->load()))));
+        v.setModEffectParam1     (modulated(ModDestination::ModEffectParam1));
+        v.setModEffectParam2     (modulated(ModDestination::ModEffectParam2));
+        v.setModEffectMix        (modulated(ModDestination::ModEffectMix));
 
-        v.setGain                (modulated(ModDestination::VoiceGain,       ParameterIDs::voiceGain(lane)));
+        v.setGain                (modulated(ModDestination::VoiceGain));
     }
 
     void B33pProcessor::triggerVoiceFromEvent(int lane, const Event& event)
@@ -1027,6 +1096,120 @@ namespace B33p
             = static_cast<int>(event.durationSeconds * currentSampleRate);
     }
 
+    void B33pProcessor::handleMidiMessage(const juce::MidiMessageMetadata& meta)
+    {
+        // Channel-voice messages only. Bigger messages (SysEx) would make
+        // juce::MidiMessage allocate, and b33p ignores them anyway.
+        if (meta.numBytes <= 0 || meta.numBytes > 3)
+            return;
+        const juce::MidiMessage msg(meta.data, meta.numBytes);
+
+        // Route every note-on to the next MIDI voice slot; route note-off
+        // to whichever slot was assigned that note. The MIDI voices live
+        // in their own pool so a held chord doesn't fight pattern
+        // playback for voice slots. Each MIDI voice inherits the
+        // currently-selected lane's params at trigger time - sound-design
+        // happens on the selected lane and MIDI plays the same patch.
+        if (msg.isNoteOn())
+        {
+            const int lane = juce::jlimit(0, Pattern::kNumLanes - 1,
+                                           selectedLane.load());
+            const int note = juce::jlimit(0, 127, msg.getNoteNumber());
+
+            // Round-robin allocation. If the slot is currently ringing,
+            // the assignment retriggers it (Voice's amp envelope handles
+            // the click-free retrigger from current level per CLAUDE.md).
+            const int slot = nextMidiVoiceIndex;
+            nextMidiVoiceIndex = (nextMidiVoiceIndex + 1) % kMidiPolyphony;
+
+            // If the stolen slot was already mapped to a held note, that
+            // note's tracking is now stale - clear the entry so a future
+            // note-off doesn't release a voice the new note has claimed.
+            for (auto& m : midiNoteToVoice)
+                if (m == slot) m = -1;
+            midiNoteToVoice[static_cast<size_t>(note)] = slot;
+
+            auto& v = midiVoices[static_cast<size_t>(slot)];
+            pushParametersToVoiceImpl(lane, v, /*applyOverrides=*/false);
+            {
+                const juce::ScopedTryLock tryLock(pitchCurveLock);
+                if (tryLock.isLocked())
+                    v.setPitchCurve(pitchCurve);
+            }
+            v.trigger(/*durationSeconds=*/10.0f,   // long; release on note-off
+                      static_cast<float>(note - 60),
+                      msg.getVelocity() / 127.0f);
+        }
+        else if (msg.isNoteOff())
+        {
+            const int note = juce::jlimit(0, 127, msg.getNoteNumber());
+            const int slot = midiNoteToVoice[static_cast<size_t>(note)];
+            if (slot >= 0 && slot < kMidiPolyphony)
+            {
+                midiVoices[static_cast<size_t>(slot)].noteOff();
+                midiNoteToVoice[static_cast<size_t>(note)] = -1;
+            }
+        }
+        else if (msg.isAllNotesOff() || msg.isAllSoundOff())
+        {
+            for (auto& v : voices)     v.noteOff();
+            for (auto& v : midiVoices) v.noteOff();
+            for (auto& m : midiNoteToVoice) m = -1;
+        }
+    }
+
+    bool B33pProcessor::isMidiNoteOn(const juce::MidiMessageMetadata& meta)
+    {
+        // Same test juce::MidiMessage::isNoteOn() applies (velocity 0 is
+        // a note-off), read straight from the bytes.
+        return meta.numBytes == 3
+            && (meta.data[0] & 0xf0) == 0x90
+            && meta.data[2] != 0;
+    }
+
+    void B33pProcessor::finishSegment(int from, int to, int outOffset,
+                                      float* left, float* right)
+    {
+        const int len = to - from;
+        if (len <= 0)
+            return;
+
+        // ---- Pass 2: batched bitcrush -> distortion -> modEffect -> gain
+        // tail, one oversampler call pair per voice for the whole segment
+        // instead of one pair per sample.
+        const auto f = static_cast<size_t>(from);
+        for (size_t v = 0; v < voices.size(); ++v)
+            voices[v].applyEffectsBlock(laneVoiceScratch[v].data() + f,
+                                        laneVelocityScratch[v].data() + f, len);
+        for (size_t v = 0; v < midiVoices.size(); ++v)
+            midiVoices[v].applyEffectsBlock(midiVoiceScratch[v].data() + f,
+                                            midiVelocityScratch[v].data() + f, len);
+
+        // ---- Pass 3: mix, limit, and write output, per sample.
+        for (int i = from; i < to; ++i)
+        {
+            const auto si = static_cast<size_t>(i);
+            float s = 0.0f;
+            for (size_t v = 0; v < voices.size(); ++v)     s += laneVoiceScratch[v][si];
+            for (size_t v = 0; v < midiVoices.size(); ++v) s += midiVoiceScratch[v][si];
+
+            // Soft-clip safety on the summed output. The voices sum with
+            // no headroom, so a dense pattern or a hot randomized patch
+            // can drive the sum well past +/-1.0; the limiter rounds those
+            // peaks toward a ceiling just below 0 dBFS so nothing
+            // hard-clips (clean signal below the knee is untouched).
+            s = outputLimiter.processSample(s);
+            // Bypass-exit fade-in. At steady state (not just-exited) this
+            // is a 1.0 multiply. Just after un-bypass it ramps from 0 to 1
+            // over 10 ms.
+            s *= bypassFadeGain.getNextValue();
+
+            const int outIdx = outOffset + i;
+            if (left  != nullptr) left[outIdx]  = s;
+            if (right != nullptr) right[outIdx] = s;
+        }
+    }
+
     void B33pProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                      juce::MidiBuffer& midi)
     {
@@ -1035,7 +1218,7 @@ namespace B33p
         const int numSamples  = buffer.getNumSamples();
         const int numChannels = buffer.getNumChannels();
 
-        // Host bypass — JUCE 8 routes bypass through the parameter
+        // Host bypass - JUCE 8 routes bypass through the parameter
         // returned by getBypassParameter(). For an instrument plugin
         // "bypass" means stop generating audio: clear the buffer and
         // the MIDI through-pass. Skipping the rest of the block also
@@ -1050,79 +1233,17 @@ namespace B33p
             bypassFadeGain.setCurrentAndTargetValue(0.0f);
             return;
         }
-        // Not bypassed — ensure the fade-gain target is 1. A no-op
+        // Not bypassed - ensure the fade-gain target is 1. A no-op
         // once already at 1; ramps from 0 if we just exited bypass.
         bypassFadeGain.setTargetValue(1.0f);
 
         pushParametersToVoices();
 
-        // ---- MIDI input ------------------------------------------
-        // Route every note-on to the next MIDI voice slot; route
-        // note-off to whichever slot was assigned that note. The
-        // MIDI voices live in their own pool so a held chord
-        // doesn't fight pattern playback for voice slots. Each
-        // MIDI voice inherits the currently-selected lane's params
-        // at trigger time — sound-design happens on the selected
-        // lane and MIDI plays the same patch.
-        for (const auto meta : midi)
-        {
-            const auto& msg = meta.getMessage();
-            if (msg.isNoteOn())
-            {
-                const int lane = juce::jlimit(0, Pattern::kNumLanes - 1,
-                                               selectedLane.load());
-                const int note = juce::jlimit(0, 127, msg.getNoteNumber());
-
-                // Round-robin allocation. If the slot is currently
-                // ringing, the assignment retriggers it (Voice's
-                // amp envelope handles the click-free retrigger
-                // from current level per CLAUDE.md).
-                const int slot = nextMidiVoiceIndex;
-                nextMidiVoiceIndex = (nextMidiVoiceIndex + 1) % kMidiPolyphony;
-
-                // If the stolen slot was already mapped to a held
-                // note, that note's tracking is now stale — clear
-                // the entry so a future note-off doesn't release
-                // a voice the new note has claimed.
-                for (auto& m : midiNoteToVoice)
-                    if (m == slot) m = -1;
-                midiNoteToVoice[static_cast<size_t>(note)] = slot;
-
-                auto& v = midiVoices[static_cast<size_t>(slot)];
-                pushParametersToVoiceImpl(lane, v, /*applyOverrides=*/false);
-                {
-                    const juce::ScopedTryLock tryLock(pitchCurveLock);
-                    if (tryLock.isLocked())
-                        v.setPitchCurve(pitchCurve);
-                }
-                v.trigger(/*durationSeconds=*/10.0f,   // long; release on note-off
-                          static_cast<float>(note - 60),
-                          msg.getVelocity() / 127.0f);
-            }
-            else if (msg.isNoteOff())
-            {
-                const int note = juce::jlimit(0, 127, msg.getNoteNumber());
-                const int slot = midiNoteToVoice[static_cast<size_t>(note)];
-                if (slot >= 0 && slot < kMidiPolyphony)
-                {
-                    midiVoices[static_cast<size_t>(slot)].noteOff();
-                    midiNoteToVoice[static_cast<size_t>(note)] = -1;
-                }
-            }
-            else if (msg.isAllNotesOff() || msg.isAllSoundOff())
-            {
-                for (auto& v : voices)     v.noteOff();
-                for (auto& v : midiVoices) v.noteOff();
-                for (auto& m : midiNoteToVoice) m = -1;
-            }
-        }
-        midi.clear();   // we never produce MIDI
-
         // ---- Host transport sync (plugin contexts) -----------------
         // When the user has enabled "Follow host transport" AND a
         // host playhead is available, we override the local play
         // flag and the playhead position with what the host
-        // reports. Pattern BPM is intentionally NOT synced —
+        // reports. Pattern BPM is intentionally NOT synced -
         // sound-design users routinely want a beep pattern at a
         // different tempo than the host session.
         bool   hostPlaying           = false;
@@ -1155,7 +1276,7 @@ namespace B33p
                                     : playing.load(std::memory_order_acquire);
         if (nowPlaying && ! audioThreadPlaying)
         {
-            // First snapshot read at playback start — try-lock and fall
+            // First snapshot read at playback start - try-lock and fall
             // through on contention; the audio thread keeps its prior
             // activeSnapshot (nullptr on cold start, which the !=
             // nullptr guards below already handle).
@@ -1187,7 +1308,7 @@ namespace B33p
         {
             // Audio-thread try-lock for the snapshot pointer. If the
             // message thread is mid-write we keep activeSnapshot and
-            // pick the new one up next block — single-block stale is
+            // pick the new one up next block - single-block stale is
             // far cheaper than blocking the audio callback.
             std::shared_ptr<const PatternSnapshot> latest = activeSnapshot;
             {
@@ -1210,17 +1331,6 @@ namespace B33p
             }
         }
 
-        // ---- Audition trigger fires before the per-sample loop ----
-        // Routes to whichever lane the editor sections currently
-        // target so the user hears the voice they're tweaking.
-        if (pendingAudition.exchange(false, std::memory_order_acq_rel))
-        {
-            Event auditionEvent { 0.0,
-                                  static_cast<double>(kAuditionDurationSeconds),
-                                  0.0f };
-            triggerVoiceFromEvent(selectedLane.load(), auditionEvent);
-        }
-
         auto* left  = numChannels > 0 ? buffer.getWritePointer(0) : nullptr;
         auto* right = numChannels > 1 ? buffer.getWritePointer(1) : nullptr;
 
@@ -1232,7 +1342,7 @@ namespace B33p
         // Host follow: snap playhead to the host's reported
         // position at the start of every block. The per-sample
         // loop below then advances by sampleDuration as usual,
-        // which keeps us sample-accurate within the block — the
+        // which keeps us sample-accurate within the block - the
         // next block re-snaps. Re-seed nextEventIndex so events
         // that land at the new position fire and ones we've
         // already passed don't.
@@ -1249,32 +1359,71 @@ namespace B33p
             }
         }
 
-        // The block below used to be one tight per-sample loop that
-        // generated each voice's fully-effected sample and mixed it to
-        // output immediately. That called OversampledBitcrush /
-        // OversampledDistortion's juce::dsp::Oversampling up/down filter
-        // pair once per SINGLE sample, paying its per-call overhead
-        // numSamples times per block instead of once. Bitcrush and
-        // distortion state intentionally carries across triggers (Voice.h)
-        // and neither cares about pattern event boundaries, so the tail of
-        // the chain can be batched across a whole chunk without changing
-        // behaviour: split into (1) a per-sample pass that still handles
-        // pattern timing and trigger/noteOff exactly as before, generating
-        // each voice's PRE-bitcrush sample into scratch, (2) one batched
-        // bitcrush -> distortion -> modEffect -> gain call per voice over
-        // the whole chunk, then (3) a per-sample pass that sums, limits,
-        // and writes output -- same sample order and signal chain as
-        // before, just regrouped. Chunked at kMaxOversampledBlockSize so
-        // the preallocated scratch (sized to that ceiling) never overflows
-        // even for an out-of-contract host block larger than 2048 samples.
+        // The audition trigger is consumed once per block and fires at the
+        // block's first sample (after any MIDI stamped at sample 0). A
+        // zero-length block leaves it pending for the next one.
+        bool auditionPending = numSamples > 0
+                            && pendingAudition.exchange(false, std::memory_order_acq_rel);
+
+        auto       midiIt  = midi.cbegin();
+        const auto midiEnd = midi.cend();
+        // Events stamped outside the block land on its first / last sample.
+        const int  lastSample = std::max(0, numSamples - 1);
+
+        // Signal flow per chunk (chunked at kMaxOversampledBlockSize so the
+        // preallocated scratch never overflows, even for an out-of-contract
+        // host block above 2048 samples):
+        //   (1) a per-sample pass handles MIDI, the audition, pattern
+        //       timing and note-offs exactly at their sample and generates
+        //       each voice's PRE-bitcrush sample into scratch;
+        //   (2) one batched bitcrush -> distortion -> modEffect -> gain call
+        //       per voice (one juce::dsp::Oversampling up/down pair per call
+        //       instead of one per sample);
+        //   (3) a per-sample sum, limit and write.
+        // A trigger re-pushes the triggered voice's parameters (per-event
+        // overrides, or the selected lane's patch for a MIDI note), and
+        // pass 2 reads whatever parameters the voice holds when it runs.
+        // So passes 2 and 3 never span a trigger: every trigger after the
+        // first sample of a segment first finishes the segment so far
+        // (finishSegment), and the triggered voice's new parameters apply
+        // from the trigger's own sample. Note-offs only touch the amp
+        // envelope (pass 1) and need no split.
         int blockOffset = 0;
         while (blockOffset < numSamples)
         {
             const int chunkLen = std::min(numSamples - blockOffset, kMaxOversampledBlockSize);
+            int segStart = 0;
 
-            // ---- Pass 1: pattern timing + oscillator/envelope/filter ---
             for (int i = 0; i < chunkLen; ++i)
             {
+                const int blockIndex = blockOffset + i;
+
+                // ---- MIDI stamped at this sample ----------------------
+                while (midiIt != midiEnd)
+                {
+                    const auto meta = *midiIt;
+                    const int pos = juce::jlimit(0, lastSample, meta.samplePosition);
+                    if (pos > blockIndex)
+                        break;
+                    if (isMidiNoteOn(meta) && i > segStart)
+                    {
+                        finishSegment(segStart, i, blockOffset, left, right);
+                        segStart = i;
+                    }
+                    handleMidiMessage(meta);
+                    ++midiIt;
+                }
+
+                // ---- Audition (routes to the lane the editor targets) --
+                if (auditionPending)
+                {
+                    auditionPending = false;
+                    Event auditionEvent { 0.0,
+                                          static_cast<double>(kAuditionDurationSeconds),
+                                          0.0f };
+                    triggerVoiceFromEvent(selectedLane.load(), auditionEvent);
+                }
+
                 // ---- Pattern playback: advance playhead, fire events --
                 if (audioThreadPlaying && activeSnapshot != nullptr)
                 {
@@ -1301,6 +1450,11 @@ namespace B33p
                         while (nextEventIndex < static_cast<int>(events.size())
                                && events[static_cast<size_t>(nextEventIndex)].event.startSeconds <= playhead)
                         {
+                            if (i > segStart)
+                            {
+                                finishSegment(segStart, i, blockOffset, left, right);
+                                segStart = i;
+                            }
                             const auto& sched = events[static_cast<size_t>(nextEventIndex)];
                             triggerVoiceFromEvent(sched.lane, sched.event);
                             ++nextEventIndex;
@@ -1322,67 +1476,36 @@ namespace B33p
 
                 // Generate this sample's pre-effect signal for every lane
                 // voice + the MIDI pool, snapshotting the trigger velocity
-                // in effect right now -- a retrigger later in this same
-                // chunk changes it for the rest of the chunk, and pass 2
-                // needs the value as of each individual sample, not
-                // whatever it ends up being once the chunk is done.
+                // in effect right now - pass 2 applies the value as of
+                // each individual sample.
+                const auto si = static_cast<size_t>(i);
                 for (size_t v = 0; v < voices.size(); ++v)
                 {
-                    laneVoiceScratch[v][static_cast<size_t>(i)]    = voices[v].generateCore();
-                    laneVelocityScratch[v][static_cast<size_t>(i)] = voices[v].getTriggerVelocity();
+                    laneVoiceScratch[v][si]    = voices[v].generateCore();
+                    laneVelocityScratch[v][si] = voices[v].getTriggerVelocity();
                 }
                 for (size_t v = 0; v < midiVoices.size(); ++v)
                 {
-                    midiVoiceScratch[v][static_cast<size_t>(i)]    = midiVoices[v].generateCore();
-                    midiVelocityScratch[v][static_cast<size_t>(i)] = midiVoices[v].getTriggerVelocity();
+                    midiVoiceScratch[v][si]    = midiVoices[v].generateCore();
+                    midiVelocityScratch[v][si] = midiVoices[v].getTriggerVelocity();
                 }
 
                 playhead += sampleDuration;
             }
 
-            // ---- Pass 2: batched bitcrush -> distortion -> modEffect ->
-            // gain tail, one oversampler call pair per voice for the
-            // whole chunk instead of one pair per sample.
-            for (size_t v = 0; v < voices.size(); ++v)
-                voices[v].applyEffectsBlock(laneVoiceScratch[v].data(), laneVelocityScratch[v].data(), chunkLen);
-            for (size_t v = 0; v < midiVoices.size(); ++v)
-                midiVoices[v].applyEffectsBlock(midiVoiceScratch[v].data(), midiVelocityScratch[v].data(), chunkLen);
-
-            // ---- Pass 3: mix, limit, and write output — same per-sample
-            // order and signal chain as the old single-pass loop; the
-            // limiter and bypass fade are both applied once per sample
-            // here exactly as before, just after pass 2 instead of
-            // interleaved with generation.
-            for (int i = 0; i < chunkLen; ++i)
-            {
-                float s = 0.0f;
-                for (size_t v = 0; v < voices.size(); ++v)     s += laneVoiceScratch[v][static_cast<size_t>(i)];
-                for (size_t v = 0; v < midiVoices.size(); ++v) s += midiVoiceScratch[v][static_cast<size_t>(i)];
-
-                // Soft-clip safety on the summed output. The voices sum
-                // with no headroom, so a dense pattern or a hot randomized
-                // patch can drive the sum well past +/-1.0; the limiter
-                // rounds those peaks toward a ceiling just below 0 dBFS so
-                // nothing hard-clips (clean signal below the knee is
-                // untouched).
-                s = outputLimiter.processSample(s);
-                // Bypass-exit fade-in. At steady state (not just-exited)
-                // this is a 1.0 multiply — free. Just after un-bypass it
-                // ramps from 0 to 1 over 10 ms.
-                s *= bypassFadeGain.getNextValue();
-
-                const int outIdx = blockOffset + i;
-                if (left  != nullptr) left[outIdx]  = s;
-                if (right != nullptr) right[outIdx] = s;
-            }
-
+            finishSegment(segStart, chunkLen, blockOffset, left, right);
             blockOffset += chunkLen;
         }
+        // A zero-length block has no sample to stamp MIDI on; still apply
+        // it, so a host flushing notes that way loses none.
+        for (; midiIt != midiEnd; ++midiIt)
+            handleMidiMessage(*midiIt);
+        midi.clear();   // we never produce MIDI
 
         if (audioThreadPlaying)
             playheadSeconds.store(playhead);
 
-        // Output peak for the level meter — scan the L channel,
+        // Output peak for the level meter - scan the L channel,
         // decay the previous value slightly so the meter falls when
         // the buffer goes quiet. The factor (~0.95 per block) gives
         // a roughly 200 ms fall time at typical block sizes.
@@ -1395,7 +1518,7 @@ namespace B33p
             outputPeak.store(std::max(blockPeak, prev));
         }
 
-        // Zero any additional output channels (defensive — stereo
+        // Zero any additional output channels (defensive - stereo
         // standalones typically have at most 2 output channels).
         for (int ch = 2; ch < numChannels; ++ch)
             buffer.clear(ch, 0, numSamples);
@@ -1403,7 +1526,7 @@ namespace B33p
         // Advance every lane's LFOs by one block's worth of phase
         // so the next block's pushParametersToVoices reads the
         // updated phase position. LFOs run free regardless of
-        // playback state — modulation persists between events.
+        // playback state - modulation persists between events.
         for (auto& laneLfos : lfos)
             for (auto& lfo : laneLfos)
                 lfo.advance(numSamples);

@@ -126,6 +126,34 @@ namespace B33p
         }
     }
 
+    void OversampledBitcrush::processSilentBlock(int numSamples)
+    {
+        if (! prepared)
+            return;
+
+        if (! oversamplingEnabled)
+        {
+            for (int i = 0; i < numSamples; ++i)
+                bitcrush.processSample(0.0f);
+            return;
+        }
+
+        // Same per-sample / per-tick sequence as processBlock()'s inner
+        // loop, minus the oversampling filters.
+        const double tickRate = sampleRate * static_cast<double>(kOversamplingFactor);
+        for (int j = 0; j < numSamples; ++j)
+        {
+            bitcrush.beginOversampledTick(tickRate);
+            for (int k = 0; k < kOversamplingFactor; ++k)
+                bitcrush.step(0.0f);
+        }
+    }
+
+    void OversampledBitcrush::clearOversamplerState()
+    {
+        oversampler.reset();
+    }
+
     float OversampledBitcrush::processSample(float input)
     {
         processBlock(&input, 1);

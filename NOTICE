@@ -25,3 +25,20 @@ build time via CPM (see CMakeLists.txt):
     https://github.com/catchorg/Catch2
     Copyright Catch2 authors.
     Licensed under the Boost Software License 1.0 (BSL-1.0).
+
+  ZQ SFX house UI (zqsfx_ui) - version v0.4.0
+    Fetched at build time via CPM; https://github.com/themightyzq/zqsfx_ui
+    Embeds the following fonts in the Standalone / VST3 / AU binaries.
+    Each is licensed under the SIL Open Font License, Version 1.1; the
+    licence texts are in the LICENSES/ folder of this repository and of
+    every release archive.
+
+    Barlow Condensed (Medium, SemiBold)
+      Copyright 2017 The Barlow Project Authors
+      LICENSES/OFL-BarlowCondensed.txt
+    VT323
+      Copyright 2011, The VT323 Project Authors
+      LICENSES/OFL-VT323.txt
+    IBM Plex Mono
+      Copyright 2017 IBM Corp., with Reserved Font Name "Plex"
+      LICENSES/OFL-IBMPlexMono.txt

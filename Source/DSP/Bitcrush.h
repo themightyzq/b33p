@@ -64,6 +64,10 @@ namespace B33p
         void  beginOversampledTick(double tickRateHz);
         float step(float input);
 
+        // True when the sample-and-hold currently holds 0 (its output
+        // until the next capture).
+        bool isHoldingZero() const noexcept { return juce::exactlyEqual(heldSample, 0.0f); }
+
     private:
         float quantize(float x) const;
         void  recomputeQuantStep();

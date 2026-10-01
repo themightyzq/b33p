@@ -62,6 +62,23 @@ namespace B33p
         // the B33pRenderVoice CLI).
         float processSample(float input);
 
+        // Idle-voice fast path (Voice::applyEffectsBlock). Equivalent to
+        // processBlock() on numSamples zeros when the oversampling filters
+        // hold no signal (after clearOversamplerState()): the up/down
+        // filters would turn zeros into zeros, so they are skipped, while
+        // the bit-depth / rate smoothers and the sample-and-hold phase
+        // advance exactly as processBlock() would advance them, so a later
+        // note meets the same hold timing as if nothing had been skipped.
+        void processSilentBlock(int numSamples);
+
+        // Zeroes the oversampling filters' memory. Voice calls this only
+        // after a long run of exactly-zero input and output, when that
+        // memory is already zero (flushed by ScopedNoDenormals).
+        void clearOversamplerState();
+
+        // True when the sample-and-hold currently holds 0.
+        bool isHoldingZero() const noexcept { return bitcrush.isHoldingZero(); }
+
         // Rounded latency (samples) added by the oversampling filters.
         // Deterministic given kOversamplingFactor -- does not depend on
         // bit depth, target rate, or sample rate (juce::dsp::

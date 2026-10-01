@@ -7,6 +7,10 @@ namespace B33p
     void PitchEnvelope::prepare(double newSampleRate)
     {
         sampleRate = newSampleRate;
+        // setCurve copies the drawn curve in on the audio thread at every
+        // trigger; room for a generous point count up front means a
+        // typical curve edit never makes that copy allocate.
+        curve.reserve(kReservedCurvePoints);
         reset();
     }
 
@@ -31,11 +35,21 @@ namespace B33p
         for (auto& p : curve)
             p.normalizedTime = std::clamp(p.normalizedTime, 0.0f, 1.0f);
 
-        std::stable_sort(curve.begin(), curve.end(),
-            [](const PitchEnvelopePoint& a, const PitchEnvelopePoint& b)
+        // Stable insertion sort by time. Same order std::stable_sort gives
+        // (a stable sort's result is unique), but in place: the voices call
+        // setCurve on the audio thread at every trigger, and libstdc++'s
+        // stable_sort allocates a temporary buffer.
+        for (size_t i = 1; i < curve.size(); ++i)
+        {
+            const PitchEnvelopePoint p = curve[i];
+            size_t j = i;
+            while (j > 0 && p.normalizedTime < curve[j - 1].normalizedTime)
             {
-                return a.normalizedTime < b.normalizedTime;
-            });
+                curve[j] = curve[j - 1];
+                --j;
+            }
+            curve[j] = p;
+        }
     }
 
     void PitchEnvelope::trigger(float durationSeconds)

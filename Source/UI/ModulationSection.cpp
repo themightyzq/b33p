@@ -144,17 +144,15 @@ namespace B33p
     {
         auto bounds = getContentBounds();
 
-        // kLfoRowHeight = shape combo (22) + gap (4) + the Rate LabeledSlider's own
-        // budget (60 = 14 label + 24 knob + 22 dice/lock row). That 60 is the
-        // accessibility floor speaking: a LabeledSlider with showRandomizer = true
-        // needs label(14) + slider(>=22) + diceLock(22) = 50 at an absolute
-        // minimum, and 60 leaves the rotary knob a couple of extra px so it still
-        // reads as a knob rather than a dot. At the old 56 (cell = 30) the Rate
-        // knob itself silently collapsed to 0 px tall and its dice/lock row
-        // clipped to 16 — b33p_ui_snapshot --hit-audit caught both. The 30 px this
-        // grew by comes back out of MainComponent's kModulationRowHeight (220 ->
-        // 250), which only lengthens the voiceEditorViewport's scroll content —
-        // see the comment there.
+        // kLfoRowHeight is the Rate LabeledSlider's full height (the shape combo
+        // sits beside it, see below): 14 label + 50 slider (16 px value text box
+        // + 34 px dial) + 22 dice/lock row. A LabeledSlider with showRandomizer =
+        // true needs label(14) + slider(>=22) + diceLock(22) = 50 at an absolute
+        // minimum (b33p_ui_snapshot --hit-audit checks the 22 px floor); the
+        // value text box needs slider >= 31 to keep its full 16 px. The row grew
+        // 56 -> 86 earlier, and MainComponent's kModulationRowHeight with it
+        // (220 -> 250), which only lengthens the voiceEditorViewport's scroll
+        // content - see the comment there.
         constexpr int kLfoRowHeight  = 86;   // leaves room for all 4 matrix rows
         constexpr int kRowGap        = 6;
         constexpr int kInnerGap      = 6;
@@ -172,12 +170,18 @@ namespace B33p
             if (i < kNumLfosPerLane - 1)
                 lfoRow.removeFromLeft(kInnerGap);
 
-            // Shape combo on top, rate slider (LabeledSlider: label + knob +
-            // dice/lock row) filling the rest.
+            // Shape combo on the left, vertically centred; the Rate
+            // LabeledSlider (label + knob + dice/lock row) takes the right
+            // half at the cell's full height. Stacked (combo above knob), the
+            // knob's slider got 24 px, so JUCE squeezed its value text box to
+            // 9 px and the value read at about half the size of every other
+            // knob's. Side by side it gets 86 - 14 - 22 = 50 px: the full
+            // 16 px text box (the same value text as every other knob) above
+            // a 34 px dial, with no change to the row's height.
             auto& lfo = lfoControls[static_cast<size_t>(i)];
-            auto shapeRow = cell.removeFromTop(22);
-            cell.removeFromTop(4);
-            lfo.shape.setBounds(shapeRow);
+            auto shapeArea = cell.removeFromLeft((cell.getWidth() - kInnerGap) / 2);
+            cell.removeFromLeft(kInnerGap);
+            lfo.shape.setBounds(shapeArea.withSizeKeepingCentre(shapeArea.getWidth(), 22));
             lfo.rate .setBounds(cell);
         }
 

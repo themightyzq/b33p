@@ -48,7 +48,8 @@ namespace B33p
             // notifyFullStateLoaded fires the message-thread callback
             // that re-syncs widgets that don't auto-track the pattern
             // — length combo, loop toggle, lane name labels, mute
-            // buttons. Cheap (callAsync coalesces duplicates).
+            // buttons. Cheap (the processor's AsyncUpdater coalesces
+            // duplicates).
             processor.notifyFullStateLoaded();
             if (auto* c = editor.getComponent())
                 c->repaint();
