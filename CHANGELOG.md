@@ -15,6 +15,8 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-01
+
 ### Changed
 
 - MIDI notes start and stop on their own sample. Earlier, every MIDI note-on and note-off
