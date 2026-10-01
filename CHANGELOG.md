@@ -15,6 +15,19 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-10-01
+
+v0.5.0 was tagged but never released; 0.5.1 is the first release with the 0.5.0 changes below.
+
+### Fixed
+
+- Output no longer depends on the host block size on Windows, Linux and Intel Macs. JUCE's
+  oversampler zeroed tiny filter memory (below 1e-8) at the end of each processing block on
+  x86 only, so the Bitcrush and Distortion oversamplers differed by about -160 dBFS between,
+  say, 64 and 2048 samples. Apple Silicon was unaffected. The zeroing is off; the audio
+  thread already flushes denormals. Found by the CI test that renders MIDI notes at two
+  block sizes and compares them sample for sample.
+
 ## [0.5.0] — 2026-10-01
 
 ### Changed

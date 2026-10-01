@@ -6,6 +6,7 @@
 #include "State/B33pProcessor.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_dsp/juce_dsp.h>
 
 #include <algorithm>
 #include <cmath>
@@ -122,6 +123,16 @@ TEST_CASE("B33pProcessor: a MIDI note-on lands on its own sample, not the block 
     const auto b = render(*split, { 300, 212 }, midi);
     REQUIRE(firstDifference(a, b) == -1);
 }
+
+// juce::dsp::Oversampling snaps its allpass state below 1e-8 to zero once per
+// processSamplesUp/Down call when JUCE_DSP_ENABLE_SNAP_TO_ZERO is on, which
+// is only effective on x86 / x86_64 (JUCE_SNAP_TO_ZERO is a no-op on arm64).
+// The snap points then follow the block size, and the render below differs by
+// ~1e-8 between block sizes on Windows, Linux and Intel macOS while staying
+// bit-identical on Apple Silicon. CMake turns the snap off for every target;
+// this keeps the test TU, and so a regression, honest on every architecture.
+static_assert(JUCE_DSP_ENABLE_SNAP_TO_ZERO == 0,
+              "block-size invariance needs JUCE_DSP_ENABLE_SNAP_TO_ZERO=0 (see CMakeLists.txt)");
 
 TEST_CASE("B33pProcessor: MIDI note-on and note-off timing is block-size invariant",
           "[state][timing][midi]")

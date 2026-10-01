@@ -84,6 +84,7 @@ target_link_libraries(B33pTests PRIVATE
 # in the curl symbols and linking juce_audio_processors pulls in
 # juce_gui_extra, both of which fail on ubuntu-latest.
 target_compile_definitions(B33pTests PRIVATE
+    ${B33P_DSP_DEFINITIONS}
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
 )
@@ -116,6 +117,7 @@ target_link_libraries(B33pRenderVoice PRIVATE
 )
 
 target_compile_definitions(B33pRenderVoice PRIVATE
+    ${B33P_DSP_DEFINITIONS}
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
 )

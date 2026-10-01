@@ -5,7 +5,7 @@ if(APPLE)
 endif()
 
 project(B33p
-    VERSION 0.5.0
+    VERSION 0.5.1
     DESCRIPTION "Sound design tool for short synthesized beeps, blips, alarms, and droid chatter"
     HOMEPAGE_URL "https://github.com/themightyzq/b33p"
     LANGUAGES CXX C
@@ -110,6 +110,17 @@ CPMAddPackage(
     GIT_TAG             v0.4.0
 )
 
+# JUCE's dsp module zeroes filter state below 1e-8 at the end of every block
+# (JUCE_DSP_ENABLE_SNAP_TO_ZERO, active on x86 / x86_64 only; a no-op on arm64).
+# The oversampler's allpass memory is snapped once per processSamplesUp/Down
+# call, so the snap points move with the host block size and Intel output
+# differed from arm64 output by ~1e-8 (-160 dBFS) between block sizes, breaking
+# the block-size-invariance contract on Windows, Linux and the x86_64 slice.
+# processBlock already runs under juce::ScopedNoDenormals, which is the
+# documented replacement for the snap. Every target that compiles juce_dsp
+# (the filters are templates in headers) must agree, so they all take this.
+set(B33P_DSP_DEFINITIONS JUCE_DSP_ENABLE_SNAP_TO_ZERO=0)
+
 # ---------------------------------------------------------------------------
 # Plugin + standalone target
 #
@@ -206,6 +217,7 @@ target_sources(B33p PRIVATE
 target_include_directories(B33p PRIVATE Source)
 
 target_compile_definitions(B33p PRIVATE
+    ${B33P_DSP_DEFINITIONS}
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:B33p,JUCE_PRODUCT_NAME>"
@@ -266,6 +278,7 @@ juce_add_console_app(b33p_ui_snapshot PRODUCT_NAME "b33p_ui_snapshot")
 target_sources(b33p_ui_snapshot PRIVATE tools/ui_snapshot/main.cpp)
 target_include_directories(b33p_ui_snapshot PRIVATE Source)
 target_compile_definitions(b33p_ui_snapshot PRIVATE
+    ${B33P_DSP_DEFINITIONS}
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
 )
