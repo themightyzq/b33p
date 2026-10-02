@@ -52,10 +52,10 @@ namespace B33p
         SliderFormatting::applyPercent(sustainSlider.getSlider());
         SliderFormatting::applySeconds(releaseSlider.getSlider());
 
-        SliderFormatting::applyDoubleClickReset(attackSlider .getSlider(), processor.getApvts(), ParameterIDs::ampAttack(lane));
-        SliderFormatting::applyDoubleClickReset(decaySlider  .getSlider(), processor.getApvts(), ParameterIDs::ampDecay(lane));
-        SliderFormatting::applyDoubleClickReset(sustainSlider.getSlider(), processor.getApvts(), ParameterIDs::ampSustain(lane));
-        SliderFormatting::applyDoubleClickReset(releaseSlider.getSlider(), processor.getApvts(), ParameterIDs::ampRelease(lane));
+        zqsfx::ui::setDoubleClickDefault(attackSlider .getSlider(), processor.getApvts(), ParameterIDs::ampAttack(lane));
+        zqsfx::ui::setDoubleClickDefault(decaySlider  .getSlider(), processor.getApvts(), ParameterIDs::ampDecay(lane));
+        zqsfx::ui::setDoubleClickDefault(sustainSlider.getSlider(), processor.getApvts(), ParameterIDs::ampSustain(lane));
+        zqsfx::ui::setDoubleClickDefault(releaseSlider.getSlider(), processor.getApvts(), ParameterIDs::ampRelease(lane));
 
         visualizer.retargetLane(lane);
         setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6

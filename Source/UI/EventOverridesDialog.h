@@ -5,6 +5,7 @@
 #include "State/B33pProcessor.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <zqsfx_ui/components/Dial.h>
 
 #include <array>
 #include <functional>
@@ -49,18 +50,18 @@ namespace B33p
         {
             juce::Label    label;
             juce::ComboBox dest;
-            juce::Slider   amount;
+            zqsfx::ui::Dial amount;
         };
 
         EventDialogEdits                          editing;
         std::array<SlotControls, kNumEventOverrides> slotControls;
 
         juce::Label  probabilityLabel { {}, "Probability" };
-        juce::Slider probabilitySlider;
+        zqsfx::ui::Dial probabilitySlider;
         juce::Label  ratchetsLabel    { {}, "Ratchets" };
-        juce::Slider ratchetsSlider;
+        zqsfx::ui::Dial ratchetsSlider;
         juce::Label  humanizeLabel    { {}, "Humanize" };
-        juce::Slider humanizeSlider;
+        zqsfx::ui::Dial humanizeSlider;
 
         juce::TextButton applyButton  { "Apply"  };
         juce::TextButton cancelButton { "Cancel" };

@@ -84,9 +84,9 @@ namespace B33p
         SliderFormatting::applyDecimal(resonanceSlider.getSlider(), 2);
         SliderFormatting::applyDecimal(vowelSlider    .getSlider(), 2);
 
-        SliderFormatting::applyDoubleClickReset(cutoffSlider   .getSlider(), processor.getApvts(), ParameterIDs::filterCutoffHz(lane));
-        SliderFormatting::applyDoubleClickReset(resonanceSlider.getSlider(), processor.getApvts(), ParameterIDs::filterResonanceQ(lane));
-        SliderFormatting::applyDoubleClickReset(vowelSlider    .getSlider(), processor.getApvts(), ParameterIDs::filterVowel(lane));
+        zqsfx::ui::setDoubleClickDefault(cutoffSlider   .getSlider(), processor.getApvts(), ParameterIDs::filterCutoffHz(lane));
+        zqsfx::ui::setDoubleClickDefault(resonanceSlider.getSlider(), processor.getApvts(), ParameterIDs::filterResonanceQ(lane));
+        zqsfx::ui::setDoubleClickDefault(vowelSlider    .getSlider(), processor.getApvts(), ParameterIDs::filterVowel(lane));
 
         visualizer.retargetLane(lane);
         setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6

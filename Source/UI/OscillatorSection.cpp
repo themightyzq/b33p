@@ -177,24 +177,24 @@ namespace B33p
         SliderFormatting::applyDecimal(fmDepthSlider.getSlider(),   2);
         SliderFormatting::applyDecimal(ringRatioSlider.getSlider(), 2);
         SliderFormatting::applyDecimal(ringMixSlider.getSlider(),   2);
-        SliderFormatting::applyDoubleClickReset(basePitchSlider.getSlider(),
-                                                processor.getApvts(),
-                                                ParameterIDs::basePitchHz(lane));
-        SliderFormatting::applyDoubleClickReset(morphSlider.getSlider(),
-                                                processor.getApvts(),
-                                                ParameterIDs::wavetableMorph(lane));
-        SliderFormatting::applyDoubleClickReset(fmRatioSlider.getSlider(),
-                                                processor.getApvts(),
-                                                ParameterIDs::fmRatio(lane));
-        SliderFormatting::applyDoubleClickReset(fmDepthSlider.getSlider(),
-                                                processor.getApvts(),
-                                                ParameterIDs::fmDepth(lane));
-        SliderFormatting::applyDoubleClickReset(ringRatioSlider.getSlider(),
-                                                processor.getApvts(),
-                                                ParameterIDs::ringRatio(lane));
-        SliderFormatting::applyDoubleClickReset(ringMixSlider.getSlider(),
-                                                processor.getApvts(),
-                                                ParameterIDs::ringMix(lane));
+        zqsfx::ui::setDoubleClickDefault(basePitchSlider.getSlider(),
+                                         processor.getApvts(),
+                                         ParameterIDs::basePitchHz(lane));
+        zqsfx::ui::setDoubleClickDefault(morphSlider.getSlider(),
+                                         processor.getApvts(),
+                                         ParameterIDs::wavetableMorph(lane));
+        zqsfx::ui::setDoubleClickDefault(fmRatioSlider.getSlider(),
+                                         processor.getApvts(),
+                                         ParameterIDs::fmRatio(lane));
+        zqsfx::ui::setDoubleClickDefault(fmDepthSlider.getSlider(),
+                                         processor.getApvts(),
+                                         ParameterIDs::fmDepth(lane));
+        zqsfx::ui::setDoubleClickDefault(ringRatioSlider.getSlider(),
+                                         processor.getApvts(),
+                                         ParameterIDs::ringRatio(lane));
+        zqsfx::ui::setDoubleClickDefault(ringMixSlider.getSlider(),
+                                         processor.getApvts(),
+                                         ParameterIDs::ringMix(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));
         setAccentColour(Section::houseLaneAccent(lane));

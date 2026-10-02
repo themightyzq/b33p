@@ -5,6 +5,7 @@
 #include "State/B33pProcessor.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <zqsfx_ui/components/Dial.h>
 
 #include <functional>
 
@@ -68,7 +69,7 @@ namespace B33p
         juce::Label    laneLabel,     startLabel,    durationLabel,
                         pitchLabel,    velocityLabel;
         juce::ComboBox laneCombo;
-        juce::Slider   startSlider,   durationSlider, pitchSlider, velocitySlider;
+        zqsfx::ui::Dial startSlider, durationSlider, pitchSlider, velocitySlider;
         juce::TextButton deleteButton { "Delete" };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(InspectorStrip)

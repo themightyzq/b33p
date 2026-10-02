@@ -131,20 +131,4 @@ namespace B33p::SliderFormatting
         };
         slider.updateText();
     }
-
-    // Wires double-click on the knob to snap back to the parameter's
-    // default value (DAW convention). Pulls the default from the
-    // APVTS parameter's normalised range so this stays in sync if
-    // the parameter layout changes.
-    inline void applyDoubleClickReset(juce::Slider& slider,
-                                       juce::AudioProcessorValueTreeState& apvts,
-                                       const juce::String& parameterID)
-    {
-        if (auto* param = apvts.getParameter(parameterID))
-        {
-            const auto& range = apvts.getParameterRange(parameterID);
-            slider.setDoubleClickReturnValue(true,
-                range.convertFrom0to1(param->getDefaultValue()));
-        }
-    }
 }

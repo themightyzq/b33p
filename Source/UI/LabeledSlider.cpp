@@ -44,7 +44,7 @@ namespace B33p
         // mouse-down (the common "hold then drag" gesture); a higher
         // sensitivity means more travel per unit of value.
         setMouseDragSensitivity(e.mods.isShiftDown() ? 1500 : 250);
-        juce::Slider::mouseDown(e);
+        Dial::mouseDown(e);
     }
 
     void B33pSlider::showContextMenu()
@@ -103,14 +103,6 @@ namespace B33p
     void LabeledSlider::attachRandomizer(B33pProcessor& processor,
                                           const juce::String& parameterID)
     {
-        // Wire double-click / "Reset to default" to the parameter's default,
-        // in the slider's own value space (the SliderAttachment has already
-        // matched the slider range to the parameter range). Done before the
-        // randomizer-visibility early-out so even non-randomizable knobs reset.
-        if (auto* p = processor.getApvts().getParameter(parameterID))
-            slider.setDoubleClickReturnValue(true,
-                (double) p->convertFrom0to1(p->getDefaultValue()));
-
         // (Re-)register as a RollListener so randomize events on this
         // parameter trigger the change-flash. Re-attaching to a new lane
         // unhooks the previous registration first so we don't double-fire.

@@ -107,9 +107,9 @@ namespace B33p
         SliderFormatting::applyDecimal(p2Slider .getSlider(), 2);
         SliderFormatting::applyDecimal(mixSlider.getSlider(), 2);
 
-        SliderFormatting::applyDoubleClickReset(p1Slider .getSlider(), processor.getApvts(), ParameterIDs::modEffectParam1(lane));
-        SliderFormatting::applyDoubleClickReset(p2Slider .getSlider(), processor.getApvts(), ParameterIDs::modEffectParam2(lane));
-        SliderFormatting::applyDoubleClickReset(mixSlider.getSlider(), processor.getApvts(), ParameterIDs::modEffectMix(lane));
+        zqsfx::ui::setDoubleClickDefault(p1Slider .getSlider(), processor.getApvts(), ParameterIDs::modEffectParam1(lane));
+        zqsfx::ui::setDoubleClickDefault(p2Slider .getSlider(), processor.getApvts(), ParameterIDs::modEffectParam2(lane));
+        zqsfx::ui::setDoubleClickDefault(mixSlider.getSlider(), processor.getApvts(), ParameterIDs::modEffectMix(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6
         setAccentColour(Section::houseLaneAccent(lane));

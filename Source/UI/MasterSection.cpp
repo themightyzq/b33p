@@ -134,9 +134,9 @@ namespace B33p
         // dB. Round-trips via valueFromTextFunction so a typed
         // "+6 dB" parses back to ~2.0 linear.
         SliderFormatting::applyLinearGainAsDb(gainSlider.getSlider());
-        SliderFormatting::applyDoubleClickReset(gainSlider.getSlider(),
-                                                processor.getApvts(),
-                                                ParameterIDs::voiceGain(lane));
+        zqsfx::ui::setDoubleClickDefault(gainSlider.getSlider(),
+                                         processor.getApvts(),
+                                         ParameterIDs::voiceGain(lane));
 
         setAccentColour(Section::houseLaneAccent(lane));
     }

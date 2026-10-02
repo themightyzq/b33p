@@ -107,7 +107,7 @@ CPMAddPackage(
 CPMAddPackage(
     NAME                zqsfx_ui
     GITHUB_REPOSITORY   themightyzq/zqsfx_ui
-    GIT_TAG             v0.4.0
+    GIT_TAG             v0.5.0
 )
 
 # JUCE's dsp module zeroes filter state below 1e-8 at the end of every block

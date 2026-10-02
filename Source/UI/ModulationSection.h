@@ -6,6 +6,7 @@
 #include "State/B33pProcessor.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <zqsfx_ui/components/Dial.h>
 
 #include <array>
 #include <memory>
@@ -61,7 +62,7 @@ namespace B33p
             juce::Label    label;
             juce::ComboBox source;
             juce::ComboBox dest;
-            juce::Slider   amount;
+            zqsfx::ui::Dial amount;
             std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> sourceAttachment;
             std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> destAttachment;
             std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>   amountAttachment;

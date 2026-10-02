@@ -321,6 +321,8 @@ namespace B33p
         // attachment above (setNumDecimalPlacesToDisplay would be reset by
         // it, which is why Scope used to read "1.000…"). (REVIEW-DESIGN.)
         SliderFormatting::applyDecimal(scopeSlider, 2);
+        zqsfx::ui::setDoubleClickDefault(scopeSlider, processor.getApvts(),
+                                         ParameterIDs::randomizationScope());
         scopeSlider.setTitle("Randomization scope");
         addAndMakeVisible(scopeSlider);
 

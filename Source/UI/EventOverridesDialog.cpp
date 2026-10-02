@@ -76,6 +76,7 @@ namespace B33p
             slot.amount.setTextBoxStyle(juce::Slider::TextBoxRight, false, 56, 18);
             slot.amount.setValue(static_cast<double>(editing.overrides[static_cast<size_t>(i)].value),
                                   juce::dontSendNotification);
+            zqsfx::ui::setDoubleClickDefault(slot.amount, static_cast<double>(EventOverride{}.value));
             slot.amount.setTitle("Override slot " + juce::String(i + 1) + " amount");
             slot.amount.setTooltip("Override amount for slot " + juce::String(i + 1));
             slot.amount.onValueChange = [this, i]
@@ -106,6 +107,7 @@ namespace B33p
         {
             editing.probability = static_cast<float>(probabilitySlider.getValue());
         };
+        zqsfx::ui::setDoubleClickDefault(probabilitySlider, static_cast<double>(Event{}.probability));
         probabilitySlider.setTitle("Probability");
         probabilitySlider.setTooltip("0 = never fires, 1 = always fires (rolled at snapshot time)");
         addAndMakeVisible(probabilitySlider);
@@ -120,6 +122,7 @@ namespace B33p
             editing.ratchets = juce::jlimit(1, kMaxRatchets,
                                              static_cast<int>(ratchetsSlider.getValue()));
         };
+        zqsfx::ui::setDoubleClickDefault(ratchetsSlider, static_cast<double>(Event{}.ratchets));
         ratchetsSlider.setTitle("Ratchets");
         ratchetsSlider.setTooltip("1 = single hit; higher = N evenly-spaced retriggers within the event's duration");
         addAndMakeVisible(ratchetsSlider);
@@ -133,6 +136,7 @@ namespace B33p
         {
             editing.humanizeAmount = static_cast<float>(humanizeSlider.getValue());
         };
+        zqsfx::ui::setDoubleClickDefault(humanizeSlider, static_cast<double>(Event{}.humanizeAmount));
         humanizeSlider.setTitle("Humanize");
         humanizeSlider.setTooltip("Random jitter on timing + velocity. Re-randomises each snapshot rebuild.");
         addAndMakeVisible(humanizeSlider);

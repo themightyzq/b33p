@@ -59,7 +59,6 @@ namespace B33p
             slot.amount.setSliderStyle(juce::Slider::LinearHorizontal);
             slot.amount.setTextBoxStyle(juce::Slider::TextBoxRight, false, 56, 16);
             slot.amount.setRange(-1.0, 1.0, 0.01);
-            slot.amount.setDoubleClickReturnValue(true, 0.0);
             slot.amount.setPopupDisplayEnabled(true, false, this);
             addAndMakeVisible(slot.amount);
 
@@ -109,9 +108,9 @@ namespace B33p
             lfo.rate.attachRandomizer(processor, ParameterIDs::lfoRateHz(lane, i));
 
             SliderFormatting::applyHz(lfo.rate.getSlider());
-            SliderFormatting::applyDoubleClickReset(lfo.rate.getSlider(),
-                                                    processor.getApvts(),
-                                                    ParameterIDs::lfoRateHz(lane, i));
+            zqsfx::ui::setDoubleClickDefault(lfo.rate.getSlider(),
+                                             processor.getApvts(),
+                                             ParameterIDs::lfoRateHz(lane, i));
         }
 
         for (int i = 0; i < kNumModSlots; ++i)
@@ -134,6 +133,8 @@ namespace B33p
             // (full float precision); override it for a clean bipolar readout
             // ("+0.29" / "-1.00") (REVIEW-DESIGN).
             SliderFormatting::applyBipolar(slot.amount);
+            zqsfx::ui::setDoubleClickDefault(slot.amount, processor.getApvts(),
+                                             ParameterIDs::modSlotAmount(lane, i));
         }
 
         setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6

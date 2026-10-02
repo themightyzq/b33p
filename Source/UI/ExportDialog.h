@@ -3,6 +3,7 @@
 #include "Pattern/AudioFileWriter.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <zqsfx_ui/components/Dial.h>
 
 #include <functional>
 #include <memory>
@@ -81,7 +82,7 @@ namespace B33p
         juce::ComboBox   channelCombo;
 
         juce::Label      variationsLabel;
-        juce::Slider     variationsSlider;
+        zqsfx::ui::Dial   variationsSlider;
 
         juce::TextButton cancelButton { "Cancel" };
         juce::TextButton exportButton { "Export" };

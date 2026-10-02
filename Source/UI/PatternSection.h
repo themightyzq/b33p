@@ -7,6 +7,7 @@
 #include "State/B33pProcessor.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <zqsfx_ui/components/Dial.h>
 
 namespace B33p
 {
@@ -56,7 +57,7 @@ namespace B33p
         juce::ComboBox   gridCombo;
 
         juce::Label      bpmLabel;
-        juce::Slider     bpmSlider;
+        zqsfx::ui::Dial   bpmSlider;
         juce::Label      timeSigLabel;
         juce::ComboBox   timeSigCombo;
 
@@ -66,7 +67,7 @@ namespace B33p
         juce::TextButton randomizePatternButton { "Randomize Pattern" };
         juce::TextButton randomizeParamsButton  { "Randomize Params" };
         juce::Label      scopeLabel;
-        juce::Slider     scopeSlider;
+        zqsfx::ui::Dial   scopeSlider;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
                          scopeAttachment;
         juce::TextButton exportButton       { "Export..." };

@@ -44,9 +44,9 @@ namespace B33p
         SliderFormatting::applyHz     (crushRateSlider.getSlider());
         SliderFormatting::applyDecimal(driveSlider    .getSlider(), 2);
 
-        SliderFormatting::applyDoubleClickReset(bitDepthSlider .getSlider(), processor.getApvts(), ParameterIDs::bitcrushBitDepth(lane));
-        SliderFormatting::applyDoubleClickReset(crushRateSlider.getSlider(), processor.getApvts(), ParameterIDs::bitcrushSampleRateHz(lane));
-        SliderFormatting::applyDoubleClickReset(driveSlider    .getSlider(), processor.getApvts(), ParameterIDs::distortionDrive(lane));
+        zqsfx::ui::setDoubleClickDefault(bitDepthSlider .getSlider(), processor.getApvts(), ParameterIDs::bitcrushBitDepth(lane));
+        zqsfx::ui::setDoubleClickDefault(crushRateSlider.getSlider(), processor.getApvts(), ParameterIDs::bitcrushSampleRateHz(lane));
+        zqsfx::ui::setDoubleClickDefault(driveSlider    .getSlider(), processor.getApvts(), ParameterIDs::distortionDrive(lane));
 
         setTitleSuffix(processor.laneTitleSuffix(lane));   // REVIEW-USER R-MISSING-6
         setAccentColour(Section::houseLaneAccent(lane));

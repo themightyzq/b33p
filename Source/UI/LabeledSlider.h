@@ -5,16 +5,18 @@
 #include "State/ParameterRandomizer.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <zqsfx_ui/components/Dial.h>
 
 namespace B33p
 {
-    // juce::Slider with b33p's interaction niceties (REVIEW.md P9/P10/P25/P36):
+    // zqsfx::ui::Dial (keyboard focus + focus ring, arrow keys, Shift+arrow fine step)
+    // with b33p's interaction niceties (REVIEW.md P9/P10/P25/P36):
     //   * hold Shift before dragging for fine adjustment
     //   * mouse-wheel / two-finger scroll steps the value
     //   * right-click (or ctrl-click) opens a menu: Enter value / Reset to
     //     default
     // The flat rotary visual lives in B33pLookAndFeel; this only adds behaviour.
-    class B33pSlider : public juce::Slider
+    class B33pSlider : public zqsfx::ui::Dial
     {
     public:
         B33pSlider();

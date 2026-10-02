@@ -119,6 +119,9 @@ namespace B33p
         for (auto* s : { &startSlider, &durationSlider, &pitchSlider, &velocitySlider })
             styleField(*s);
 
+        // No double-click reset here: these fields edit one event's data, which has no
+        // meaningful default (resetting a start time to 0 s would move the event).
+
         startSlider   .setTitle("Event start");
         durationSlider.setTitle("Event duration");
         pitchSlider   .setTitle("Event pitch offset");

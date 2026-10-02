@@ -123,3 +123,41 @@ target_compile_definitions(B33pRenderVoice PRIVATE
 )
 
 target_compile_features(B33pRenderVoice PRIVATE cxx_std_17)
+
+# -----------------------------------------------------------------------------
+# B33pUiTests — house control behaviour of every knob/slider in the real editor
+# (zqsfx::ui::Dial, keyboard focus + ring, double-click returns to the parameter
+# default). Like b33p_ui_snapshot --hit-audit it builds the editor but never a
+# window peer, so it needs no display on Linux CI. It links the plugin's shared
+# code target (B33p), which the sanitizer job never builds, so it is skipped there
+# for the same reason the hit-audit tests are (see the root CMakeLists.txt).
+# -----------------------------------------------------------------------------
+if(TARGET B33p AND NOT B33P_ENABLE_SANITIZERS)
+    add_executable(B33pUiTests
+        UI/KnobBehaviourTests.cpp
+    )
+
+    target_include_directories(B33pUiTests PRIVATE
+        ${CMAKE_SOURCE_DIR}/Source
+    )
+
+    target_link_libraries(B33pUiTests PRIVATE
+        Catch2::Catch2WithMain
+        B33p
+        zqsfx::ui
+        juce::juce_audio_processors
+        juce::juce_gui_basics
+        juce::juce_dsp
+        juce::juce_recommended_config_flags
+    )
+
+    target_compile_definitions(B33pUiTests PRIVATE
+        ${B33P_DSP_DEFINITIONS}
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
+    )
+
+    target_compile_features(B33pUiTests PRIVATE cxx_std_17)
+
+    catch_discover_tests(B33pUiTests)
+endif()
