@@ -15,6 +15,8 @@ For the full per-commit history, see [`git log`](https://github.com/themightyzq/
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-02
+
 ### Changed
 
 - Every knob and slider takes keyboard focus with a visible ring; Left/Right/Up/Down step it, Shift+arrow steps a tenth as far, and double-click returns it to its default (house UI 0.5.0).
